@@ -70,7 +70,7 @@ class SafePaste{
  allowRestore(sessionId){if(this.lease?.sessionId!==sessionId||this.lease.consumed)return false;this.lease.restore=true;return true;}
  cancel(sessionId,why='cancelled'){
   if(sessionId!==undefined&&this.lease?.sessionId!==sessionId)return false;
-  const lease=this.lease;this.lease=null;this.generation++;void this._discard(lease);if(lease)this._status('cancelled',{reason:reason(why)});return !!lease;
+  const lease=this.lease;this.lease=null;this.generation++;void this._discard(lease);if(lease)this._status(lease.dispatched?'failed':'cancelled',{reason:reason(why),...(lease.dispatched?{unknownOutcome:true,clipboardChanged:null,message:'粘贴可能已经发送，请核对原输入框；不会自动重试。'}:{})});return !!lease;
  }
  async finish(result,{isCurrent=()=>false,text=result?.text}={}){
   const lease=this.lease;if(!lease||lease.sessionId!==result?.id||lease.consumed)return this.snapshot();
@@ -82,6 +82,7 @@ class SafePaste{
   // Recheck after publishing: a subscriber may have cancelled or edited synchronously.
   if(this.lease!==lease)return this.snapshot();
   if(!current()){this.cancel(lease.sessionId);return this._status('blocked',{reason:'cancelled'});}
+  lease.dispatched=true;
   let response;try{response=await this.native.paste({token:lease.token,text,restore:lease.restore});}catch{response={status:'failed',reason:'native',clipboardChanged:null};}
   if(this.lease!==lease)return this.snapshot();this.lease=null;void this._discard(lease);
   const status=['sent','blocked','failed'].includes(response?.status)?response.status:'failed';return this._status(status,{reason:reason(response?.reason),clipboardChanged:typeof response?.clipboardChanged==='boolean'?response.clipboardChanged:null});
