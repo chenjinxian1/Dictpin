@@ -6,14 +6,23 @@ const REASONS=new Set(['unsupported','password','readonly','terminal','own','int
 const reason=value=>REASONS.has(value)?value:'native';
 const textValid=text=>typeof text==='string'&&text.trim().length>0&&text.length<=100000&&!text.includes('\0');
 class NativeDelivery{
- constructor({ownPid=process.pid,spawnImpl=spawn,exePath=path.resolve(__dirname,'../../native/dictpin-delivery.exe'),platform=process.platform,exists=fs.existsSync,timeoutMs=2500}={}){
-  this.ownPid=ownPid;this.spawnImpl=spawnImpl;this.exe=exePath;this.platform=platform;this.exists=exists;this.timeoutMs=Math.max(1,Math.min(5000,timeoutMs));this.child=null;this.pending=new Map();this.sequence=0;this.disposed=false;this.ready=false;this.buffer='';
+ constructor({ownPid=process.pid,spawnImpl=spawn,exePath=path.resolve(__dirname,'../../native/dictpin-delivery.exe'),platform=process.platform,exists=fs.existsSync,timeoutMs=2500,closeTimeoutMs=1000}={}){
+  this.ownPid=ownPid;this.spawnImpl=spawnImpl;this.exe=exePath;this.platform=platform;this.exists=exists;this.timeoutMs=Math.max(1,Math.min(5000,timeoutMs));this.closeTimeoutMs=Math.max(1,Math.min(5000,closeTimeoutMs));this.child=null;this.pending=new Map();this.sequence=0;this.disposed=false;this.ready=false;this.stopping=false;this.buffer='';this.closedPromise=null;this.closedResolve=null;
  }
  get available(){return !this.disposed&&this.platform==='win32'&&Number.isSafeInteger(this.ownPid)&&this.ownPid>0&&this.exists(this.exe);}
- _broken(){
+ _rejectPending(){
   clearTimeout(this.bootTimer);this.ready=false;this.bootReject?.(Error('native'));this.bootResolve=this.bootReject=null;this.boot=null;
   for(const pending of this.pending.values()){clearTimeout(pending.timer);pending.reject(Error('native'));}this.pending.clear();this.buffer='';
-  const child=this.child;this.child=null;try{child?.kill();}catch{}
+ }
+ _broken(){
+  this._rejectPending();
+  // A kill request is not evidence of exit. Keep ownership and quarantine the pipe
+  // until this exact child emits close; otherwise a timed-out broker could still paste.
+  const child=this.child;if(!child||this.stopping)return;this.stopping=true;try{child.kill();}catch{}
+ }
+ _closed(child){
+  if(this.child!==child)return;this._rejectPending();this.child=null;this.stopping=false;
+  this.closedResolve?.(true);this.closedResolve=null;this.closedPromise=null;
  }
  _receive(message){
   if(!message||typeof message!=='object'||Array.isArray(message))throw Error('protocol');
@@ -25,14 +34,14 @@ class NativeDelivery{
   const pending=this.pending.get(message.id);this.pending.delete(message.id);clearTimeout(pending.timer);pending.resolve(message);
  }
  _ensureReady(){
-  if(!this.available)return Promise.reject(Error('missing'));if(this.ready)return Promise.resolve();if(this.boot)return this.boot;
+  if(!this.available)return Promise.reject(Error('missing'));if(this.stopping)return Promise.reject(Error('native'));if(this.ready)return Promise.resolve();if(this.boot)return this.boot;if(this.child)return Promise.reject(Error('native'));
   this.boot=new Promise((resolve,reject)=>{this.bootResolve=resolve;this.bootReject=reject;});const waiting=this.boot;
   try{
-   const child=this.spawnImpl(this.exe,['--broker','--owner-pid',String(this.ownPid)],{cwd:path.dirname(this.exe),stdio:['pipe','pipe','pipe'],windowsHide:true,shell:false});this.child=child;
+   const child=this.spawnImpl(this.exe,['--broker','--owner-pid',String(this.ownPid)],{cwd:path.dirname(this.exe),stdio:['pipe','pipe','pipe'],windowsHide:true,shell:false});this.child=child;this.closedPromise=new Promise(resolve=>{this.closedResolve=resolve;});
    this.bootTimer=setTimeout(()=>this._broken(),this.timeoutMs);
-   child.stdout.on('data',chunk=>{if(this.child!==child)return;this.buffer+=String(chunk);if(Buffer.byteLength(this.buffer)>16384){this._broken();return;}let end;while(this.child===child&&(end=this.buffer.indexOf('\n'))>=0){const line=this.buffer.slice(0,end);this.buffer=this.buffer.slice(end+1);try{this._receive(JSON.parse(line));}catch{this._broken();return;}}});
+   child.stdout.on('data',chunk=>{if(this.child!==child||this.stopping)return;this.buffer+=String(chunk);if(Buffer.byteLength(this.buffer)>16384){this._broken();return;}let end;while(this.child===child&&!this.stopping&&(end=this.buffer.indexOf('\n'))>=0){const line=this.buffer.slice(0,end);this.buffer=this.buffer.slice(end+1);try{this._receive(JSON.parse(line));}catch{this._broken();return;}}});
    child.stderr.on('data',()=>{});for(const emitter of [child,child.stdin,child.stdout,child.stderr])emitter.on('error',()=>{if(this.child===child)this._broken();});
-   child.once('close',()=>{if(this.child===child)this._broken();});
+   child.once('close',()=>this._closed(child));
   }catch{this._broken();}
   return waiting;
  }
@@ -50,9 +59,14 @@ class NativeDelivery{
   try{const r=await this._request('paste',{token:input.token,text:input.text,restore:input.restore===true});if(!['sent','blocked','failed'].includes(r.status)||typeof r.clipboardChanged!=='boolean'){this._broken();throw Error('protocol');}return{status:r.status,reason:reason(r.reason),clipboardChanged:r.clipboardChanged};}catch{return{status:'failed',reason:'native',clipboardChanged:null};}
  }
  async discard(input={}){if(!TOKEN.test(input.token)||!this.child||!this.ready)return{discarded:false};try{return{discarded:(await this._request('discard',{token:input.token})).discarded===true};}catch{return{discarded:false};}}
- async dispose(){this.disposed=true;this._broken();}
+ async dispose(){
+  this.disposed=true;const child=this.child,closed=this.closedPromise;this._broken();
+  if(!child||this.child!==child)return{closed:true};
+  return new Promise(resolve=>{let settled=false;const finish=confirmed=>{if(settled)return;settled=true;clearTimeout(timer);resolve({closed:confirmed,...confirmed?{}:{reason:'native-exit-unconfirmed'}});};const timer=setTimeout(()=>finish(false),this.closeTimeoutMs);closed?.then(()=>finish(true));});
+ }
 }
 const MESSAGES=Object.freeze({manual:'完成后由你复制。',preparing:'正在确认原输入框。',armed:'结束后将尝试粘贴到原输入框。',pending:'正在安全投递文字…',sent:'已发送粘贴按键；请在原输入框核对，文字也已放入剪贴板。',blocked:'未自动粘贴，文字仍在，请手动复制。',failed:'自动粘贴未完成，文字仍在，请手动复制。',cancelled:'已取消自动粘贴，文字仍在。'});
+const UNKNOWN_OUTCOME={unknownOutcome:true,clipboardChanged:null,message:'粘贴可能已经发送，请核对原输入框；不会自动重试。'};
 class SafePaste{
  constructor({native=new NativeDelivery(),now=()=>Date.now(),onStatus=()=>{},leaseMs=1800000}={}){this.native=native;this.now=now;this.onStatus=onStatus;this.leaseMs=Math.max(1,Math.min(1800000,leaseMs));this.generation=0;this.lease=null;this.state={status:'manual',message:MESSAGES.manual};this.disposed=false;}
  snapshot(){return{...this.state,available:this.native.available===true,helperMissing:this.native.available===false};}
@@ -70,7 +84,7 @@ class SafePaste{
  allowRestore(sessionId){if(this.lease?.sessionId!==sessionId||this.lease.consumed)return false;this.lease.restore=true;return true;}
  cancel(sessionId,why='cancelled'){
   if(sessionId!==undefined&&this.lease?.sessionId!==sessionId)return false;
-  const lease=this.lease;this.lease=null;this.generation++;void this._discard(lease);if(lease)this._status(lease.dispatched?'failed':'cancelled',{reason:reason(why),...(lease.dispatched?{unknownOutcome:true,clipboardChanged:null,message:'粘贴可能已经发送，请核对原输入框；不会自动重试。'}:{})});return !!lease;
+  const lease=this.lease;this.lease=null;this.generation++;void this._discard(lease);if(lease)this._status(lease.dispatched?'failed':'cancelled',{reason:reason(why),...(lease.dispatched?UNKNOWN_OUTCOME:{})});return !!lease;
  }
  async finish(result,{isCurrent=()=>false,text=result?.text}={}){
   const lease=this.lease;if(!lease||lease.sessionId!==result?.id||lease.consumed)return this.snapshot();
@@ -85,8 +99,8 @@ class SafePaste{
   lease.dispatched=true;
   let response;try{response=await this.native.paste({token:lease.token,text,restore:lease.restore});}catch{response={status:'failed',reason:'native',clipboardChanged:null};}
   if(this.lease!==lease)return this.snapshot();this.lease=null;void this._discard(lease);
-  const status=['sent','blocked','failed'].includes(response?.status)?response.status:'failed';return this._status(status,{reason:reason(response?.reason),clipboardChanged:typeof response?.clipboardChanged==='boolean'?response.clipboardChanged:null});
+  const status=['sent','blocked','failed'].includes(response?.status)?response.status:'failed';return this._status(status,{reason:reason(response?.reason),clipboardChanged:typeof response?.clipboardChanged==='boolean'?response.clipboardChanged:null,...status==='failed'?UNKNOWN_OUTCOME:{}});
  }
- async dispose(){this.disposed=true;this.cancel();await this.native.dispose?.();}
+ async dispose(){this.disposed=true;this.cancel();return this.native.dispose?.();}
 }
 module.exports={NativeDelivery,SafePaste};

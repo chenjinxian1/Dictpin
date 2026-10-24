@@ -17,7 +17,8 @@ internal static class WindowsDelivery {
  const uint TokenQuery=8, GmemMoveable=2, UnicodeText=13, InputKeyboard=1, KeyUp=2;
  static readonly JavaScriptSerializer Json=new JavaScriptSerializer{MaxJsonLength=MaxLine,RecursionLimit=12};
  static readonly Stopwatch Clock=Stopwatch.StartNew();
- static int OwnerPid; static Control Dispatcher; static Lease Current; static WinEventCallback Callback;
+ static int OwnerPid; static Control Dispatcher; static volatile Lease Current; static WinEventCallback Callback;
+ static volatile Control MonitorDispatcher;static Thread MonitorThread;static int MonitorRunning;static long EventVersion;
  static IntPtr ForegroundHook,FocusHook,ValueHook,SelectionHook;
  sealed class Lease {
   public string Token,Invalid;public bool Consumed;public IntPtr Window,Focus,Caret;public uint Thread;public int Pid;public long ProcessStart,Created;
@@ -65,6 +66,8 @@ internal static class WindowsDelivery {
  static bool ValidToken(string token){Guid parsed;return token!=null&&token.Length==36&&Guid.TryParseExact(token,"D",out parsed);}
  static string ForegroundChange(string previous,IntPtr expected,IntPtr actual,int actualPid,int ownPid){return previous??(actual==expected||actualPid==ownPid?null:"focus");}
  static bool CompleteBatch(uint sent){return sent==4;}
+ static void Invalidate(Lease lease,string reason){if(lease!=null)Interlocked.CompareExchange(ref lease.Invalid,reason,null);}
+ static string InvalidReason(Lease lease){return lease==null?"missing":Volatile.Read(ref lease.Invalid);}
  static long ProcessStart(int pid){using(var process=Process.GetProcessById(pid))return process.StartTime.ToUniversalTime().Ticks;}
  static int Integrity(int pid){
   IntPtr token=IntPtr.Zero,buffer=IntPtr.Zero;
@@ -106,7 +109,7 @@ internal static class WindowsDelivery {
   var gui=Gui(lease.Thread);return gui.Focus==lease.Focus&&gui.Caret!=IntPtr.Zero&&gui.Caret==lease.Caret&&Same(gui.CaretRect,lease.CaretRect);
  }
  static string Basic(Lease lease){
-  if(lease==null)return "missing";if(lease.Invalid!=null)return lease.Invalid;
+  if(lease==null)return "missing";if(Volatile.Read(ref MonitorRunning)!=1)return "native";string invalid=InvalidReason(lease);if(invalid!=null)return invalid;
   if(Clock.Elapsed.Ticks-lease.Created>=LeaseTicks)return "expired";
   if(!IsWindow(lease.Window)||!IsWindowVisible(lease.Window)||!IsWindowEnabled(lease.Window))return "missing";
   int pid;uint thread=GetWindowThreadProcessId(lease.Window,out pid);if(pid!=lease.Pid||thread!=lease.Thread||ProcessStart(pid)!=lease.ProcessStart)return "missing";
@@ -114,7 +117,7 @@ internal static class WindowsDelivery {
   if(TerminalProcess(pid))return "terminal";
   if(!Same(lease.RuntimeId,lease.Element.GetRuntimeId()))return "focus";
   var editable=Editable(lease.Element,lease.Pid,false);if(editable!=null)return editable;
-  return SelectionSame(lease)?null:"caret";
+  if(!SelectionSame(lease))return "caret";return InvalidReason(lease);
  }
  static string Guard(Lease lease,bool restore){
   string basic=Basic(lease);if(basic!=null)return basic;IntPtr foreground=GetForegroundWindow();
@@ -125,20 +128,52 @@ internal static class WindowsDelivery {
    lease.Element.SetFocus();
   }
   if(GetForegroundWindow()!=lease.Window||!Same(lease.RuntimeId,AutomationElement.FocusedElement.GetRuntimeId()))return "focus";
-  return Editable(lease.Element,lease.Pid,true)??(SelectionSame(lease)?null:"caret");
+  string editable=Editable(lease.Element,lease.Pid,true);if(editable!=null)return editable;if(!SelectionSame(lease))return "caret";return InvalidReason(lease);
+ }
+ // Called on the independent monitor thread. This path has no UI Automation or
+ // provider calls: a hung UIA read must not delay detection of a switch and return.
+ static void ObserveEvent(uint evt,IntPtr window,int pid){
+  Interlocked.Increment(ref EventVersion); // Also fences changes during Capture while Current is null.
+  var lease=Current;if(lease==null||InvalidReason(lease)!=null)return;
+  if(evt==ForegroundEvent){if(window==IntPtr.Zero||window!=lease.Window&&pid!=OwnerPid)Invalidate(lease,"focus");return;}
+  if(pid==OwnerPid)return;
+  if(window==IntPtr.Zero||evt==FocusEvent&&pid!=lease.Pid)Invalidate(lease,"focus");
+  else if(pid==lease.Pid)Invalidate(lease,evt==SelectionEvent?"caret":"focus");
  }
  static void Changed(IntPtr hook,uint evt,IntPtr window,int obj,int child,uint thread,uint time){
-  var lease=Current;if(lease==null||lease.Invalid!=null||window==IntPtr.Zero)return;
-  try{
-   int pid=WindowPid(window);
-   if(evt==ForegroundEvent){lease.Invalid=ForegroundChange(lease.Invalid,lease.Window,window,pid,OwnerPid);return;}
-   if(pid==OwnerPid)return;
-   if(evt==FocusEvent){var focused=AutomationElement.FocusedElement;if(focused==null||!Same(lease.RuntimeId,focused.GetRuntimeId()))lease.Invalid="focus";}
-   else if(pid==lease.Pid)lease.Invalid=evt==SelectionEvent?"caret":"focus";
-  }catch{lease.Invalid="focus";}
+  try{ObserveEvent(evt,window,window==IntPtr.Zero?0:WindowPid(window));}
+  catch{Interlocked.Increment(ref EventVersion);Invalidate(Current,"focus");}
+ }
+ static bool StartMonitor(){
+  var started=new ManualResetEvent(false);
+  MonitorThread=new Thread(()=>{
+   Control monitor=null;
+   try{
+    monitor=new Control();IntPtr handle=monitor.Handle;MonitorDispatcher=monitor;Callback=Changed;
+    ForegroundHook=SetWinEventHook(ForegroundEvent,ForegroundEvent,IntPtr.Zero,Callback,0,0,0);
+    FocusHook=SetWinEventHook(FocusEvent,FocusEvent,IntPtr.Zero,Callback,0,0,0);
+    ValueHook=SetWinEventHook(ValueEvent,ValueEvent,IntPtr.Zero,Callback,0,0,0);
+    SelectionHook=SetWinEventHook(SelectionEvent,SelectionEvent,IntPtr.Zero,Callback,0,0,0);
+    if(ForegroundHook==IntPtr.Zero||FocusHook==IntPtr.Zero||ValueHook==IntPtr.Zero||SelectionHook==IntPtr.Zero)return;
+    Volatile.Write(ref MonitorRunning,1);started.Set();Application.Run();
+   }catch{Invalidate(Current,"native");}
+   finally{
+    Volatile.Write(ref MonitorRunning,0);Invalidate(Current,"native");
+    // OUTOFCONTEXT hooks are unregistered by the thread which registered them.
+    foreach(IntPtr hook in new[]{ForegroundHook,FocusHook,ValueHook,SelectionHook})if(hook!=IntPtr.Zero)UnhookWinEvent(hook);
+    MonitorDispatcher=null;if(monitor!=null)monitor.Dispose();started.Set();
+   }
+  });
+  MonitorThread.IsBackground=true;MonitorThread.SetApartmentState(ApartmentState.STA);MonitorThread.Start();
+  if(!started.WaitOne(2500))return false;return Volatile.Read(ref MonitorRunning)==1;
+ }
+ static void StopMonitor(){
+  var monitor=MonitorDispatcher;
+  try{if(monitor!=null)monitor.BeginInvoke((Action)(()=>Application.ExitThread()));}catch{}
+  if(MonitorThread!=null&&MonitorThread!=Thread.CurrentThread)MonitorThread.Join(1000);
  }
  static Dictionary<string,object> Capture(){
-  Current=null;
+  Current=null;long eventVersion=Interlocked.Read(ref EventVersion);
   try{
    IntPtr window=GetForegroundWindow();int pid;uint thread=GetWindowThreadProcessId(window,out pid);
    if(window==IntPtr.Zero||pid<=0||pid==OwnerPid||pid==Process.GetCurrentProcess().Id)return FailureCapture("own");
@@ -147,9 +182,11 @@ internal static class WindowsDelivery {
    var element=AutomationElement.FocusedElement;string error=Editable(element,pid,true);if(error!=null)return FailureCapture(error);
    var gui=Gui(thread);var selection=Selection(element);if(selection==null&&gui.Caret==IntPtr.Zero)return FailureCapture("caret");
    var lease=new Lease{Token=Guid.NewGuid().ToString("D"),Window=window,Pid=pid,Thread=thread,ProcessStart=ProcessStart(pid),Created=Clock.Elapsed.Ticks,Element=element,RuntimeId=element.GetRuntimeId(),Selection=selection,Focus=gui.Focus,Caret=gui.Caret,CaretRect=gui.CaretRect,ClipboardSequence=GetClipboardSequenceNumber()};
-   error=Guard(lease,false);if(error!=null)return FailureCapture(error);Current=lease;
+   Current=lease;error=Guard(lease,false);
+   if(error==null&&(eventVersion!=Interlocked.Read(ref EventVersion)||InvalidReason(lease)!=null))error=InvalidReason(lease)??"focus";
+   if(error!=null){Current=null;return FailureCapture(error);}
    return new Dictionary<string,object>{{"available",true},{"token",lease.Token}};
-  }catch{return FailureCapture("unsupported");}
+  }catch{Current=null;return FailureCapture("unsupported");}
  }
  static Dictionary<string,object> FailureCapture(string reason){return new Dictionary<string,object>{{"available",false},{"reason",reason}};}
  static Dictionary<string,object> PasteResult(string status,string reason,bool changed){return new Dictionary<string,object>{{"status",status},{"reason",reason},{"clipboardChanged",changed}};}
@@ -162,7 +199,7 @@ internal static class WindowsDelivery {
    try{char[] chars=(text+"\0").ToCharArray();Marshal.Copy(chars,0,memory,chars.Length);Array.Clear(chars,0,chars.Length);}finally{GlobalUnlock(data);}
    if(!OpenClipboard(Dispatcher.Handle))return false;opened=true;
    // Respect a user's clipboard update during recording without inspecting its contents.
-   if(GetClipboardSequenceNumber()!=lease.ClipboardSequence)return false;
+   if(GetClipboardSequenceNumber()!=lease.ClipboardSequence||InvalidReason(lease)!=null)return false;
    if(!EmptyClipboard())return false;changed=true;
    if(SetClipboardData(UnicodeText,data)==IntPtr.Zero)return false;transferred=true;
   }finally{if(opened)CloseClipboard();if(!transferred)GlobalFree(data);}
@@ -182,7 +219,7 @@ internal static class WindowsDelivery {
    if(!KeysReleased()||GetClipboardSequenceNumber()!=sequence)return PasteResult("blocked","keys",changed);
    // Windows has no atomic focus-bound SendInput transaction. Final checks reduce that
    // unavoidable OS race; success only means the key batch was accepted, not consumed.
-   if(GetForegroundWindow()!=lease.Window)return PasteResult("blocked","focus",changed);
+   if(GetForegroundWindow()!=lease.Window||InvalidReason(lease)!=null||Volatile.Read(ref MonitorRunning)!=1)return PasteResult("blocked","focus",changed);
    var keys=new[]{Key(0x11,false),Key(0x56,false),Key(0x56,true),Key(0x11,true)};
    uint sent=SendInput((uint)keys.Length,keys,Marshal.SizeOf(typeof(INPUT)));
    if(!CompleteBatch(sent)){if(sent>0){var release=new[]{Key(0x56,true),Key(0x11,true)};SendInput((uint)release.Length,release,Marshal.SizeOf(typeof(INPUT)));}return PasteResult("failed","partial",changed);}
@@ -206,21 +243,32 @@ internal static class WindowsDelivery {
  static string ReadLine(){var buffer=new StringBuilder();while(true){int next=Console.In.Read();if(next<0)return buffer.Length==0?null:buffer.ToString();if(next=='\n')return buffer.ToString();if(next=='\r')continue;if(buffer.Length>=MaxLine)throw new InvalidOperationException();buffer.Append((char)next);}}
  static bool PureSelfTest(){
   string changed=ForegroundChange(null,(IntPtr)10,(IntPtr)20,2,99);changed=ForegroundChange(changed,(IntPtr)10,(IntPtr)10,1,99);
-  return ValidText("hello\nworld")&&!ValidText(" ")&&!ValidText("x\0y")&&!ValidText(new String('x',100001))&&ValidToken("11111111-1111-4111-8111-111111111111")&&!ValidToken("missing")&&Same(new[]{1,2},new[]{1,2})&&!Same(new[]{1,2},new[]{1,3})&&Marshal.SizeOf(typeof(INPUT))==40&&changed=="focus"&&ForegroundChange(null,(IntPtr)10,(IntPtr)99,99,99)==null&&CompleteBatch(4)&&!CompleteBatch(3)&&!CompleteBatch(0);
+  return ValidText("hello\nworld")&&!ValidText(" ")&&!ValidText("x\0y")&&!ValidText(new String('x',100001))&&ValidToken("11111111-1111-4111-8111-111111111111")&&!ValidToken("missing")&&Same(new[]{1,2},new[]{1,2})&&!Same(new[]{1,2},new[]{1,3})&&Marshal.SizeOf(typeof(INPUT))==40&&changed=="focus"&&ForegroundChange(null,(IntPtr)10,(IntPtr)99,99,99)==null&&CompleteBatch(4)&&!CompleteBatch(3)&&!CompleteBatch(0)&&PureMonitorSelfTest();
+ }
+ static bool PureMonitorSelfTest(){
+  int savedOwner=OwnerPid;OwnerPid=99;
+  try{
+   Current=null;long before=Interlocked.Read(ref EventVersion);ObserveEvent(ForegroundEvent,(IntPtr)20,2);
+   if(Interlocked.Read(ref EventVersion)==before)return false;
+   var lease=new Lease{Window=(IntPtr)10,Pid=1};Current=lease;
+   using(var observed=new ManualResetEvent(false)){
+    var monitor=new Thread(()=>{ObserveEvent(ForegroundEvent,(IntPtr)20,2);ObserveEvent(ForegroundEvent,(IntPtr)10,1);observed.Set();});
+    monitor.IsBackground=true;monitor.Start();if(!observed.WaitOne(1000)||!monitor.Join(1000)||InvalidReason(lease)!="focus")return false;
+   }
+   lease=new Lease{Window=(IntPtr)10,Pid=1};Current=lease;ObserveEvent(ForegroundEvent,(IntPtr)99,99);if(InvalidReason(lease)!=null)return false;
+   ObserveEvent(SelectionEvent,(IntPtr)10,1);ObserveEvent(FocusEvent,(IntPtr)20,2);if(InvalidReason(lease)!="caret")return false;
+   lease=new Lease{Window=(IntPtr)10,Pid=1};Current=lease;ObserveEvent(ForegroundEvent,IntPtr.Zero,0);return InvalidReason(lease)=="focus";
+  }finally{Current=null;OwnerPid=savedOwner;}
  }
  [STAThread] public static int Main(string[] args){
   if(args.Length==1&&args[0]=="--self-test"){bool ok=PureSelfTest();Console.WriteLine(ok?"{\"selfTest\":\"passed\",\"nativeActions\":0}":"{\"selfTest\":\"failed\"}");return ok?0:1;}
   if(args.Length!=3||args[0]!="--broker"||args[1]!="--owner-pid"||!Int32.TryParse(args[2],out OwnerPid)||OwnerPid<=0||OwnerPid==Process.GetCurrentProcess().Id)return 2;
   try{using(var owner=Process.GetProcessById(OwnerPid))if(owner.HasExited)return 2;}catch{return 2;}
-  Console.InputEncoding=Encoding.UTF8;Console.OutputEncoding=new UTF8Encoding(false);Dispatcher=new Control();IntPtr handle=Dispatcher.Handle;Callback=Changed;
-  ForegroundHook=SetWinEventHook(ForegroundEvent,ForegroundEvent,IntPtr.Zero,Callback,0,0,0);
-  FocusHook=SetWinEventHook(FocusEvent,FocusEvent,IntPtr.Zero,Callback,0,0,0);
-  ValueHook=SetWinEventHook(ValueEvent,ValueEvent,IntPtr.Zero,Callback,0,0,0);
-  SelectionHook=SetWinEventHook(SelectionEvent,SelectionEvent,IntPtr.Zero,Callback,0,0,0);
-  if(ForegroundHook==IntPtr.Zero||FocusHook==IntPtr.Zero||ValueHook==IntPtr.Zero||SelectionHook==IntPtr.Zero)return 3;
+  Console.InputEncoding=Encoding.UTF8;Console.OutputEncoding=new UTF8Encoding(false);Dispatcher=new Control();IntPtr handle=Dispatcher.Handle;
+  if(!StartMonitor()){StopMonitor();Dispatcher.Dispose();return 3;}
   Console.WriteLine("{\"type\":\"ready\",\"version\":1}");
   var reader=new Thread(()=>{try{string line;while((line=ReadLine())!=null){string input=line;Dispatcher.Invoke((Action)(()=>Execute(input)));}}catch{}finally{try{Dispatcher.BeginInvoke((Action)(()=>Application.ExitThread()));}catch{}}});reader.IsBackground=true;reader.Start();
-  try{Application.Run();}finally{Current=null;foreach(IntPtr hook in new[]{ForegroundHook,FocusHook,ValueHook,SelectionHook})if(hook!=IntPtr.Zero)UnhookWinEvent(hook);Dispatcher.Dispose();}
+  try{Application.Run();}finally{Current=null;StopMonitor();Dispatcher.Dispose();}
   return 0;
  }
 }
