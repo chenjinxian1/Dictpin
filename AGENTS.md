@@ -1,11 +1,11 @@
 # Dictpin contributor guidance
 
-Read README.md, docs/INSTALL.md and docs/PRIVACY.md before changes. Keep the product compact: local dictation, explicit dictionary rules, optional light text cleanup, editing and explicit copying. No translation, Ask, expansion, automatic pasting or large history console.
+Read README.md, docs/INSTALL.md and docs/PRIVACY.md. Keep the product compact: local dictation, explicit dictionary rules, optional light text cleanup, editing and explicit copying. No translation, Ask, expansion, automatic pasting or large history console.
 
-Preserve recognition originals, task/version ownership, recording isolation, recovery, undo, drafts and clipboard feedback. Do not inspect or migrate real keys, profiles, transcripts or recordings. Never automatically open a physical microphone or call a paid service for validation. Use synthetic data and isolated work/ fixtures.
+Preserve recognition originals, task/version ownership, recording isolation, recovery, undo, drafts and clipboard feedback. Never read real keys, profiles, transcripts or recordings for validation. Never automatically open a physical microphone, make a paid request, or stop/replace a running application.
 
-Use npm run dev for a deliberate development launch. Do not stop or replace a user's running application. External runtimes/models stay external. Build the Local03 worker locally from native/build-local03.cmd; generated binaries remain ignored.
+This repository contains the application source and essential setup/docs only. Keep automated tests, benchmarks, old interfaces, screenshot-generation fixtures and internal review reports in the separate local maintenance workspace. Do not reintroduce them into the public source tree.
 
-Run npm test and npm run check for relevant source changes. Run npm run check:docs for documentation/assets. UI changes require the current Local03 Electron matrix and visual review; synthetic rendering is separate from actual hardware/OS/service acceptance. Require natural test-process exit.
+Run npm run check for syntax, module/resource completeness and documentation. Run npm run doctor after preparing external resources. Build only native/build-local03.cmd locally; generated binaries, models and runtimes remain ignored. UI changes require visual review with fictional data; separate synthetic evidence from hardware/OS/service acceptance.
 
-Keep work/, .local/, profiles, recordings, models, credentials, private paths and raw user logs out of Git. Retain MIT and separately applicable third-party notices. Do not infer UI/ASR language support from translated README files.
+Keep work/, .local/, profiles, recordings, models, credentials, private paths and raw logs out of Git. Preserve MIT and separately applicable third-party notices. Six README languages do not imply six UI or recognition languages.

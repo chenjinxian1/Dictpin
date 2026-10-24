@@ -10,7 +10,7 @@
 
 Dictpin est une version de développement d’une application Windows de transcription vocale, construite avec Electron, la reconnaissance locale SenseVoice, des règles explicites de dictionnaire personnel et un nettoyage facultatif du texte par un service compatible. Pour les messages courts, les notes, les noms et les termes techniques : démarrez, parlez, relisez, copiez.
 
-> **Version de développement distribuée sous forme de code source.** Dépôt : [chenjinxian1/Dictpin](https://github.com/chenjinxian1/Dictpin). Le code et les ressources originales du projet sont sous licence MIT, au nom de chenjinxian1 ; les composants tiers conservent leurs propres conditions. Aucun installateur ni téléchargement de version n’est validé. Le nom Dictpin a fait l’objet d’une [première recherche d’homonymes](../branding/NAME-CHECK.md), sans garantie de disponibilité juridique de la marque. Les identifiants du paquet et les chemins de données restent inchangés. Ce projet est indépendant de Typeless et n’a aucun lien officiel avec lui.
+> **Version de développement distribuée sous forme de code source.** Dépôt : [chenjinxian1/Dictpin](https://github.com/chenjinxian1/Dictpin). Le code et les ressources originales du projet sont sous licence MIT, au nom de chenjinxian1 ; les composants tiers conservent leurs propres conditions. Aucun installateur ni téléchargement de version n’est validé. Le nom Dictpin a fait l’objet d’une première recherche d’homonymes, sans garantie de disponibilité juridique de la marque. Les identifiants du paquet et les chemins de données restent inchangés. Ce projet est indépendant de Typeless et n’a aucun lien officiel avec lui.
 
 ## Découvrir l’application
 
@@ -25,8 +25,6 @@ Rendu réel de l’interface Electron de production, en mode d’affichage angla
 ![Configuration API de Dictpin en anglais avec une clé vide](../images/settings.png)
 
 Adresse et modèle Qwen donnés en exemple ; le champ de clé API est vide. Aucun test de connexion, appel facturé, état connecté fictif ou mesure de latence. Voir les [conditions de capture](../SCREENSHOTS.md).
-
-Le [prompt de génération en anglais](../branding/hero-prompt.en.txt) et les [consignes de marque](../branding/README.md) décrivent l’illustration conceptuelle ci-dessus. Les captures Electron de cette section montrent l’application réelle avec des données de test fictives.
 
 ## Fonctions déjà disponibles
 
@@ -58,7 +56,6 @@ Depuis la racine du dépôt, une fois les ressources prêtes :
 ```powershell
 .\native\build-local03.cmd
 npm run doctor
-npm test
 npm run check
 node scripts/package-inputs.cjs
 npm run dev
@@ -68,7 +65,7 @@ Les scripts à la racine utilisent les modules intégrés de Node ; aucune insta
 
 Pour une **utilisation locale sans API**, laissez **轻整理** (nettoyage léger) désactivé. Ouvrez **设置** (Paramètres), choisissez le microphone effectivement utilisé par l’Enregistreur Windows, cliquez sur **保存更改** (Enregistrer les modifications), puis démarrez explicitement la dictée. Un choix de microphone non enregistré n’est pas actif. Arrêtez, vérifiez et copiez le texte. Configurez un raccourci seulement si vous le souhaitez.
 
-`npm run preview` propose uniquement un aperçu local des documents et captures sur l’interface de boucle locale, pas l’application. `npm run check` contrôle le code source, les exclusions et les documents sans dépendre de l’espace de travail privé d’origine. Une fois Electron externe et le programme natif préparés, `npm run test:ui` exécute la matrice Local03 actuelle. Consultez [l’état des vérifications et de la construction](../INSTALL.md#validation-and-build-status). Aucune commande de création d’installateur n’est présentée comme validée.
+`npm run check` vérifie la syntaxe de l’application, les dépendances locales, les fichiers nécessaires à la distribution et la documentation. Les tests, mesures de performance, anciennes interfaces et outils internes de publication restent hors de ce dépôt. Consultez le [statut de validation et de compilation](../INSTALL.md#validation-and-build-status). Aucune commande de création d’un installateur n’est présentée comme validée.
 
 ## Configuration facultative de l’API
 
@@ -94,7 +91,7 @@ L’interface utilise par défaut le **chinois simplifié** et propose un **affi
 
 Pour ouvrir l’interface anglaise, lancez `npm run dev -- --ui-language=en` ; sans ce paramètre, l’interface reste en chinois par défaut. Ce choix ne modifie que l’affichage, pas les transcriptions ni le dictionnaire.
 
-Les nouvelles vérifications sont consignées dans [Vérification avant publication](../release/VERIFICATION.md) ; les anciens résultats Local03 restent des résultats historiques. Les pages simulées et l’audio généré ne certifient pas le matériel. Les raccourcis globaux, la transmission au presse-papiers, le branchement à chaud des périphériques, le focus, les écrans multiples, le DPI Windows, la qualité des services réels et l’installation sur une machine vierge exigent encore des validations séparées.
+Ce dépôt contient le code de l’application et sa documentation. Les jeux de test internes et rapports de performance ne sont pas inclus. Les raccourcis globaux, le presse-papiers système, les changements de microphone, le focus, les écrans multiples, le DPI Windows, les services réels et l’installation sur une machine vierge nécessitent encore des validations distinctes.
 
 Les anciens tests de performance concernent leur machine et leur corpus, sans promettre une vitesse ou une précision universelles. L’inspection de préparation à la distribution indique explicitement **`distributionReady:false`**.
 
@@ -114,10 +111,10 @@ Les anciens tests de performance concernent leur machine et leur corpus, sans pr
 
 Prochaines étapes : configuration et distribution sur une machine vierge, validation d’un plus grand nombre de périphériques, commandes de conservation et de suppression des transcriptions, puis améliorations de reconnaissance étayées par des mesures. Il s’agit de projets, pas de fonctions déjà disponibles. L’application restera un outil de dictée compact.
 
-Lisez [CONTRIBUTING.md](../../CONTRIBUTING.md) pour les vérifications locales sûres et [SECURITY.md](../../SECURITY.md) pour les limites du canal de signalement. [CHANGELOG.md](../../CHANGELOG.md) décrit l’état non publié. La description About, les sujets suggérés et un brouillon de notes de version sans numéro figurent dans la [liste de préparation à la publication](../release/PUBLISHING.md).
+Lisez [CONTRIBUTING.md](../../CONTRIBUTING.md) pour les vérifications locales sûres et [SECURITY.md](../../SECURITY.md) pour les limites du signalement. [CHANGELOG.md](../../CHANGELOG.md) décrit les modifications du code source.
 
 ## Licence et remerciements
 
-Le code original, la documentation et les ressources originales du projet sont proposés sous la [licence MIT](../../LICENSE), copyright 2026 chenjinxian1. La [portée des licences](../release/LICENSE-AUDIT.md) distingue ces éléments des polices, déclarations générées, bibliothèques et modèles tiers.
+Le code original, la documentation et les ressources originales du projet sont proposés sous la [licence MIT](../../LICENSE), copyright 2026 chenjinxian1. La [portée des licences](../../THIRD_PARTY_NOTICES.md) distingue ces éléments des polices, déclarations générées, bibliothèques et modèles tiers.
 
 Les composants tiers conservent leurs propres conditions : Electron/Chromium, sherpa-onnx/ONNX Runtime, les poids SenseVoice, Silero VAD et Saira. Les conditions des modèles sont distinctes d’une éventuelle licence du code de l’application. Lisez [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md). Merci à leurs équipes de maintenance et aux contributeurs de FLEURS. L’orientation industrielle sobre s’inspire d’[endfield-ui-skill](https://github.com/hhikr/endfield-ui-skill) ; aucun personnage, logo ou visuel de jeu n’est utilisé comme élément de marque.

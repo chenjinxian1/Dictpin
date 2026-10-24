@@ -51,6 +51,6 @@ OS-backed encryption does not protect against malware with the same user's privi
 
 Capped in-memory performance records contain stage duration/status/size/resource metadata, not transcripts, dictionary text, keys, or clipboard contents. This does not make every historical review dump anonymous. Historical raw development evidence is excluded from this public source snapshot.
 
-Only individually inspected synthetic screenshots are used in the new README. No real user transcript, recording or key was read for those captures. See the [public-source privacy boundary](release/PRIVACY-AUDIT.md) for selected and excluded material. Bounded scans cannot guarantee that arbitrary secrets are absent.
+Only individually inspected screenshots with fictional content are used in the README. No real user transcript, recording or key was read for those captures. See [application examples](SCREENSHOTS.md) for their scope. Bounded scans cannot guarantee that arbitrary secrets are absent.
 
-Do not publish `work/`, `.local/`, profiles, models/runtime payloads or raw review dumps. This source snapshot starts with a fresh reviewed history rather than importing the old development history. Follow [publication preparation](release/PUBLISHING.md). A private reporting channel has not been configured; see [SECURITY.md](../SECURITY.md) before disclosing a problem.
+Do not publish `work/`, `.local/`, profiles, models/runtime payloads or raw review dumps. Tests, benchmarks and internal review materials stay in the full local maintenance workspace. The public source history is separate from the original development history. A private reporting channel has not been configured; see [SECURITY.md](../SECURITY.md) before disclosing a problem.

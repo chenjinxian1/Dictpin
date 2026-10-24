@@ -55,13 +55,12 @@ After the build, from the repository root:
 
 ```powershell
 npm run doctor
-npm test
 npm run check
 node scripts/package-inputs.cjs
 npm run check:docs
 ```
 
-Doctor requires the external runtime/model layout and checks existence/version, not DLL completeness, model hashes or recognition quality. The application regression suite includes invalid-argument tests of the compiled candidate, so build it before testing even when no real audio is used.
+Doctor requires the external runtime/model layout and checks existence/version, not DLL completeness, model hashes or recognition quality. Compile the worker before launching. No microphone or model is started by these checks.
 
 The portable source check does not require the original developer's private history, archive or launcher. Static package-input inspection checks that the locally built candidate and required production sources are present; it still reports **`distributionReady:false`**. A passing source check is not an accepted installer.
 
@@ -71,7 +70,7 @@ The portable source check does not require the original developer's private hist
 npm run dev
 ```
 
-The launcher uses an isolated development profile under `work/dev/profile/`; it does not start recording by itself. Existing development settings are retained. First-run defaults leave cleanup and global shortcuts off. Historical compatibility helpers are not launch instructions.
+The launcher uses an isolated development profile under `work/dev/profile/`; it does not start recording by itself. Existing development settings are retained. First-run defaults leave cleanup and global shortcuts off. Test fixtures, legacy entry points, benchmark tools and internal review reports are excluded from this repository.
 
 In **设置** (Settings), choose the microphone actually used by Windows Recorder and click **保存更改** (Save changes). Without an API, keep **轻整理** off. Click **开始听写** to record and **结束听写** to stop, then inspect, edit or explicitly copy. A segment is limited to 60 seconds, with automatic stop around 58 seconds.
 
@@ -87,28 +86,15 @@ npm run dev -- --ui-language=en
 
 The flag is process-only. It does not migrate a profile, translate dictated text or dictionary terms, change recognition language, or start recording. An already running instance keeps its current presentation. Omit the flag for the default Chinese interface. Some unmapped system/provider messages retain their original language.
 
-## Preview documentation
-
-```powershell
-npm run preview
-```
-
-Preview prints a loopback-only URL. It serves the sanitized documentation preview, concept hero and selected fictional-content software screenshots; it does not run the application or expose profiles/work directories. Stop it deliberately when finished. Previewing screenshots does not validate hardware or a paid API.
-
 ## Validation and build status
 
 | Command | Meaning and limits |
 | --- | --- |
-| `npm test` | Application and development regression suites; includes compiled-candidate invalid-argument checks. Build the candidate first. |
 | `npm run check` | Portable source syntax, ignore-boundary and documentation checks; does not depend on private original-workspace evidence or require an empty Git remote list. |
-| `npm run check:docs` | Publication links, navigation, image hashes/dimensions and concept/screenshot disclosures. It does not certify legal rights or translation quality. |
+| `npm run check:docs` | Usage-document links, six-language navigation, selected image files and screenshot/concept separation. It does not certify legal rights or translation quality. |
 | `node scripts/package-inputs.cjs` | Strict development/package inputs, including the locally compiled candidate. No installer is run. |
-| `npm run test:ui` or `node scripts/ui.cjs local03` | Current Local03 real Electron page matrix with fictional state and simulated native adapters. External Electron and the compiled candidate must be available. |
-| `npm run test:core` / `npm run test:extended` | Focused Electron flow suites. |
-| `npm run test:capture` | Generated-audio flow, not a physical microphone. |
-| `node scripts/test-microphone-permissions.cjs` | Permission-routing checks with fake media input. |
 
-Require both assertions and natural process exit. Forced termination is not success. [Verification](release/VERIFICATION.md) reports the exact public-source checks; earlier development results are historical. Raw output stays in ignored `work/`.
+This repository contains only the application and its supporting setup/documentation. Automated test fixtures and internal performance/review reports remain in the full local maintenance workspace. Source checks do not certify a physical microphone, OS shortcuts/clipboard, DPI or live paid services.
 
 There is **no verified installer build command**. Existing electron-builder metadata does not package the worker, complete DLL/model set and paths into an accepted standalone distribution. No supported `npm run build`, signed installer, clean install, update or uninstall is claimed. Installing app development dependencies does not resolve those packaging gaps.
 
@@ -116,4 +102,4 @@ There is **no verified installer build command**. Existing electron-builder meta
 
 Missing runtime/model: compare the complete layout and pinned versions, rebuild the candidate if missing, then run doctor. No sound: save the input that works in Recorder; check permission/mute, then record deliberately. API errors are covered in [API configuration](API_CONFIGURATION.md). Copy important text if saving fails. Never disable certificate verification or post credentials, personal transcripts or raw device logs in an issue.
 
-Read [third-party notices](../THIRD_PARTY_NOTICES.md), [privacy](PRIVACY.md), and [source-publication scope](release/PUBLISHING.md) before sharing a modified source snapshot or binary.
+Read [third-party notices](../THIRD_PARTY_NOTICES.md), [privacy](PRIVACY.md) before sharing a modified source snapshot or binary.

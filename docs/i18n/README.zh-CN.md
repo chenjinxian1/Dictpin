@@ -10,7 +10,7 @@
 
 Dictpin 是一款 Windows 桌面语音转文字应用的开发候选版，采用 Electron、本地 SenseVoice 识别、用户明确设定的个人词典规则，以及通过兼容服务提供的可选轻整理。适合短消息、随手笔记、人名与专业术语：开始、说话、检查、复制。
 
-> **这是源码开发候选版。** 源码仓库：[chenjinxian1/Dictpin](https://github.com/chenjinxian1/Dictpin)。项目代码和原创项目素材由 chenjinxian1 以 MIT 许可公开，第三方组件保留各自条款。目前没有经过验收的安装程序或正式版本下载。Dictpin 已做初步[重名检索](../branding/NAME-CHECK.md)，不代表商标可用性保证。程序包标识与数据路径保留原名称。本项目独立于 Typeless，与其没有官方关联。
+> **这是源码开发候选版。** 源码仓库：[chenjinxian1/Dictpin](https://github.com/chenjinxian1/Dictpin)。项目代码和原创项目素材由 chenjinxian1 以 MIT 许可公开，第三方组件保留各自条款。目前没有经过验收的安装程序或正式版本下载。Dictpin 已做初步重名检索，不代表商标可用性保证。程序包标识与数据路径保留原名称。本项目独立于 Typeless，与其没有官方关联。
 
 ## 查看应用
 
@@ -25,8 +25,6 @@ Dictpin 是一款 Windows 桌面语音转文字应用的开发候选版，采用
 ![Dictpin 英文 API 配置界面，密钥为空](../images/settings.png)
 
 展示 Qwen 地址和模型配置示例，API 密钥为空。没有执行连接测试、付费请求，也没有伪造已连接状态或延迟数据。详见[截图制作说明](../SCREENSHOTS.md)。
-
-上方概念配图的创作说明见[英文图像生成提示词](../branding/hero-prompt.en.txt)与[品牌说明](../branding/README.md)。本节的 Electron 截图展示实际应用，使用的是虚构测试数据。
 
 ## 当前已实现
 
@@ -58,7 +56,6 @@ Dictpin 是一款 Windows 桌面语音转文字应用的开发候选版，采用
 ```powershell
 .\native\build-local03.cmd
 npm run doctor
-npm test
 npm run check
 node scripts/package-inputs.cjs
 npm run dev
@@ -68,7 +65,7 @@ npm run dev
 
 如需**不配置 API 的本地使用**，请保持**轻整理**关闭。进入**设置**，选择 Windows 录音机实际使用的麦克风，点击**保存更改**，然后主动开始听写。尚未保存的设备选择不会生效。结束后检查并复制文字；需要时再配置快捷键。
 
-`npm run preview` 仅通过本机回环地址预览公开文档与截图，不启动实际应用。`npm run check` 检查源码、忽略边界和文档，不再依赖原始私人工作空间。准备好外部 Electron 和编译后的原生候选程序后，`npm run test:ui` 运行当前 Local03 页面矩阵。详见[验证与构建状态](../INSTALL.md#validation-and-build-status)。目前没有已验证可用的安装包构建命令。
+`npm run check` 检查应用语法、本地依赖、构建输入和文档。此仓库只保留应用主体；测试、性能评测、旧界面和内部发布工具保留在本地。详见[验证与构建状态](../INSTALL.md#validation-and-build-status)。目前没有已验证可用的安装包构建命令。
 
 ## 可选 API 配置
 
@@ -94,7 +91,7 @@ npm run dev
 
 运行 `npm run dev -- --ui-language=en` 可使用英文界面；不加该参数时保留默认中文。此选项只改变界面显示，不改写转写文本或词典内容。
 
-本次新验证记录在[发布验证](../release/VERIFICATION.md)，之前 Local03 的结果均为历史记录。模拟页面和生成音频不能验收真实硬件。系统快捷键、剪贴板交付、设备拔插、焦点、多屏、Windows DPI、真实服务质量和全新环境安装仍需独立验收。
+此仓库包含应用源码和使用文档，不包含内部测试样例及性能报告。系统快捷键、系统剪贴板、设备拔插、焦点、多屏、Windows DPI、真实服务质量和全新环境安装仍需独立验收。
 
 历史基准仅适用于当时的设备与语料，不代表通用速度或准确率。打包输入检查明确报告 **`distributionReady:false`**。
 
@@ -114,10 +111,10 @@ npm run dev
 
 下一步包括全新环境安装与打包、更多设备验收、转写保留与删除控制，以及以实测数据为依据的识别改善。这些是计划，尚非现有功能。应用会继续保持小巧的听写工具定位。
 
-安全的本地检查方式见 [CONTRIBUTING.md](../../CONTRIBUTING.md)，安全问题披露渠道的限制见 [SECURITY.md](../../SECURITY.md)。[CHANGELOG.md](../../CHANGELOG.md) 记录尚未发布的状态。About 简介、建议 Topics 和尚未编号的首版说明草稿见[发布检查清单](../release/PUBLISHING.md)。
+安全的本地检查方式见 [CONTRIBUTING.md](../../CONTRIBUTING.md)，安全问题披露渠道的限制见 [SECURITY.md](../../SECURITY.md)。[CHANGELOG.md](../../CHANGELOG.md) 记录源码变更。
 
 ## 许可证与致谢
 
-项目原创代码、文档和原创项目素材采用 [MIT 许可证](../../LICENSE)，版权署名为 Copyright 2026 chenjinxian1。[许可范围说明](../release/LICENSE-AUDIT.md)将项目材料与第三方字体、生成的接口声明、运行库和模型权重分别列明。
+项目原创代码、文档和原创项目素材采用 [MIT 许可证](../../LICENSE)，版权署名为 Copyright 2026 chenjinxian1。[许可范围说明](../../THIRD_PARTY_NOTICES.md)将项目材料与第三方字体、生成的接口声明、运行库和模型权重分别列明。
 
 第三方组件保留各自的授权条件，包括 Electron/Chromium、sherpa-onnx/ONNX Runtime、SenseVoice 权重、Silero VAD 和 Saira。模型条款独立于任何应用代码许可证。请阅读 [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md)。感谢这些组件的维护者与 FLEURS 贡献者。克制的工业设计方向受到 [endfield-ui-skill](https://github.com/hhikr/endfield-ui-skill) 启发；品牌资产没有使用游戏角色、标志或现成美术素材。

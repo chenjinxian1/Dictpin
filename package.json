@@ -5,17 +5,13 @@
   "license": "MIT",
   "author": "chenjinxian1",
   "description": "Local development workspace for compact Windows voice dictation",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "doctor": "node scripts/dev.cjs --check",
     "dev": "node scripts/dev.cjs",
-    "test": "node scripts/test.cjs",
     "check": "node scripts/verify.cjs",
-    "check:docs": "node scripts/check-release-docs.cjs",
-    "preview": "node scripts/preview.cjs",
-    "test:ui": "node scripts/ui.cjs local03",
-    "test:core": "node scripts/ui.cjs core",
-    "test:extended": "node scripts/ui.cjs extended",
-    "test:capture": "node scripts/ui.cjs capture"
+    "check:docs": "node scripts/check-release-docs.cjs"
   }
 }

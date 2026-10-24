@@ -16,7 +16,7 @@ Non-sensitive defects can be reported in [GitHub Issues](https://github.com/chen
 - Cancelled/failed audio is temporary process memory, not crash-proof storage.
 - URL validation and environment isolation are guardrails, not a security audit.
 
-Read [Privacy](docs/PRIVACY.md), [API configuration](docs/API_CONFIGURATION.md) and the [public-source privacy boundary](docs/release/PRIVACY-AUDIT.md).
+Read [Privacy](docs/PRIVACY.md), [API configuration](docs/API_CONFIGURATION.md).
 
 ## Maintainer preparation
 

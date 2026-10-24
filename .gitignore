@@ -39,3 +39,20 @@ Thumbs.db
 *.tar.bz2
 *.tar.gz
 token-usage.json
+
+# Local maintenance and review material is not part of the public app source.
+test/
+tests/
+app/test/
+app/scripts/
+scripts/test/
+tools/
+review/
+docs/release/
+scripts/*benchmark*
+scripts/*fleurs*
+scripts/*resource*
+scripts/test*
+scripts/ui.cjs
+scripts/capture-docs.cjs
+Test.cmd

@@ -10,7 +10,7 @@
 
 Dictpin ialah calon pembangunan aplikasi suara kepada teks untuk desktop Windows, dibina menggunakan Electron, pengecaman SenseVoice setempat, peraturan kamus peribadi yang ditetapkan secara jelas, serta kemasan teks pilihan melalui perkhidmatan yang serasi. Untuk mesej pendek, nota, nama dan istilah teknikal: mula, bercakap, semak, salin.
 
-> **Calon pembangunan yang diedarkan sebagai kod sumber.** Repositori: [chenjinxian1/Dictpin](https://github.com/chenjinxian1/Dictpin). Kod dan aset asal projek dilesenkan di bawah MIT atas nama chenjinxian1; komponen pihak ketiga mengekalkan syarat masing-masing. Belum ada pemasang atau muat turun keluaran yang disahkan. Nama Dictpin telah melalui [saringan nama](../branding/NAME-CHECK.md) awal, bukan jaminan ketersediaan cap dagangan. Pengenal pakej dan laluan data kekal dengan nama sedia ada. Projek ini bebas daripada Typeless dan tiada hubungan rasmi dengannya.
+> **Calon pembangunan yang diedarkan sebagai kod sumber.** Repositori: [chenjinxian1/Dictpin](https://github.com/chenjinxian1/Dictpin). Kod dan aset asal projek dilesenkan di bawah MIT atas nama chenjinxian1; komponen pihak ketiga mengekalkan syarat masing-masing. Belum ada pemasang atau muat turun keluaran yang disahkan. Nama Dictpin telah melalui saringan nama awal, bukan jaminan ketersediaan cap dagangan. Pengenal pakej dan laluan data kekal dengan nama sedia ada. Projek ini bebas daripada Typeless dan tiada hubungan rasmi dengannya.
 
 ## Lihat aplikasi
 
@@ -25,8 +25,6 @@ Rendiran sebenar UI Electron produksi dalam mod paparan bahasa Inggeris pilihan,
 ![Konfigurasi API Dictpin dalam bahasa Inggeris dengan kunci kosong](../images/settings.png)
 
 Alamat dan model Qwen ialah contoh konfigurasi, manakala kunci API kosong. Tiada ujian sambungan, permintaan berbayar, status tersambung rekaan atau dakwaan kependaman. Lihat [butiran tangkapan](../SCREENSHOTS.md).
-
-[Prom penjanaan imej bahasa Inggeris](../branding/hero-prompt.en.txt) dan [panduan jenama](../branding/README.md) menerangkan ilustrasi konsep di atas. Tangkapan Electron dalam bahagian ini menunjukkan aplikasi sebenar dengan data ujian rekaan.
 
 ## Fungsi yang sudah dilaksanakan
 
@@ -58,7 +56,6 @@ Selepas sumber disediakan, jalankan dari akar repositori:
 ```powershell
 .\native\build-local03.cmd
 npm run doctor
-npm test
 npm run check
 node scripts/package-inputs.cjs
 npm run dev
@@ -68,7 +65,7 @@ Skrip di akar menggunakan modul terbina dalam Node; tiada langkah pemasangan keb
 
 Untuk **penggunaan setempat tanpa API**, biarkan **轻整理** (kemasan ringan) dimatikan. Buka **设置** (Tetapan), pilih mikrofon yang benar-benar digunakan oleh Windows Recorder, klik **保存更改** (Simpan perubahan), kemudian mulakan imlak sendiri. Pilihan peranti yang belum disimpan belum berkuat kuasa. Hentikan, semak dan salin. Tetapkan pintasan hanya jika diperlukan.
 
-`npm run preview` hanya memaparkan pratonton dokumen awam dan tangkapan skrin melalui alamat gelung balik, bukan menjalankan aplikasi. `npm run check` menyemak sumber, sempadan pengecualian dan dokumen tanpa ruang kerja peribadi asal. Selepas Electron luaran dan program natif yang dibina disediakan, `npm run test:ui` menjalankan matriks Local03 semasa. Lihat [status pengesahan dan binaan](../INSTALL.md#validation-and-build-status). Tiada arahan pembinaan pemasang yang dinyatakan sebagai sudah disahkan.
+`npm run check` menyemak sintaks aplikasi, kebergantungan setempat, fail pengedaran dan dokumentasi. Ujian, penilaian prestasi, antara muka lama serta alat penerbitan dalaman tidak disertakan dalam repositori ini. Lihat [status pengesahan dan binaan](../INSTALL.md#validation-and-build-status). Belum ada arahan pembinaan pemasang yang disahkan.
 
 ## Persediaan API pilihan
 
@@ -94,7 +91,7 @@ UI menggunakan **bahasa Cina Ringkas** secara lalai, dengan **mod paparan bahasa
 
 Untuk membuka UI bahasa Inggeris, jalankan `npm run dev -- --ui-language=en`; tanpa pilihan ini, UI lalai bahasa Cina dikekalkan. Pilihan ini hanya menukar paparan, bukan teks transkripsi atau kandungan kamus.
 
-Semakan baharu direkodkan dalam [Pengesahan keluaran](../release/VERIFICATION.md); hasil Local03 terdahulu ialah rekod sejarah. Halaman simulasi dan audio janaan tidak mengesahkan perkakasan. Pintasan global, penghantaran papan klip, sambung/cabut peranti, fokus, berbilang paparan, DPI Windows, mutu perkhidmatan sebenar dan pemasangan pada mesin bersih masih memerlukan pengesahan berasingan.
+Repositori ini mengandungi kod aplikasi dan panduan penggunaan. Data ujian dalaman dan laporan prestasi tidak disertakan. Pintasan global, papan klip sistem, pertukaran mikrofon, fokus, berbilang paparan, DPI Windows, mutu perkhidmatan sebenar dan pemasangan pada mesin bersih masih memerlukan pengesahan berasingan.
 
 Penanda aras terdahulu hanya terpakai pada mesin dan korpus berkenaan, bukan kelajuan atau ketepatan sejagat. Pemeriksaan pembungkusan secara jelas melaporkan **`distributionReady:false`**.
 
@@ -114,10 +111,10 @@ Penanda aras terdahulu hanya terpakai pada mesin dan korpus berkenaan, bukan kel
 
 Seterusnya: persediaan pada mesin bersih dan pembungkusan, pengesahan peranti yang lebih luas, kawalan pengekalan/pemadaman transkrip serta penambahbaikan pengecaman yang diukur. Ini ialah rancangan, bukan ciri sedia ada. Aplikasi akan kekal sebagai alat imlak yang ringkas.
 
-Baca [CONTRIBUTING.md](../../CONTRIBUTING.md) untuk semakan setempat yang selamat dan [SECURITY.md](../../SECURITY.md) untuk had saluran pelaporan keselamatan. [CHANGELOG.md](../../CHANGELOG.md) merekodkan status yang belum dikeluarkan. Teks About, cadangan Topics dan draf keluaran tanpa nombor versi tersedia dalam [senarai semak penerbitan](../release/PUBLISHING.md).
+Baca [CONTRIBUTING.md](../../CONTRIBUTING.md) untuk semakan setempat yang selamat dan [SECURITY.md](../../SECURITY.md) untuk had pelaporan keselamatan. [CHANGELOG.md](../../CHANGELOG.md) merekodkan perubahan kod sumber.
 
 ## Lesen dan penghargaan
 
-Kod asal, dokumentasi dan aset asal projek ditawarkan di bawah [Lesen MIT](../../LICENSE), hak cipta 2026 chenjinxian1. [Skop lesen](../release/LICENSE-AUDIT.md) membezakan bahan projek daripada fon, pengisytiharan janaan, masa jalan dan pemberat model pihak ketiga.
+Kod asal, dokumentasi dan aset asal projek ditawarkan di bawah [Lesen MIT](../../LICENSE), hak cipta 2026 chenjinxian1. [Skop lesen](../../THIRD_PARTY_NOTICES.md) membezakan bahan projek daripada fon, pengisytiharan janaan, masa jalan dan pemberat model pihak ketiga.
 
 Komponen pihak ketiga mengekalkan syarat masing-masing: Electron/Chromium, sherpa-onnx/ONNX Runtime, pemberat SenseVoice, Silero VAD dan Saira. Syarat model berasingan daripada sebarang lesen kod aplikasi. Baca [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md). Terima kasih kepada penyelenggara komponen ini dan penyumbang FLEURS. Arah visual perindustrian yang terkawal diinspirasikan oleh [endfield-ui-skill](https://github.com/hhikr/endfield-ui-skill); tiada watak permainan, logo atau karya seni permainan digunakan sebagai aset jenama.

@@ -10,7 +10,7 @@
 
 Dictpin은 Electron, 로컬 SenseVoice 음성 인식, 사용자가 명시적으로 정한 개인 사전 규칙, 호환 서비스의 선택적 텍스트 다듬기를 사용하는 Windows 데스크톱 음성 입력 앱의 개발 후보판입니다. 짧은 메시지, 메모, 이름, 전문 용어를 입력할 때 시작하고, 말하고, 확인한 다음 복사하면 됩니다.
 
-> **소스 코드로 제공하는 개발 후보판입니다.** 저장소: [chenjinxian1/Dictpin](https://github.com/chenjinxian1/Dictpin). 프로젝트의 독자적인 코드와 원본 자산은 chenjinxian1 명의의 MIT 라이선스로 공개하며, 제3자 구성 요소에는 각각의 조건이 적용됩니다. 검증된 설치 프로그램이나 릴리스 다운로드는 아직 없습니다. Dictpin은 예비 [이름 중복 조사](../branding/NAME-CHECK.md)를 거친 이름이며 상표 사용 가능성을 보장하지 않습니다. 패키지 식별자와 데이터 경로는 기존 이름을 유지합니다. 이 프로젝트는 Typeless와 독립적이며 공식 제휴 관계가 없습니다.
+> **소스 코드로 제공하는 개발 후보판입니다.** 저장소: [chenjinxian1/Dictpin](https://github.com/chenjinxian1/Dictpin). 프로젝트의 독자적인 코드와 원본 자산은 chenjinxian1 명의의 MIT 라이선스로 공개하며, 제3자 구성 요소에는 각각의 조건이 적용됩니다. 검증된 설치 프로그램이나 릴리스 다운로드는 아직 없습니다. Dictpin은 예비 이름 중복 조사를 거친 이름이며 상표 사용 가능성을 보장하지 않습니다. 패키지 식별자와 데이터 경로는 기존 이름을 유지합니다. 이 프로젝트는 Typeless와 독립적이며 공식 제휴 관계가 없습니다.
 
 ## 앱 살펴보기
 
@@ -25,8 +25,6 @@ Dictpin은 Electron, 로컬 SenseVoice 음성 인식, 사용자가 명시적으�
 ![API 키가 비어 있는 Dictpin 영문 설정 화면](../images/settings.png)
 
 Qwen 주소와 모델의 설정 예이며 API 키는 비어 있습니다. 연결 테스트나 유료 요청을 실행하지 않았으며 연결 성공 표시나 지연 수치를 꾸며 넣지 않았습니다. [화면 캡처 조건](../SCREENSHOTS.md)을 확인하세요.
-
-위 컨셉 이미지의 제작 방향은 [영문 이미지 생성 프롬프트](../branding/hero-prompt.en.txt)와 [브랜드 가이드](../branding/README.md)에서 확인할 수 있습니다. 이 절의 Electron 화면은 가상의 테스트 데이터를 사용한 실제 앱 화면입니다.
 
 ## 현재 구현된 기능
 
@@ -58,7 +56,6 @@ Qwen 주소와 모델의 설정 예이며 API 키는 비어 있습니다. 연결
 ```powershell
 .\native\build-local03.cmd
 npm run doctor
-npm test
 npm run check
 node scripts/package-inputs.cjs
 npm run dev
@@ -68,7 +65,7 @@ npm run dev
 
 **API 없이 로컬로 사용하려면** **轻整理**(가벼운 다듬기)를 꺼 두세요. **设置**(설정)에서 Windows 녹음기가 실제로 사용하는 마이크를 선택하고 **保存更改**(변경 사항 저장)를 누른 뒤 직접 받아쓰기를 시작하세요. 저장하지 않은 장치 선택은 적용되지 않습니다. 녹음을 끝내고 결과를 확인한 다음 복사합니다. 단축키는 필요한 경우에만 설정하세요.
 
-`npm run preview`는 로컬 루프백 주소에서 공개 문서와 화면 캡처를 미리 보여 주며 앱 자체를 실행하지 않습니다. `npm run check`는 원래의 비공개 작업 공간 없이 소스, 제외 범위, 문서를 검사합니다. 외부 Electron과 빌드한 네이티브 프로그램을 준비한 뒤 `npm run test:ui`로 현재 Local03 매트릭스를 실행할 수 있습니다. [검증 및 빌드 상태](../INSTALL.md#validation-and-build-status)를 확인하세요. 검증된 설치 프로그램 빌드 명령은 없습니다.
+`npm run check`는 앱 구문, 로컬 의존성, 배포 대상 파일과 문서를 검사합니다. 테스트, 성능 평가, 이전 화면과 내부 공개 준비 도구는 이 저장소에서 제외합니다. [검증 및 빌드 상태](../INSTALL.md#validation-and-build-status)를 확인하세요. 검증된 설치 프로그램 빌드 명령은 없습니다.
 
 ## 선택적 API 설정
 
@@ -94,7 +91,7 @@ UI의 기본 언어는 **중국어 간체**이며, 선택적 **영문 표시 모
 
 영문 UI로 실행하려면 `npm run dev -- --ui-language=en`을 사용하세요. 이 옵션을 생략하면 기본 중국어 UI가 유지됩니다. 표시 언어만 바꾸며 받아쓰기 결과나 사전 내용은 변경하지 않습니다.
 
-이번 검증은 [배포 준비 검증 기록](../release/VERIFICATION.md)에 기록하며, 이전 Local03 결과는 과거 자료입니다. 합성 페이지와 생성 오디오는 실제 하드웨어를 검증하지 못합니다. 전역 단축키, 클립보드 전달, 장치 연결 및 분리, 포커스, 다중 화면, Windows DPI, 실제 서비스 품질, 깨끗한 환경에서의 설치는 별도 검수가 필요합니다.
+이 저장소에는 앱 본체의 소스와 사용 문서가 포함됩니다. 내부 테스트 데이터와 성능 보고서는 포함하지 않습니다. 전역 단축키, 시스템 클립보드, 마이크 변경, 포커스, 다중 화면, Windows DPI, 실제 서비스 품질과 새 환경 설치는 별도 검수가 필요합니다.
 
 이전 벤치마크는 해당 컴퓨터와 평가 자료에만 적용되며 보편적인 속도나 정확도를 뜻하지 않습니다. 패키징 검사는 명시적으로 **`distributionReady:false`**를 보고합니다.
 
@@ -114,10 +111,10 @@ UI의 기본 언어는 **중국어 간체**이며, 선택적 **영문 표시 모
 
 다음 작업은 깨끗한 환경에서의 설치와 패키징, 더 다양한 장치 검수, 전사문 보관 및 삭제 제어, 측정에 근거한 인식 개선입니다. 이들은 현재 기능이 아닌 계획입니다. 앱은 작은 받아쓰기 도구라는 방향을 유지합니다.
 
-안전한 로컬 검사 방법은 [CONTRIBUTING.md](../../CONTRIBUTING.md), 보안 제보 채널의 제약은 [SECURITY.md](../../SECURITY.md)를 읽어 주세요. [CHANGELOG.md](../../CHANGELOG.md)는 아직 릴리스되지 않은 상태를 기록합니다. 저장소 About 소개, 권장 Topics, 버전 번호를 정하지 않은 릴리스 초안은 [공개 전 확인 목록](../release/PUBLISHING.md)에 있습니다.
+안전한 로컬 검사는 [CONTRIBUTING.md](../../CONTRIBUTING.md), 보안 제보의 제약은 [SECURITY.md](../../SECURITY.md)를 읽어 주세요. [CHANGELOG.md](../../CHANGELOG.md)에 소스 변경 사항을 기록합니다.
 
 ## 라이선스와 감사의 말
 
-프로젝트의 독자적인 코드, 문서와 원본 자산에는 [MIT 라이선스](../../LICENSE)가 적용되며 저작권 표기는 Copyright 2026 chenjinxian1입니다. [라이선스 범위](../release/LICENSE-AUDIT.md)에서는 제3자 글꼴, 생성된 선언, 런타임과 모델 가중치를 별도로 구분합니다.
+프로젝트의 독자적인 코드, 문서와 원본 자산에는 [MIT 라이선스](../../LICENSE)가 적용되며 저작권 표기는 Copyright 2026 chenjinxian1입니다. [라이선스 범위](../../THIRD_PARTY_NOTICES.md)에서는 제3자 글꼴, 생성된 선언, 런타임과 모델 가중치를 별도로 구분합니다.
 
 Electron/Chromium, sherpa-onnx/ONNX Runtime, SenseVoice 가중치, Silero VAD, Saira에는 각각의 라이선스가 적용됩니다. 모델 사용 조건은 앱 코드의 라이선스와 별개입니다. [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md)를 읽어 주세요. 이 프로젝트들의 유지보수자와 FLEURS 기여자에게 감사드립니다. 절제된 산업적 시각 방향은 [endfield-ui-skill](https://github.com/hhikr/endfield-ui-skill)에서 영감을 받았으며, 게임 캐릭터·로고·아트워크를 브랜드 자산으로 사용하지 않습니다.

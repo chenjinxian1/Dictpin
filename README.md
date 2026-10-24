@@ -10,7 +10,7 @@
 
 Dictpin is a Windows desktop voice-to-text development candidate built with Electron, local SenseVoice recognition, explicit personal dictionary rules, and optional text cleanup through a compatible service. For short messages, notes, names, and technical terms: start, speak, review, copy.
 
-> **Source-code development candidate.** Source: [chenjinxian1/Dictpin](https://github.com/chenjinxian1/Dictpin). The project code and original project assets are MIT-licensed by chenjinxian1; third-party components keep their own terms. There is no verified installer or release download. Dictpin follows preliminary [name screening](docs/branding/NAME-CHECK.md), not trademark clearance. Package IDs and data paths retain their existing names. This project is independent of Typeless and has no official affiliation.
+> **Source-code development candidate.** Source: [chenjinxian1/Dictpin](https://github.com/chenjinxian1/Dictpin). The project code and original project assets are MIT-licensed by chenjinxian1; third-party components keep their own terms. There is no verified installer or release download. Dictpin follows preliminary name screening, not trademark clearance. Package IDs and data paths retain their existing names. This project is independent of Typeless and has no official affiliation.
 
 ## See the application
 
@@ -25,8 +25,6 @@ Actual production Electron renderer in optional English presentation mode, with 
 ![Dictpin API configuration in English with an empty key](docs/images/settings.png)
 
 Example Qwen address and model, with the API key empty. No connection test, paid request, connected badge or latency claim. See [capture details](docs/SCREENSHOTS.md).
-
-The [English generation prompt](docs/branding/hero-prompt.en.txt) and [brand guidance](docs/branding/README.md) document the concept artwork above. The Electron captures in this section show the actual application with synthetic data.
 
 ## What works today
 
@@ -58,7 +56,6 @@ From the repository root, after preparing the resources:
 ```powershell
 .\native\build-local03.cmd
 npm run doctor
-npm test
 npm run check
 node scripts/package-inputs.cjs
 npm run dev
@@ -68,7 +65,7 @@ Root scripts use Node built-ins; there is no root dependency installation step. 
 
 For **local use without an API**, keep **轻整理** (light cleanup) off. Open **设置** (Settings), select the microphone actually used by Windows Recorder, click **保存更改** (Save changes), then explicitly start dictation. Unsaved device selections are not active. Stop, inspect, and copy. Configure a shortcut only if wanted.
 
-`npm run preview` serves a safe loopback-only documentation and screenshot preview, not the live app. `npm run check` runs portable source, ignore-boundary and document checks without the original private workspace. `npm run test:ui` runs the current Local03 matrix after external Electron and the native candidate are prepared. See [validation and build status](docs/INSTALL.md#validation-and-build-status). No installer build command is represented as working.
+`npm run check` checks application syntax, local dependencies, packaging inputs and documentation. Test suites, benchmarks, old interfaces and internal publication tools are kept out of this application-source repository. See [validation and build status](docs/INSTALL.md#validation-and-build-status). No installer build command is represented as working.
 
 ## Optional API setup
 
@@ -94,7 +91,7 @@ The UI defaults to **Simplified Chinese**, with an optional **English presentati
 
 To open the optional English UI, run `npm run dev -- --ui-language=en`; omit the flag for the default Chinese UI. This changes presentation only, not transcript or dictionary data.
 
-Fresh checks are recorded in [Release verification](docs/release/VERIFICATION.md); earlier Local03 results are historical. Synthetic pages and generated audio do not certify hardware. Global shortcuts, clipboard delivery, device hot-plugging, focus, multiple displays, Windows DPI, real service quality, and clean-machine installation still require separate acceptance.
+This repository contains application source and usage documentation. Internal test fixtures and performance reports are not included. Global shortcuts, the system clipboard, microphone changes, focus, multiple displays, Windows DPI, real service quality and clean-machine installation still need separate acceptance.
 
 Earlier benchmarks apply to their machine and corpus, not universal speed or accuracy. Packaging inspection explicitly reports **`distributionReady:false`**.
 
@@ -114,10 +111,10 @@ Earlier benchmarks apply to their machine and corpus, not universal speed or acc
 
 Next: clean-machine setup and packaging, broader device acceptance, transcript retention/deletion controls, and measured recognition improvements. These are plans, not existing features. The application will remain a compact dictation tool.
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for safe local checks and [SECURITY.md](SECURITY.md) for disclosure limitations. [CHANGELOG.md](CHANGELOG.md) records the unreleased state. About text, suggested topics, and an unnumbered release draft are in the [publication checklist](docs/release/PUBLISHING.md).
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for safe local checks and [SECURITY.md](SECURITY.md) for disclosure limitations. [CHANGELOG.md](CHANGELOG.md) records the source changes.
 
 ## License and acknowledgements
 
-The original project code, documentation and original project assets are available under the [MIT License](LICENSE), copyright 2026 chenjinxian1. The [license scope](docs/release/LICENSE-AUDIT.md) distinguishes project material from third-party fonts, generated declarations, runtimes and model weights.
+The original project code, documentation and original project assets are available under the [MIT License](LICENSE), copyright 2026 chenjinxian1. The [license scope](THIRD_PARTY_NOTICES.md) distinguishes project material from third-party fonts, generated declarations, runtimes and model weights.
 
 Third-party components retain their own terms: Electron/Chromium, sherpa-onnx/ONNX Runtime, SenseVoice weights, Silero VAD, and Saira. Model terms are separate from any application-code license. Read [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Thanks to these maintainers and FLEURS contributors. The restrained industrial direction draws inspiration from [endfield-ui-skill](https://github.com/hhikr/endfield-ui-skill); no game characters, logos, or artwork are used as brand assets.

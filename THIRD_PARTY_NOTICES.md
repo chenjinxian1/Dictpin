@@ -1,6 +1,6 @@
 # Third-party notices and release scope
 
-Checked 2026-10-24. This inventory distinguishes bundled source/assets from external development resources. It is not a blanket license grant, a trademark permission, or a complete binary-distribution notice bundle. The original project source and owner-approved original assets are under the root [MIT License](LICENSE), copyright 2026 chenjinxian1. The [license scope](docs/release/LICENSE-AUDIT.md) keeps third-party terms separate.
+Checked 2026-10-24. This inventory distinguishes bundled source/assets from external development resources. It is not a blanket license grant, a trademark permission, or a complete binary-distribution notice bundle. The original project source and owner-approved original assets are under the root [MIT License](LICENSE), copyright 2026 chenjinxian1. Third-party components retain the separate terms described below.
 
 ## Files in this source checkout
 
@@ -15,12 +15,6 @@ The ABI declarations in `native/LocalAsrWorker.cs` and `native/LocalAsrWorker.Lo
 Copyright (c) 2023 Xiaomi Corporation.
 
 Source: [versioned C API header](https://github.com/k2-fsa/sherpa-onnx/blob/v1.13.8/sherpa-onnx/c-api/c-api.h). Upstream license: [Apache-2.0](https://github.com/k2-fsa/sherpa-onnx/blob/v1.13.8/LICENSE). The complete retained Apache text follows at the end of this file. Preserve these notices with redistributed generated declarations and compiled workers.
-
-### Public FLEURS benchmark material
-
-Historical development evaluation used references and recognition outputs for the Google FLEURS test dataset; raw review manifests, reports and audio are not included in this public source snapshot. Source: [google/fleurs, revision 70bb2e84b976b7e960aa89f1c648e09c59f894dd](https://huggingface.co/datasets/google/fleurs/tree/70bb2e84b976b7e960aa89f1c648e09c59f894dd). License: [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/).
-
-Attribution: Google FLEURS dataset contributors; Conneau et al., *FLEURS: Few-shot Learning Evaluation of Universal Representations of Speech* (2022), [paper](https://arxiv.org/abs/2205.12446). The local evaluation selected the first 30 regular WAV members of each pinned Mandarin and English test archive, converted float audio to PCM16 using the product's clamp/scale/round rule, and produced derived ASR/error/timing reports. That historical evaluation recorded sample identities, transcriptions and SHA-256 values in its private-workspace evidence. Those records and the audio are not bundled in this source export. Keep the attribution, license link and modification description if sharing these reports. They are public benchmark material, not private user speech.
 
 ### Inherited icons and local source
 
