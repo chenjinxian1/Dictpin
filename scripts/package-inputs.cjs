@@ -9,6 +9,7 @@ function inspectPackageInputs({workspaceRoot=root,metadata,exists=fs.existsSync,
  for(const file of ['src/dictation-entry.cjs','src/local-asr.js','src/local-dictionary.js','src/dictionary.js'])checks.push({name:'Required production module is included',relative:file,path:path.join(workspaceRoot,'app',file),ok:files.includes(file)});
  const nativeWorker='native/local-asr-worker-local03.exe';
  for(const relative of [nativeWorker,'native/LocalAsrWorker.Local03.cs','native/build-local03.cmd'])if(!sourceOnly||relative!==nativeWorker)check('Local03 development native input',relative);
+ for(const relative of ['native/dictpin-delivery.exe','native/WindowsDelivery.cs','native/build-delivery.cmd'])if(!sourceOnly||!relative.endsWith('.exe'))check('Guarded delivery native input',relative);
  const failures=checks.filter(item=>!item.ok);
  return {status:failures.length?'failed':'passed',scope:sourceOnly?'Static source/package inputs only; the generated native executable is deliberately not required.':'Static development/package file inputs only; no binary, microphone, API, installer or application is run.',sourceOnly,automaticExecution:false,nativeWorker,checks,failures,distributionReady:false,distributionLimitations:['未构建或运行安装包，不能把清单检查当作安装与分发验收。','候选 worker、共享 ASR DLL、模型和许可证仍使用工程旁的开发布局；当前 extraResources 不代表可独立分发。','正式安装布局、资源定位、签名及许可核查需要独立完成。']};
 }

@@ -15,9 +15,11 @@
   $('voice-wave').hidden=!recording;$('bar-status').hidden=recording;
   $('bar-status').textContent=phase==='copied'?'已复制，请自行粘贴':ready?((data.result.status!=='completed'||/整理未完成|超出轻整理/.test(state.message||''))?'原文已保留':data.result.refined?'已整理':'已就绪'):data.recovery?'本段可恢复':data.canUseOriginal?'文字已就绪':phase==='starting'?'准备中':phase==='stopping'?'结束中':active?(phase==='refining'||/整理/.test(state.message||'')?'整理中':'识别中'):'听写未完成';
   if(error){$('voice-wave').hidden=true;$('bar-status').hidden=false;$('bar-status').textContent=error;}
-  $('voice-pill').title=error||state.message||'';$('voice-pill').setAttribute('aria-label',recording&&!error?'正在录音':$('bar-status').textContent);
+  if(!active&&state.delivery?.status==='sent')$('bar-status').textContent='已尝试粘贴';
+  if(!active&&state.delivery?.unknownOutcome)$('bar-status').textContent='请核对原输入框';
+  $('voice-pill').title=error||state.delivery?.message||state.message||'';$('voice-pill').setAttribute('aria-label',recording&&!error?'正在录音':$('bar-status').textContent);
   $('bar-cancel').hidden=!active;$('bar-cancel').disabled=pending;$('bar-cancel').textContent=session.cancelLabel;$('bar-cancel').setAttribute('aria-label',session.cancelLabel);$('bar-cancel').title=data.canUseOriginal?'结束整理并保留完整识别原文；已发出的请求仍可能计费。':data.escapeRegistered?'取消 (Esc)':'取消本次听写';$('bar-stop').hidden=!recording;$('bar-stop').disabled=pending;
-  $('bar-ready-actions').hidden=!available&&phase!=='error'&&!recovery;$('bar-copy').hidden=!available;$('bar-copy').disabled=copying;$('bar-copy').textContent=copying?'复制中':'复制';$('bar-view').disabled=copying||!recovery&&typeof(data.result?.id||state.sessionId)!=='string';$('bar-view').textContent=recovery?'恢复':'查看';
+  $('bar-ready-actions').hidden=!available&&phase!=='error'&&!recovery;$('bar-copy').hidden=!available;$('bar-copy').disabled=copying||state.delivery?.status==='pending';$('bar-copy').textContent=copying?'复制中':'复制';$('bar-view').disabled=copying||!recovery&&typeof(data.result?.id||state.sessionId)!=='string';$('bar-view').textContent=recovery?'恢复':'查看';
   $('bar-dismiss').hidden=active||phase==='copied';$('bar-feedback').hidden=true;$('bar-feedback').textContent=error||(phase==='error'?state.message||'听写失败，请从托盘查看最近结果。':'');$('bar-feedback').title=$('bar-feedback').textContent;level(state.level);
   if(phase!==visualPhase){motion?.respond($('voice-center'));visualPhase=phase;}
  }

@@ -5,6 +5,7 @@
  const motion=window.DictationMotion?.createFeedbackMotion();
  let snapshot=null,version=0,page='recent',lastRequested=null,initial=null,dirty=false,saving=false,testing=false,wordBusy=false,copying=false,wordId=null,wordOpener=null,undoToken=null,undoEntryId=null,wordSignature='',deviceRevision=0,discardFocus=null,discardDestination='recent',capturePending=false,copyRevision=0,copyAck=null,copyTimer=null,toastTimer=null,toastOwner=null,resultSignature='';
  const busy=()=>ACTIVE.has(snapshot?.state?.phase);
+ const deliveryPending=()=>snapshot?.state?.delivery?.status==='pending';
  function restoreFocus(target,ownerPage,from=null){const current=document.activeElement,ownedUnavailable=current===from&&(from?.disabled||!from?.getClientRects().length);if(page===ownerPage&&(current===document.body||ownedUnavailable)&&!document.querySelector('dialog[open]')&&target?.isConnected&&!target.disabled)target.focus({preventScroll:true});}
  function confirmDiscard(destination){if(!dirty||saving||document.querySelector('dialog[open]'))return;discardDestination=destination;discardFocus=document.activeElement;$('draft-dialog').showModal();sync();$('keep-editing').focus();}
  function toast(text,owner=null,duration=0){if(toastTimer!==null)clearTimeout(toastTimer);toastTimer=null;toastOwner=owner;$('toast-text').textContent=text;$('toast').hidden=false;motion?.respond($('toast'));if(duration)toastTimer=setTimeout(()=>clearToast(owner),duration);}
@@ -14,8 +15,8 @@
  function showUndo(operation){undoToken=operation.undoToken;$('word-undo-text').textContent='已移除“'+operation.word+'”';$('word-undo').hidden=false;motion?.respond($('word-undo'));}
  function clearSaveError(){for(const id of ['save-error-report','save-error-link','model-url-error'])$(id).hidden=true;$('save-error-detail').textContent='';$('save-message').classList.remove('error');}
  function saveError(message,summary='保存失败，草稿已保留。'){$('save-message').textContent=summary;$('save-message').classList.add('error');$('save-message').tabIndex=0;$('save-error-detail').textContent=message;$('save-error-report').hidden=false;$('save-error-report').open=false;$('save-error-link').hidden=true;}
- function form(){return {copyShortcut:$('copy-shortcut').value.trim(),deviceId:$('microphone').value,shortcut:$('shortcut').value.trim(),enabled:$('light-edit').checked,baseUrl:$('model-url').value.trim(),model:$('model-name').value.trim(),key:$('model-key').value.trim(),remember:$('remember-key').checked};}
- function savedForm(data){return {copyShortcut:data.settings.copyShortcut||'',deviceId:data.settings.deviceId||'',shortcut:data.settings.shortcut||'',enabled:data.settings.refiner.enabled===true,baseUrl:data.settings.refiner.baseUrl||'',endpointMode:data.settings.refiner.endpointMode,model:data.settings.refiner.model||'',key:'',remember:data.keyStatus?.persistent===true};}
+ function form(){return {autoPaste:$('auto-paste').checked,appendMode:$('append-mode').checked,copyShortcut:$('copy-shortcut').value.trim(),deviceId:$('microphone').value,shortcut:$('shortcut').value.trim(),enabled:$('light-edit').checked,baseUrl:$('model-url').value.trim(),model:$('model-name').value.trim(),key:$('model-key').value.trim(),remember:$('remember-key').checked};}
+ function savedForm(data){return {autoPaste:data.settings.autoPaste===true,appendMode:data.settings.appendMode===true,copyShortcut:data.settings.copyShortcut||'',deviceId:data.settings.deviceId||'',shortcut:data.settings.shortcut||'',enabled:data.settings.refiner.enabled===true,baseUrl:data.settings.refiner.baseUrl||'',endpointMode:data.settings.refiner.endpointMode,model:data.settings.refiner.model||'',key:'',remember:data.keyStatus?.persistent===true};}
  let deviceInputs=null,deviceFeedback='';
  function microphoneChanged(){return !!snapshot&&$('microphone').value!==(snapshot.settings.deviceId||'');}
  function microphoneHint(){
@@ -25,6 +26,7 @@
  }
  function alignScroll(){const node=$('page-'+page).querySelector('.page-body');if(node?.offsetWidth)document.documentElement.style.setProperty('--scroll-gutter',(node.offsetWidth-node.clientWidth)+'px');}
  function setForm(value){
+  $('auto-paste').checked=value.autoPaste===true;$('append-mode').checked=value.appendMode===true;
   if(![...$('microphone').options].some(option=>option.value===value.deviceId)){const option=document.createElement('option');option.value=value.deviceId;option.textContent='已保存的麦克风（当前未找到）';$('microphone').append(option);}
   $('microphone').value=value.deviceId;$('shortcut').value=value.shortcut;$('copy-shortcut').value=value.copyShortcut||'';$('light-edit').checked=value.enabled;$('model-url').value=value.baseUrl;$('model-name').value=value.model;$('model-key').value='';$('remember-key').checked=value.remember;
   for(const field of $('settings-form').querySelectorAll('[aria-invalid]'))field.removeAttribute('aria-invalid');
@@ -38,7 +40,7 @@
  }
  function sync(){
   if(!microphoneChanged()&&toastOwner?.kind==='microphone-draft')clearToast(toastOwner);
-  const locked=!snapshot||saving||wordBusy,formLocked=locked||testing||snapshot?.dataWritable?.settings===false,wordsLocked=locked||snapshot?.dataWritable?.dictionary===false;
+  const locked=!snapshot||saving||wordBusy||deliveryPending()||!!snapshot?.state?.pipeline&&(!snapshot.state.pipeline.sealed||snapshot.state.pipeline.pending>0),formLocked=!snapshot||saving||wordBusy||testing||deliveryPending()||snapshot?.dataWritable?.settings===false,wordsLocked=!snapshot||saving||wordBusy||snapshot?.dataWritable?.dictionary===false;
   for(const input of $('settings-form').querySelectorAll('input,select'))input.disabled=formLocked;
   $('remember-key').disabled=formLocked||snapshot?.secureStorage!==true;
    const settingsTab=document.querySelector('[data-page=settings]');settingsTab.dataset.dirty=String(dirty);settingsTab.setAttribute('aria-label',dirty?'设置，有未保存的更改':'设置');
@@ -51,6 +53,7 @@
    const capture=model.captureView(snapshot),session=model.sessionView(snapshot),modal=!!document.querySelector('dialog[open]');$('capture-label').textContent=capture.label;$('capture-toggle').disabled=capture.disabled||capturePending||saving||testing||wordBusy||copying||modal;$('capture-toggle').dataset.active=String(capture.action==='stop');$('capture-cancel').hidden=!capture.cancel;$('capture-cancel').disabled=capturePending||saving||modal;$('capture-cancel').textContent=session.cancelLabel;$('capture-cancel').title=snapshot?.canUseOriginal?'结束整理并保留完整识别原文；已发出的请求仍可能计费。':'取消本次听写';
   const previousBusy=busy()&&snapshot?.recentResult?.id!==snapshot?.state?.sessionId;for(const id of ['copy-original','restore-original','undo-text','undo-corrections'])$(id).disabled=locked||previousBusy;
   $('copy-result').disabled=locked||previousBusy||copying||!snapshot?.recentResult||!$('result-content').value?.trim();$('copy-result').textContent=copying?'复制中…':copyAck?.id===snapshot?.recentResult?.id&&copyAck?.revision===(snapshot?.recentResult?.revision||1)?'已复制':'复制文字';$('copy-result').setAttribute('aria-busy',String(copying));
+  $('append-result').disabled=locked||busy()||capturePending||!snapshot?.recentResult?.text?.trim()||snapshot?.recovery?.tailPending===true;
   if(saving||!$('save-message').classList.contains('error'))$('save-message').textContent=saving?'正在保存…':dirty&&busy()?'任务结束后可保存':dirty?'有未保存的更改':$('save-message').dataset.saved==='true'?'已保存':'';
   $('save-message').tabIndex=$('save-message').classList.contains('error')?0:-1;$('save-settings').textContent=$('save-message').classList.contains('error')?'重试保存':'保存更改';
   microphoneHint();
@@ -94,13 +97,14 @@
   $('confirm-keep').addEventListener('click',cancel);$('confirm-apply').addEventListener('click',run);dialog.addEventListener('cancel',cancel,{once:true});$('confirm-keep').focus();
  }
  function renderResult(){
+  const delivery=snapshot.state.delivery;$('delivery-message').hidden=!delivery||delivery.status==='manual';$('delivery-message').textContent=delivery?.message||'';
   const task=model.sessionView(snapshot);$('task-status').hidden=!task.active;$('task-status-title').textContent=task.title;$('task-status-detail').textContent=task.detail;
   const steps=['recording','recognition','cleanup'],current=steps.indexOf(task.step);for(const step of $('task-status').querySelectorAll('[data-step]')){const index=steps.indexOf(step.dataset.step);step.hidden=true;step.dataset.complete=String(index<current);if(index===current)step.setAttribute('aria-current','step');else step.removeAttribute('aria-current');}
   const r=snapshot.recentResult;$('result-content').dataset.resultId=r?.id||'';$('result-content').dataset.revision=String(r?.revision||1);const view=model.resultView(r,busy(),snapshot.state.sessionId);$('shortcut-guide').hidden=!view.showShortcut||busy();$('effective-shortcut').textContent=model.effectiveShortcut(snapshot);const hasShortcut=snapshot?.shortcutStatus?.statuses?.current?.registered===true;$('effective-shortcut').hidden=!hasShortcut;$('shortcut-prefix').textContent=hasShortcut?'按':'';$('shortcut-suffix').textContent=hasShortcut?'开始说话，再按一次结束':'';$('empty-result').hidden=!!r||busy();$('result-content').hidden=!r;$('result-details').hidden=!r;$('usage-details').hidden=!r;$('setup-shortcut').hidden=hasShortcut;$('empty-start').disabled=model.captureView(snapshot).disabled;$('undo-text').hidden=typeof r?.previousText!=='string';$('retry-cleanup').hidden=!snapshot.canRetryCleanup||!/整理未完成|整理失败|超时/.test(r?.message||'');const changes=r?.corrections||[];$('correction-details').hidden=!changes.length;$('correction-summary').textContent=(['restored','manual'].includes(r?.source)?'词典纠正记录：':'词典已纠正 ')+changes.length+' 处';$('correction-list').replaceChildren(...changes.map(change=>{const li=document.createElement('li');li.textContent=change.from+' → '+change.to;return li;}));
   const recovery=snapshot.recovery;$('recovery-strip').hidden=!recovery;$('recovery-message').textContent=recovery?(recovery.reason==='cancelled'?'已取消，本段仅在内存保留30秒。':'本段识别失败，录音仅在内存保留5分钟。'):'';$('retry-segment').textContent=recovery?.reason==='cancelled'?'恢复本段识别':'重试本段';
   if(!r){$('result-content').value='';$('result-content').textContent='';$('result-message').textContent='';$('recent-time').textContent='';return;}
   const signature=JSON.stringify([r.id,view.text]);if(editorId!==r.id){editorId=r.id;editorRevision=r.revision||1;editorDirty=false;editorError='';$('result-content').value=view.text;$('result-content').textContent=view.text;}else if(!editorDirty&&!editorFlight&&!composition){editorRevision=r.revision||1;if($('result-content').value!==view.text)$('result-content').value=view.text;$('result-content').textContent=view.text;}showEditState();$('original-text').textContent=r.original||'';if(signature!==resultSignature){resultSignature=signature;motion?.respond($('result-content'));}
-  $('result-message').classList.toggle('warning',view.warning);$('result-message').textContent=view.message;$('result-content').readOnly=busy()&&r.id!==snapshot.state.sessionId;
+  $('result-message').classList.toggle('warning',view.warning);$('result-message').textContent=snapshot.state.phase==='error'&&snapshot.state.message?snapshot.state.message:view.message;$('result-content').readOnly=deliveryPending()||busy()&&(r.id!==snapshot.state.sessionId||!!snapshot.state.pipeline&&(!snapshot.state.pipeline.sealed||snapshot.state.pipeline.pending>0));
   $('recent-time').textContent=view.metadata;usage(r);
  }
  function renderWords(){
@@ -201,6 +205,13 @@
   finally{capturePending=false;sync();}
  }
  $('capture-toggle').addEventListener('click',()=>void captureAction());$('capture-cancel').addEventListener('click',()=>void captureAction(true));
+ $('append-result').addEventListener('click',async()=>{
+  if(busy()||deliveryPending()||capturePending||!snapshot?.recentResult)return;
+  try{await flushEditor();if(microphoneChanged()){setPage('settings');toast('麦克风尚未生效，请先保存更改。');return;}
+   const r=snapshot.recentResult,run=async()=>{capturePending=true;sync();try{const answer=await bridge.start({appendTo:r.id,expectedRevision:r.revision||1,...snapshot.recovery?{discardRecoveryToken:snapshot.recovery.token}:{}});if(answer?.accepted===false)toast('上一段仍在结束，请稍候再追加。');}finally{capturePending=false;sync();}};
+   if(snapshot.recovery)confirmAction('继续追加？','未处理的临时录音将清除，已有文字仍保留。',run);else await run();
+  }catch(error){toast(failure(error,'追加未开始，已有文字仍保留。'));}
+ });
  async function copyCurrent(source){
   const id=snapshot?.recentResult?.id;if(!id||copying||busy()&&id!==snapshot.state.sessionId)return;const localVersion=editorVersion;copying=true;sync();
   try{try{await flushEditor();}catch(error){if(snapshot?.recentResult?.id!==id||snapshot.recentResult.text!==$('result-content').value)throw error;}const r=snapshot.recentResult;const ack=await bridge.copyResult({id,expectedRevision:r.revision||1,...source?{source}:{}});if(ack?.ok&&snapshot.recentResult?.id===id&&(snapshot.recentResult.revision||1)===ack.revision&&editorVersion===localVersion){copyAck=source?null:{id,revision:ack.revision};toast(source?'已复制识别原文。':'已复制，请自行粘贴。',{kind:'copy',id},2200);}}

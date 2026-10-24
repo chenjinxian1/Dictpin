@@ -2,7 +2,7 @@
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.DictationUiState=factory();})(typeof globalThis!=='undefined'?globalThis:this,function(){
  function draftPatch(before,after){
   const patch={},refiner={};
-  for(const key of ['deviceId','shortcut','copyShortcut'])if(after[key]!==before[key])patch[key]=after[key];
+  for(const key of ['deviceId','shortcut','copyShortcut','autoPaste','appendMode'])if(after[key]!==before[key])patch[key]=after[key];
   for(const key of ['enabled','baseUrl','model'])if(after[key]!==before[key])refiner[key]=after[key];
   if(after.key){refiner.key=after.key;refiner.persistKey=after.remember===true;}
   else if(after.remember!==before.remember)refiner.persistKey=after.remember===true;
@@ -19,6 +19,7 @@
  }
  function captureView(snapshot){
   if(!snapshot)return {label:'连接中',action:null,disabled:true,cancel:false};
+  if(snapshot.state?.delivery?.status==='pending')return {label:'投递中',action:null,disabled:true,cancel:false};
   const phase=snapshot?.state?.phase||'idle',active=['starting','recording','stopping','processing','transcribing','refining'].includes(phase);
   if(phase==='recording')return {label:'结束听写',action:'stop',disabled:false,cancel:true};
   if(active)return {label:phase==='starting'?'准备中':phase==='stopping'?'结束中':snapshot?.canUseOriginal||phase==='refining'||/整理/.test(snapshot?.state?.message||'')?'整理中':'识别中',action:null,disabled:true,cancel:true};
@@ -29,8 +30,9 @@
   const phase=snapshot?.state?.phase,active=['starting','recording','stopping','processing','transcribing','refining'].includes(phase),original=active&&snapshot?.canUseOriginal===true;
   if(!active)return {active:false,title:'',detail:'',step:null,cancelLabel:'取消'};
   if(phase==='starting')return {active:true,title:'正在准备麦克风',detail:'准备完成后开始录音，可随时取消。',step:'recording',cancelLabel:'取消'};
-  if(phase==='recording')return {active:true,title:'正在录音',detail:'再次按快捷键，或点“结束听写”。',step:'recording',cancelLabel:'取消'};
+  if(phase==='recording')return {active:true,title:snapshot.state?.pipeline?'正在录音，逐段识别':'正在录音',detail:snapshot.state?.pipeline?'已就绪 '+snapshot.state.pipeline.completed+' 段，待识别 '+snapshot.state.pipeline.pending+' 段。':'再次按快捷键，或点“结束听写”。',step:'recording',cancelLabel:'取消'};
   if(phase==='stopping')return {active:true,title:'正在结束录音',detail:'即将进行本机识别。',step:'recording',cancelLabel:'取消'};
+  if(snapshot.state?.pipeline?.pending)return {active:true,title:'正在完成剩余片段',detail:'已就绪 '+snapshot.state.pipeline.completed+' 段，待识别 '+snapshot.state.pipeline.pending+' 段。',step:'recognition',cancelLabel:'取消'};
   const cleanup=original||phase==='refining'||/整理/.test(snapshot?.state?.message||'');
   return {active:true,title:cleanup?'文字已就绪，正在轻整理':'正在本机识别',detail:original?'可以直接复制文字，或修改后使用。':cleanup?'整理失败时保留完整原文。':'语音留在本机，请稍候。',step:cleanup?'cleanup':'recognition',cancelLabel:original?'结束整理':'取消'};
  }

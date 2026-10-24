@@ -7,7 +7,8 @@ function doctor(){
   {name:'Electron 44.8.0 (external, no download)',ok:fs.existsSync(electron)&&fs.existsSync(path.join(path.dirname(electron),'version'))&&fs.readFileSync(path.join(path.dirname(electron),'version'),'utf8').trim()==='44.8.0',path:electron},
   {name:'Local03 candidate native worker (original retained separately)',ok:fs.existsSync(path.join(root,'native/local-asr-worker-local03.exe')),path:path.join(root,'native/local-asr-worker-local03.exe')}];
  for(const relative of ['runtime/bin/sherpa-onnx-c-api.dll','models/sensevoice/tokens.txt','models/sensevoice/model.int8.onnx','models/silero_vad.onnx'])checks.push({name:'Shared ASR '+relative,ok:fs.existsSync(path.join(resourceRoot,relative)),path:path.join(resourceRoot,relative)});
- return {ready:checks.every(c=>c.ok),root,electron,resourceRoot,checks,profile:path.join(root,'work/dev/profile'),automaticMicrophone:false,automaticTextRequests:false,defaultGlobalShortcut:''};
+ checks.push({name:'Optional guarded paste helper',optional:true,ok:fs.existsSync(path.join(root,'native/dictpin-delivery.exe')),path:path.join(root,'native/dictpin-delivery.exe')});
+ return {ready:checks.filter(c=>!c.optional).every(c=>c.ok),root,electron,resourceRoot,checks,profile:path.join(root,'work/dev/profile'),automaticMicrophone:false,automaticTextRequests:false,defaultGlobalShortcut:''};
 }
 function seedProfile(profile){
  fs.mkdirSync(profile,{recursive:true});const file=path.join(profile,'settings.json');

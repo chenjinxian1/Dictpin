@@ -8,6 +8,12 @@
  const protectedAttributes='#original-text,#correction-list,#provider-summary,.word-title,.word-aliases,[data-user-text]';
  const chrome='title,button,label,summary,h1,h2,h3,.app-name,.skip,.hint,.empty-copy,.dictionary-intro,.dictionary-help,.privacy-note,.count-unit,#notice,#session-status,#task-status-title,#task-status-detail,#result-message,#recent-time,#shortcut-prefix,#shortcut-suffix,#toast-text,#word-undo-text,#word-error,#confirm-description,#bar-status,#bar-feedback,#voice-pill';
  const english=Object.freeze({
+  '继续追加':'Append more','继续追加？':'Append more?','安全自动粘贴':'Guarded auto-paste','快捷键继续追加到最近结果':'Append to the latest result with the shortcut','保留前一稿；自动投递只发送新增部分。':'Keep the earlier draft; delivery sends only new text.',
+  '默认关闭。仅快捷键唤起可投递；焦点变化时保留文字。会替换剪贴板。':'Off by default. Shortcut only; focus changes block delivery. Replaces clipboard.','投递中':'Delivering','正在录音，逐段识别':'Recording with local previews','正在完成剩余片段':'Finishing remaining segments',
+  '完成后由你复制。':'Copy manually when ready.','正在确认原输入框。':'Checking the original input field.','结束后将尝试粘贴到原输入框。':'After Stop, attempt one paste to the original input field.','正在安全投递文字…':'Delivering text with safety checks…',
+  '已发送粘贴按键；请在原输入框核对，文字也已放入剪贴板。':'Paste keys sent. Check the original field; text is also on the clipboard.','未自动粘贴，文字仍在，请手动复制。':'Auto-paste was blocked. Your text is still here to copy.','自动粘贴未完成，文字仍在，请手动复制。':'Auto-paste did not finish. Your text is still here.',
+  '已取消自动粘贴，文字仍在。':'Auto-paste cancelled; text is preserved.','粘贴可能已经发送，请核对原输入框；不会自动重试。':'Paste may already have been sent. Check the original field; there is no automatic retry.','投递结果不确定，请核对原输入框；不会自动重试。':'Delivery is uncertain. Check the original field; there is no automatic retry.',
+  '未处理的临时录音将清除，已有文字仍保留。':'Unprocessed temporary audio will be cleared. Existing text stays.','上一段仍在结束，请稍候再追加。':'The previous recording is still closing. Try appending when it has stopped.','追加未开始，已有文字仍保留。':'Append did not start. Existing text is preserved.','已尝试粘贴':'Paste attempted','请核对原输入框':'Check the original field',
   '本地听写':'Dictpin','听写条':'Dictpin voice strip','跳到内容':'Skip to content','管理':'Navigation','结果':'Results','词典':'Dictionary','设置':'Settings','设置，有未保存的更改':'Settings, unsaved changes',
   '最近结果':'Recent result','开始听写':'Start dictation','结束听写':'Stop dictation','重新听写':'Record again','取消':'Cancel','确认':'Confirm','返回':'Back','连接中':'Connecting','正在连接桌面程序':'Connecting to the desktop app','识别器不可用':'Recognizer unavailable',
   '复制':'Copy','复制文字':'Copy text','复制中…':'Copying…','复制中':'Copying','已复制':'Copied','已复制，请自行粘贴':'Copied','已复制，请自行粘贴。':'Copied. Paste when ready.','已复制识别原文。':'Original transcript copied.',
@@ -54,6 +60,7 @@
    }
    if(element.id==='correction-summary'){const match=text.match(/^(词典已纠正 |词典纠正记录：)(\d+) 处$/);if(match)return (match[1]==='词典纠正记录：'?'History: ':'')+match[2]+' dictionary correction'+(match[2]==='1'?'':'s');}
    if(element.id==='result-message'){const match=text.match(/^已纠正 (\d+) 处$/);if(match)return match[1]+' correction'+(match[1]==='1'?'':'s')+' applied';}
+   const progress=text.match(/^已就绪 (\d+) 段，待识别 (\d+) 段。$/);if(progress)return progress[1]+' segments ready; '+progress[2]+' pending.';
    return translate(text);
   });
  }

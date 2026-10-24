@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('dictation',Object.freeze({
  cancel:input=>ipcRenderer.invoke('capture:cancel',input),
  recordingReady:input=>ipcRenderer.invoke('audio:ready',input),
  submitAudio:input=>ipcRenderer.invoke('audio:submit',input),
+ submitSegment:input=>ipcRenderer.invoke('audio:segment',input),
+ sealSegments:input=>ipcRenderer.invoke('audio:seal',input),
  submitCancelledAudio:input=>ipcRenderer.invoke('audio:cancelled',input),
  reportRecordingError:input=>ipcRenderer.invoke('audio:error',input),
  reportLevel:level=>ipcRenderer.send('audio:level',level),

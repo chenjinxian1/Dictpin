@@ -9,8 +9,9 @@ function object(value,allowed){
 }
 function singleShortcutMap(settings){return {current:settings.shortcut||'',copy:settings.copyShortcut||''};}
 function settingsPatch(settings,input){
- object(input,['deviceId','shortcut','copyShortcut','refiner','expectedRefiner']);if(!Object.keys(input).length)throw Error('没有可保存的更改。');
+ object(input,['deviceId','shortcut','copyShortcut','autoPaste','appendMode','refiner','expectedRefiner']);if(!Object.keys(input).length)throw Error('没有可保存的更改。');
  const next={...settings,refiner:{...settings.refiner}};
+ for(const key of ['autoPaste','appendMode'])if(Object.hasOwn(input,key)){if(typeof input[key]!=='boolean')throw Error('听写开关无效。');next[key]=input[key];if(key==='autoPaste')next.deliveryConsentVersion=input[key]?1:0;}
  if(Object.hasOwn(input,'deviceId')){if(typeof input.deviceId!=='string'||input.deviceId.length>512)throw Error('麦克风设置无效。');next.deviceId=input.deviceId;}
  if(Object.hasOwn(input,'shortcut')){normalizeAccelerator(input.shortcut);if(!input.shortcut)throw Error('请保留一个可用的听写快捷键。');next.shortcut=input.shortcut;}
  if(Object.hasOwn(input,'copyShortcut')){normalizeAccelerator(input.copyShortcut);next.copyShortcut=input.copyShortcut;}
@@ -30,7 +31,7 @@ function settingsPatch(settings,input){
  }
  return next;
 }
-function registerProductIpc({ipcMain,controller,store,getMainWindow,getBarWindow,mainURL,barURL,snapshot,publish,copyResult,applyShortcuts=()=>{},showMain,dismissOverlay,providerChecks,editorFlushed=()=>{},setShortcutRecording=()=>{}}){
+function registerProductIpc({ipcMain,controller,store,getMainWindow,getBarWindow,mainURL,barURL,snapshot,publish,copyResult,applyShortcuts=()=>{},showMain,dismissOverlay,providerChecks,editorFlushed=()=>{},setShortcutRecording=()=>{},deliveryBusy=()=>false,onManualResult=()=>{},onStopFromMain=()=>{}}){
  let saving=false;
  function verify(event,roles){
   const targets={main:[getMainWindow(),mainURL],bar:[getBarWindow(),barURL]};
@@ -38,25 +39,28 @@ function registerProductIpc({ipcMain,controller,store,getMainWindow,getBarWindow
   throw Error('拒绝未授权的窗口请求。');
  }
  function handle(name,roles,fn){ipcMain.handle(name,async(event,...args)=>{verify(event,roles);return fn(event,...args);});}
- function idle(){if(saving||controller.active())throw Error('请先结束当前任务。');}
+ function idle(){if(saving||controller.active()||deliveryBusy())throw Error('请先结束当前任务。');}
  function captureInput(input){object(input,['sessionId']);if(typeof input.sessionId!=='string'||input.sessionId!==controller.state.sessionId||input.sessionId!==controller.session?.id)throw Error('录音操作已过期。');}
  async function toggle(source,mode='current'){
-  if(saving||mode!=='current')return {accepted:false};
+  if(saving||deliveryBusy()||mode!=='current')return {accepted:false};
+  if(source==='ui'&&controller.state.phase==='recording')onStopFromMain(controller.state.sessionId);
   return controller.toggle(source,{});
  }
  handle('snapshot',['main','bar'],event=>snapshot(event.sender===getBarWindow()?.webContents));
- handle('capture:start',['main'],(_event,input,...extra)=>{if(extra.length)throw Error('开始听写不接受模式或任务。');if(input!==undefined)object(input,['discardRecoveryToken']);if(saving||controller.active())return {accepted:false};return controller.start?controller.start(input):controller.toggle('ui',{});});
+ handle('capture:start',['main'],(_event,input,...extra)=>{if(extra.length)throw Error('开始听写不接受模式或任务。');if(input!==undefined)object(input,['discardRecoveryToken','appendTo','expectedRevision']);if(saving||controller.active()||deliveryBusy())return {accepted:false};return controller.start?controller.start(input):controller.toggle('ui',{});});
  handle('capture:toggle',['main'],(_event,input,...extra)=>{if(input!==undefined||extra.length)throw Error('听写操作不接受模式或任务。');return toggle('ui');});
- handle('capture:stop',['main','bar'],(_event,input)=>{captureInput(input);return {accepted:controller.stop()!==false};});
+ handle('capture:stop',['main','bar'],(event,input)=>{captureInput(input);if(event.sender===getMainWindow()?.webContents)onStopFromMain(input.sessionId);return {accepted:controller.stop()!==false};});
  handle('capture:cancel',['main','bar'],(_event,input)=>{captureInput(input);return {accepted:controller.cancel()};});
  handle('audio:ready',['main'],(_event,input)=>controller.recordingReady(input));
  handle('audio:submit',['main'],(_event,input)=>controller.submitAudio(input));
+ handle('audio:segment',['main'],(_event,input)=>controller.submitSegment(input));
+ handle('audio:seal',['main'],(_event,input)=>controller.sealSegments(input));
  handle('audio:cancelled',['main'],(_event,input)=>controller.submitCancelledAudio(input));
  handle('audio:error',['main'],(_event,input)=>controller.reportRecordingError(input));
- handle('result:copy',['main','bar'],(_event,id)=>copyResult(id));
- handle('result:update',['main'],(_event,input)=>{controller.updateResult(input);return snapshot(false);});
- handle('result:restore',['main'],(_event,input)=>{controller.restoreResult(input);return snapshot(false);});
- handle('result:retry-cleanup',['main'],async(_event,input)=>{await controller.retryCleanup(input);return snapshot(false);});
+ handle('result:copy',['main','bar'],(_event,id)=>{if(deliveryBusy())throw Error('正在投递，请先核对投递结果。');onManualResult();return copyResult(id);});
+ handle('result:update',['main'],(_event,input)=>{if(deliveryBusy())throw Error('正在投递，请稍候再修改。');onManualResult();controller.updateResult(input);return snapshot(false);});
+ handle('result:restore',['main'],(_event,input)=>{if(deliveryBusy())throw Error('正在投递，请稍候再修改。');onManualResult();controller.restoreResult(input);return snapshot(false);});
+ handle('result:retry-cleanup',['main'],async(_event,input)=>{if(deliveryBusy())throw Error('正在投递，请稍候。');onManualResult();await controller.retryCleanup(input);return snapshot(false);});
  handle('recovery:retry',['main','bar'],async(event,input)=>{object(input,['token']);if(typeof input.token!=='string')throw Error('恢复操作无效。');await controller.retryRecovery(input.token);return snapshot(event.sender===getBarWindow()?.webContents);});
  handle('recovery:discard',['main'],(_event,input)=>{object(input,['token']);if(typeof input.token!=='string')throw Error('恢复操作无效。');controller.discardRecovery(input.token);return snapshot(false);});
  handle('editor:flushed',['main'],(_event,input)=>{object(input,['token','ok']);return editorFlushed(input);});

@@ -1,6 +1,7 @@
 'use strict';
-(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.DictationCapture=factory();})(typeof globalThis!=='undefined'?globalThis:this,function(){
- function createCapture({bridge,mediaDevices,Recorder,decode,now=()=>performance.now(),AudioContextClass,requestFrame=()=>null,cancelFrame=()=>{}}){
+(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./pcm-capture'));else root.DictationCapture=factory(root.DictpinPcmCapture);})(typeof globalThis!=='undefined'?globalThis:this,function(pcmApi){
+ function createCapture({bridge,mediaDevices,Recorder,decode,now=()=>performance.now(),AudioContextClass,WorkletNodeClass,requestFrame=()=>null,cancelFrame=()=>{}}){
+  const streaming=pcmApi.createCapture({bridge,mediaDevices,AudioContextClass,WorkletNodeClass});
   let active=null,disposed=false;const started=new Set();
   function close(capture){
    if(capture.stream&&capture.closedStream!==capture.stream){capture.stream.getTracks().forEach(track=>{try{track.stop();}catch{}});capture.closedStream=capture.stream;}
@@ -78,6 +79,8 @@
   }
   async function command(value){
    if(!value||typeof value!=='object')return {accepted:false};
+   if(value.type==='start'&&value.recordingLimits?.segmented===true){if(active)cancel(active.id);return streaming.command(value);}
+   if(streaming.owns(value.sessionId))return streaming.command(value);
    if(value.type==='start')return start(value);
    if(value.type==='cancel')return {accepted:cancel(value.sessionId)};
    if(value.type==='cancel-retain'){
@@ -97,7 +100,7 @@
    }
    return {accepted:false};
   }
-  return {command,dispose(){disposed=true;if(active)cancel(active.id);}};
+  return {command,dispose(){disposed=true;streaming.dispose();if(active)cancel(active.id);}};
  }
  return {createCapture};
 });

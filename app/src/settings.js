@@ -7,6 +7,7 @@ const MODES=Object.freeze(['dictate','translate','ask']);
 const TASKS=Object.freeze(['ask','shorten','expand','rewrite','explain','translate','write']);
 const DEFAULTS = Object.freeze({
   copyShortcut:'',
+  deliveryConsentVersion:0,appendMode:false,
   asr: {backend:'cloud',baseUrl:'https://api.openai.com/v1', model:'whisper-1',protocol:'openai-transcriptions',endpointMode:'base'},
   refiner: {baseUrl:'https://api.openai.com/v1', model:'gpt-4.1-mini',endpointMode:'base', enabled:false,citationFormat:'none'},
   usagePrices:{asr:defaultPrice(),refiner:defaultPrice()},
@@ -81,7 +82,10 @@ function validateSettings(input,{repairPreferredTarget=false}={}) {
   s.language=string(input.language??'','语言',12);
   if(s.language && !/^[a-z]{2,3}(-[A-Za-z]{2,4})?$/.test(s.language)) throw new Error('语言请使用 zh、en 等代码，或留空自动识别');
   s.deviceId=string(input.deviceId??'','麦克风',512);
-  s.autoPaste=false; // Temporarily copy-only until Windows target/caret/content protection is validated.
+  // A dormant legacy autoPaste flag is not consent to the newly introduced native feature.
+  s.deliveryConsentVersion=input.deliveryConsentVersion===1?1:0;
+  s.autoPaste=input.autoPaste===true&&s.deliveryConsentVersion===1;
+  s.appendMode=input.appendMode===true;
   s.saveHistory=input.saveHistory!==false;
   s.mode=choice(input.mode??DEFAULTS.mode,MODES,'处理模式');
   s.appearance=choice(input.appearance??DEFAULTS.appearance,['light','dark','system'],'外观');
