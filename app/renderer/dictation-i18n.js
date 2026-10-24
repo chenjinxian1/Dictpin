@@ -8,7 +8,7 @@
  const protectedAttributes='#original-text,#correction-list,#provider-summary,.word-title,.word-aliases,[data-user-text]';
  const chrome='title,button,label,summary,h1,h2,h3,.app-name,.skip,.hint,.empty-copy,.dictionary-intro,.dictionary-help,.privacy-note,.count-unit,#notice,#session-status,#task-status-title,#task-status-detail,#result-message,#recent-time,#shortcut-prefix,#shortcut-suffix,#toast-text,#word-undo-text,#word-error,#confirm-description,#bar-status,#bar-feedback,#voice-pill';
  const english=Object.freeze({
-  '继续追加':'Append more','继续追加？':'Append more?','安全自动粘贴':'Guarded auto-paste','快捷键继续追加到最近结果':'Append to the latest result with the shortcut','保留前一稿；自动投递只发送新增部分。':'Keep the earlier draft; delivery sends only new text.',
+  '继续追加':'Append more','继续追加？':'Append more?','撤销追加':'Undo append','安全自动粘贴':'Guarded auto-paste','快捷键继续追加到最近结果':'Append to the latest result with the shortcut','保留前一稿；自动投递只发送新增部分。':'Keep the earlier draft; delivery sends only new text.',
   '默认关闭。仅快捷键唤起可投递；焦点变化时保留文字。会替换剪贴板。':'Off by default. Shortcut only; focus changes block delivery. Replaces clipboard.','投递中':'Delivering','正在录音，逐段识别':'Recording with local previews','正在完成剩余片段':'Finishing remaining segments',
   '完成后由你复制。':'Copy manually when ready.','正在确认原输入框。':'Checking the original input field.','结束后将尝试粘贴到原输入框。':'After Stop, attempt one paste to the original input field.','正在安全投递文字…':'Delivering text with safety checks…',
   '已发送粘贴按键；请在原输入框核对，文字也已放入剪贴板。':'Paste keys sent. Check the original field; text is also on the clipboard.','未自动粘贴，文字仍在，请手动复制。':'Auto-paste was blocked. Your text is still here to copy.','自动粘贴未完成，文字仍在，请手动复制。':'Auto-paste did not finish. Your text is still here.',

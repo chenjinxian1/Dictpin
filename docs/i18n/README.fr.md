@@ -44,11 +44,11 @@ Adresse et modèle Qwen donnés en exemple ; le champ de clé API est vide. Aucu
 - **Reconnaissance locale :** SenseVoice sur processeur, avec détection d’activité vocale Silero ; aucun basculement automatique vers une reconnaissance dans le cloud.
 - **Corrections explicites du dictionnaire :** enregistrez un terme correct et, si nécessaire, ses erreurs de transcription fréquentes. Les remplacements locaux s’effectuent en un seul passage, en privilégiant la règle correspondante la plus longue, sans déduction d’homophones ni apprentissage automatique. Vous pouvez examiner et annuler les corrections.
 - **Texte disponible avant la fin du nettoyage :** modifiez ou copiez immédiatement. Ces deux actions arrêtent le nettoyage en attente ; une réponse tardive ne peut plus remplacer cette version. Le texte original de la reconnaissance reste accessible.
-- **Récupération volontaire :** un enregistrement complet annulé peut être récupéré pendant 30 secondes ; après un échec de reconnaissance, il reste disponible jusqu’à cinq minutes, uniquement en mémoire. La nouvelle tentative exige un clic et la récupération désactive le nettoyage distant.
+- **Reprise explicite :** le texte terminé est conservé ; le PCM non traité, borné et uniquement en mémoire, peut être repris pendant 30 secondes après annulation ou cinq minutes après échec, sans nettoyage distant.
 - **Un espace de travail compact :** résultat, dictionnaire, paramètres et petite barre flottante d’enregistrement. Les thèmes clair et sombre, le contraste élevé, la réduction des animations et le focus clavier sont déjà implémentés.
 - **Nettoyage léger facultatif :** ponctuation, paragraphes et suppression des hésitations par un service texte Chat Completions. En cas d’échec ou au bout de 12 secondes, le brouillon corrigé localement reste utilisable.
 
-Les avantages concrets sont la maîtrise du texte, des règles de dictionnaire utilisables hors ligne et la possibilité de récupérer un enregistrement sans devoir recommencer immédiatement. Nous ne revendiquons aucune précision, latence, consommation mémoire ou supériorité concurrentielle universelle. La traduction, les questions-réponses, l’enrichissement du texte, le collage automatique et un grand tableau de bord d’historique ne font pas partie du projet.
+Les avantages concrets sont la maîtrise du texte, des règles de dictionnaire utilisables hors ligne et la possibilité de récupérer un enregistrement sans devoir recommencer immédiatement. Nous ne revendiquons aucune précision, latence, consommation mémoire ou supériorité concurrentielle universelle. La traduction, les questions-réponses, l’enrichissement du texte, un grand tableau de bord d’historique ne font pas partie du projet.
 
 ## Déroulement
 
@@ -58,7 +58,21 @@ Démarrage explicite → microphone sélectionné → reconnaissance locale
                     → relecture / modification → copie explicite
 ```
 
-Un seul segment est traité à la fois. Chaque enregistrement est limité à 60 secondes ; l’enregistrement s’arrête vers 58 secondes. Pendant le nettoyage, **复制文字** (Copier le texte) copie la version visible et arrête le nettoyage. Dans la fenêtre principale, `Ctrl+Enter` copie le résultat complet et `Ctrl+C` conserve son comportement habituel de copie de la sélection. Le raccourci global facultatif « copier le dernier résultat » n’est pas attribué par défaut.
+Une seule session et un seul décodeur local à la fois. L’arrêt termine les segments acceptés avant le nettoyage et la livraison facultatifs. Modifier ou copier pendant le nettoyage l’arrête. `Ctrl+Enter` copie tout le résultat et `Ctrl+C` conserve la copie de sélection habituelle. Le raccourci de copie reste non attribué par défaut.
+
+## Dictée longue, ajout et collage protégé
+
+L’enregistrement alimente désormais un pipeline local borné. Les segments privilégient les pauses et durent au plus 20 secondes ; un seul moteur SenseVoice les décode dans l’ordre, avec aperçu et sauvegarde du texte pendant la dictée. La limite de session de 60 secondes est supprimée. Des garde-fous arrêtent la session à 30 minutes, 100 000 caractères ou en cas d’accumulation ; l’audio accepté n’est pas tronqué silencieusement.
+
+**Append more** conserve le brouillon précédent, y compris ses corrections manuelles, et ajoute l’enregistrement suivant. Une préférence permet aussi l’ajout au raccourci. Le texte antérieur n’est pas nettoyé à nouveau ; la livraison automatique ne transmet que le nouveau suffixe. Copier porte toujours sur le résultat complet. Les aperçus restent en lecture seule jusqu’à la fin du décodage ; pendant le nettoyage, modifier ou copier l’arrête.
+
+Le **collage protégé est désactivé par défaut**. Compilez l’outil Windows séparé, activez l’option et enregistrez, puis lancez la dictée par raccourci depuis un champ modifiable compatible. Après un arrêt explicite, un seul collage est tenté. Les mots de passe, terminaux, applications élevées, contrôles non vérifiables et changements de focus, curseur, processus ou presse-papiers le bloquent. Un retour au champ initial n’est autorisé qu’après un arrêt explicite dans Dictpin ; aucune application sans rapport n’est forcée au premier plan. Un démarrage dans l’application reste manuel.
+
+La livraison remplace le presse-papiers sans lire ni sauvegarder son contenu précédent. L’envoi des touches ne prouve pas leur réception. Si le résultat est incertain, vérifiez le champ d’origine ; aucune répétition automatique. Démarrage, ajout et édition sont bloqués pendant la livraison. Les arrêts de protection et la récupération n’autorisent pas de collage.
+
+Le texte terminé est sauvegardé. Seule la collection bornée de PCM **non traité** est récupérable en mémoire : 30 secondes après annulation, cinq minutes au plus après échec. La reprise est explicite, sans nettoyage distant ; ce n’est pas une archive de toute la dictée. Expiration, effacement et fermeture suppriment cet audio.
+
+Les découpes forcées peuvent affecter les mots sans pause. Microphones réels, contrôles natifs, focus, presse-papiers et performances comparatives nécessitent une validation séparée. Aucune supériorité sur Typeless n’est revendiquée. Voir le [journal des modifications](../../CHANGELOG.md).
 
 ## Démarrage rapide : environnement de développement
 
@@ -68,6 +82,7 @@ Depuis la racine du dépôt, une fois les ressources prêtes :
 
 ```powershell
 .\native\build-local03.cmd
+.\native\build-delivery.cmd
 npm run doctor
 npm run check
 node scripts/package-inputs.cjs

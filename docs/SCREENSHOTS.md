@@ -6,7 +6,7 @@ The README uses two **actual production Electron renderer captures**, taken on 2
 
 ![English main window with a fictional result](images/results.png)
 
-The real local dictionary changes the seeded misspellings `dict pin` and `sense voice` to `Dictpin` and `SenseVoice`. The result shows editing, explicit copying and access to the original text. This illustrates the application and local correction, not acoustic recognition quality.
+The real local dictionary changes the seeded misspellings `dict pin` and `sense voice` to `Dictpin` and `SenseVoice`. The result shows editing, explicit copying, the Append more action and access to the original text. The current source also supports ordered live previews; this picture is a seeded completed result and does not claim acoustic performance. This illustrates the application and local correction, not acoustic recognition quality.
 
 ## API configuration
 

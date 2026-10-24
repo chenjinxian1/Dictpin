@@ -44,11 +44,11 @@ Example Qwen address and model, with the API key empty. No connection test, paid
 - **Local recognition:** CPU SenseVoice with Silero voice activity detection; no automatic cloud recognition fallback.
 - **Explicit dictionary correction:** save a correct term and optional common misspellings. Local, single-pass replacement uses the longest matching rule; no inferred homophones or automatic learning. Review corrections and undo them.
 - **Text before cleanup finishes:** edit or copy immediately. Either action ends pending cleanup; a late response cannot replace that version. The recognition original remains available.
-- **Deliberate recovery:** complete cancelled audio can be recovered for 30 seconds, and failed-recognition audio for up to five minutes, in memory only. Retry requires a click; recovery disables remote cleanup.
+- **Deliberate recovery:** completed text survives; bounded unfinished PCM can be retried for 30 seconds after Cancel or five minutes after failure, in memory only. Recovery is explicit and disables remote cleanup.
 - **A small workspace:** results, dictionary, settings, and a floating recording strip. Light/dark themes, high contrast, reduced motion, and keyboard focus are implemented.
 - **Optional light cleanup:** punctuation, paragraphing, and disfluency removal through a text Chat Completions service. Failure or a 12-second deadline leaves the local corrected draft usable.
 
-The practical advantages are control over wording, offline dictionary rules, and recovery without immediately recording again. We make no universal accuracy, latency, memory, or competitive-performance claim. Translation, question answering, expansion, automatic pasting, and a large history dashboard are outside the scope.
+The practical advantages are control over wording, offline dictionary rules, and recovery without immediately recording again. We make no universal accuracy, latency, memory, or competitive-performance claim. Translation, question answering, expansion, and a large history dashboard are outside the scope.
 
 ## Workflow
 
@@ -58,7 +58,21 @@ Explicit start → selected microphone → local recognition
               → review / edit → explicit copy
 ```
 
-One segment is processed at a time. Recorded segments are limited to 60 seconds; recording stops at about 58 seconds. During cleanup, **复制文字** (Copy text) copies the visible version and ends cleanup. In the main window, `Ctrl+Enter` copies the whole result and `Ctrl+C` keeps normal selection behavior. The optional “copy latest result” global shortcut starts unassigned.
+One recording session and one local decoder run at a time. Stop drains accepted segments before optional cleanup/delivery. During cleanup, Copy text or editing ends cleanup. `Ctrl+Enter` copies the full result; `Ctrl+C` retains normal selection copying. The optional copy-result shortcut remains unassigned by default.
+
+## Long dictation, append and guarded paste
+
+Recording now feeds a bounded local pipeline instead of waiting for a whole container at Stop. PCM segments prefer pauses and are capped at 20 seconds; one SenseVoice worker decodes them in order, with live text checkpoints inside the app. There is no 60-second session ceiling. Resource guards stop a session at 30 minutes, 100,000 characters, or a growing recognition backlog; accepted audio is not silently trimmed.
+
+Use **Append more** to keep the earlier edited draft and add the next recording. The optional shortcut append preference does the same. Earlier text is not re-refined; automatic delivery uses only the new suffix, so an existing document is not pasted twice. Full-result Copy remains explicit. Live previews are read-only until the remaining segments finish; once cleanup starts, editing/copying can end it safely.
+
+**Guarded auto-paste is off by default.** Build the separate Windows helper, enable it in Settings, save, then start with the dictation shortcut while a supported editable field is focused. After explicit Stop, Dictpin attempts one paste. It rejects passwords, terminals, elevated or unsupported controls, and changed focus/caret/process/clipboard ownership. Focus may return from Dictpin only after an explicit Stop in its own UI; unrelated applications are never forcibly activated. Starting from the app UI has no captured external target and stays manual.
+
+Delivery replaces the clipboard with the new text; it does not read or back up earlier clipboard content. “Paste keys sent” is not proof that the destination consumed them. An uncertain outcome asks you to check the original field, and is never automatically retried. New recording, append and editing are blocked while a paste is pending. Resource/backpressure stops and recovery do not authorize a paste.
+
+Completed text is checkpointed. Only the bounded **unfinished** PCM collection is recoverable: 30 seconds after Cancel or up to five minutes after recognition failure, in memory, with explicit retry and no remote cleanup. This is not a complete long-recording archive. Expiry, clear and exit erase the temporary audio.
+
+Forced segment boundaries can affect words spoken without pauses. Real microphone quality, native input-field compatibility, focus, clipboard delivery and comparative performance still require manual acceptance; no superiority over Typeless is claimed. See [Changelog](CHANGELOG.md).
 
 ## Quick start: developer setup
 
@@ -68,6 +82,7 @@ From the repository root, after preparing the resources:
 
 ```powershell
 .\native\build-local03.cmd
+.\native\build-delivery.cmd
 npm run doctor
 npm run check
 node scripts/package-inputs.cjs

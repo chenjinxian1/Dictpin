@@ -97,6 +97,8 @@
   $('confirm-keep').addEventListener('click',cancel);$('confirm-apply').addEventListener('click',run);dialog.addEventListener('cancel',cancel,{once:true});$('confirm-keep').focus();
  }
  function renderResult(){
+  $('task-status').dataset.segmented=String(!!snapshot.state.pipeline);
+  $('undo-text').textContent=snapshot.recentResult?.source==='appended'?'撤销追加':'撤销还原';
   const delivery=snapshot.state.delivery;$('delivery-message').hidden=!delivery||delivery.status==='manual';$('delivery-message').textContent=delivery?.message||'';
   const task=model.sessionView(snapshot);$('task-status').hidden=!task.active;$('task-status-title').textContent=task.title;$('task-status-detail').textContent=task.detail;
   const steps=['recording','recognition','cleanup'],current=steps.indexOf(task.step);for(const step of $('task-status').querySelectorAll('[data-step]')){const index=steps.indexOf(step.dataset.step);step.hidden=true;step.dataset.complete=String(index<current);if(index===current)step.setAttribute('aria-current','step');else step.removeAttribute('aria-current');}

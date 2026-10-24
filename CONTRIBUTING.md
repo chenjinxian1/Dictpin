@@ -1,11 +1,12 @@
 # Contributing to Dictpin
 
-Keep Dictpin a small Windows dictation tool: explicit recording, local recognition, optional light cleanup, personal dictionary rules, editable results and explicit copying. Preserve original text, task/version checks, recovery and undo. Avoid new dependencies and unrelated features.
+Keep Dictpin a small Windows dictation tool: explicit recording, local recognition, optional light cleanup, personal dictionary rules, editable results, explicit copying and opt-in guarded paste. Preserve original text, task/version checks, recovery and undo. Native delivery must fail closed, have explicit consent and never automatically retry an uncertain paste. Live segments stay inside the app until explicit Stop. Append preserves earlier manual text and sends only the new suffix. Avoid new dependencies and unrelated features.
 
 Read [Installation](docs/INSTALL.md), [API configuration](docs/API_CONFIGURATION.md) and [Privacy](docs/PRIVACY.md). Prepare the external resources, build the native worker, then check the source:
 
 ```powershell
 .\native\build-local03.cmd
+.\native\build-delivery.cmd
 npm run doctor
 npm run check
 ```

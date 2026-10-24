@@ -8,6 +8,6 @@ Preserve recognition originals, task/version ownership, recording isolation, rec
 
 This repository contains the application source and essential setup/docs only. Keep automated tests, benchmarks, old interfaces, screenshot-generation fixtures and internal review reports in the separate local maintenance workspace. Do not reintroduce them into the public source tree.
 
-Run npm run check for syntax, module/resource completeness and documentation. Run npm run doctor after preparing external resources. Build only native/build-local03.cmd locally; generated binaries, models and runtimes remain ignored. UI changes require visual review with fictional data; separate synthetic evidence from hardware/OS/service acceptance.
+Run npm run check for syntax, module/resource completeness and documentation. Run npm run doctor after preparing external resources. Build native/build-local03.cmd and, for guarded paste, native/build-delivery.cmd locally; generated binaries, models and runtimes remain ignored. UI changes require visual review with fictional data; separate synthetic evidence from hardware/OS/service acceptance.
 
 Keep work/, .local/, profiles, recordings, models, credentials, private paths and raw logs out of Git. Preserve MIT and separately applicable third-party notices. Six README languages do not imply six UI or recognition languages.

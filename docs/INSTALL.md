@@ -14,9 +14,10 @@
 git clone https://github.com/chenjinxian1/Dictpin.git
 cd Dictpin
 .\native\build-local03.cmd
+.\native\build-delivery.cmd
 ```
 
-The command builds only `native/local-asr-worker-local03.exe` in this checkout. It does not replace another application's worker, shared DLLs, or models. Preserve external artifacts and their notices; the source license does not relicense them.
+The first command builds `native/local-asr-worker-local03.exe`; the second builds the separate `native/dictpin-delivery.exe` for optional guarded paste. Both outputs stay in this checkout and are ignored by Git. The delivery helper uses the Windows .NET Framework UI Automation/Windows Forms assemblies supplied with the framework, not a downloaded dependency. It does not replace another application's worker, shared DLLs, or models. Preserve external artifacts and their notices; the source license does not relicense them.
 
 ## Required directory layout
 
@@ -60,9 +61,9 @@ node scripts/package-inputs.cjs
 npm run check:docs
 ```
 
-Doctor requires the external runtime/model layout and checks existence/version, not DLL completeness, model hashes or recognition quality. Compile the worker before launching. No microphone or model is started by these checks.
+The guarded delivery helper is optional for recognition and copying. Missing it disables native delivery without preventing manual use. `doctor` reports that optional component separately. Doctor requires the external runtime/model layout and checks existence/version, not DLL completeness, model hashes or recognition quality. Compile the worker before launching. No microphone or model is started by these checks.
 
-The portable source check does not require the original developer's private history, archive or launcher. Static package-input inspection checks that the locally built candidate and required production sources are present; it still reports **`distributionReady:false`**. A passing source check is not an accepted installer.
+The portable source check does not require the original developer's private history, archive or launcher. Static package-input inspection checks that both locally built helpers and required production sources are present; it still reports **`distributionReady:false`**. A passing source check is not an accepted installer.
 
 ## Start and use deliberately
 
@@ -72,9 +73,17 @@ npm run dev
 
 The launcher uses an isolated development profile under `work/dev/profile/`; it does not start recording by itself. Existing development settings are retained. First-run defaults leave cleanup and global shortcuts off. Test fixtures, legacy entry points, benchmark tools and internal review reports are excluded from this repository.
 
-In **设置** (Settings), choose the microphone actually used by Windows Recorder and click **保存更改** (Save changes). Without an API, keep **轻整理** off. Click **开始听写** to record and **结束听写** to stop, then inspect, edit or explicitly copy. A segment is limited to 60 seconds, with automatic stop around 58 seconds.
+In **设置** (Settings), choose the microphone actually used by Windows Recorder and click **保存更改** (Save changes). Without an API, keep **轻整理** off. Click **开始听写** to record and **结束听写** to stop, then inspect, edit or explicitly copy. Recording now previews ordered local recognition segments while you speak. Segments prefer pauses and are capped at 20 seconds; a session is guarded at 30 minutes/100,000 characters, with early stop if recognition falls behind. Completed text is preserved and accepted unfinished PCM is retained for explicit recovery.
 
 Settings save while idle and apply to the next task without restarting. A running task keeps its captured device/dictionary/service configuration. Complete cancelled audio can be recovered for 30 seconds, failed-recognition audio for up to five minutes, in memory only. Recovery requires a click and disables optional remote cleanup.
+
+## Guarded paste and append
+
+Build the delivery helper with the command above. In Settings, explicitly enable **安全自动粘贴** (Guarded auto-paste) and save. Existing profiles stay off unless newly opted in. Focus a supported editable field, then use the dictation shortcut. After explicit Stop, Dictpin attempts a single paste. App-UI starts stay manual. Passwords, terminals, elevated/unsupported controls and changed focus/caret/process/clipboard state block delivery. Returning from Dictpin is allowed only after an explicit Stop in its own UI, without forcing unrelated apps. The clipboard is replaced, not read or backed up.
+
+Use **继续追加** (Append more) for another recording without overwriting the earlier draft; the shortcut append preference is under Other options. Full Copy includes the combined result, while guarded delivery sends only newly added text. Existing text is not re-refined. During recording/decoding the preview is read-only; edit/copy is available once remaining segments finish. Appended results currently do not expose the whole-result cleanup retry action, preserving the earlier draft.
+
+An uncertain paste result means check the original input first; never assume nothing was inserted. There is no automatic retry. Resource/backpressure stops and recovered audio do not auto-paste. These are development capabilities, not completed physical-input acceptance. See [Privacy](PRIVACY.md) and [Changelog](../CHANGELOG.md).
 
 ## Optional English presentation
 

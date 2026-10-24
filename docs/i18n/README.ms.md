@@ -44,11 +44,11 @@ Alamat dan model Qwen ialah contoh konfigurasi, manakala kunci API kosong. Tiada
 - **Pengecaman setempat:** SenseVoice pada CPU dengan pengesanan aktiviti suara Silero; tiada pertukaran automatik kepada pengecaman awan.
 - **Pembetulan kamus yang jelas:** simpan istilah yang betul dan, jika perlu, ejaan salah yang kerap berlaku. Penggantian setempat dilakukan sekali sahaja dengan mengutamakan padanan peraturan terpanjang; tiada tekaan homofon atau pembelajaran automatik. Anda boleh menyemak pembetulan dan membuat asal.
 - **Teks tersedia sebelum kemasan selesai:** terus sunting atau salin. Kedua-dua tindakan menamatkan kemasan yang sedang berjalan; respons lewat tidak boleh menggantikan versi itu. Transkrip asal kekal tersedia.
-- **Pemulihan atas pilihan pengguna:** rakaman lengkap yang dibatalkan boleh dipulihkan selama 30 saat, manakala rakaman yang gagal dikenal pasti boleh disimpan sehingga lima minit, dalam memori sahaja. Cubaan semula memerlukan klik; pemulihan menyahaktifkan kemasan jauh.
+- **Pemulihan yang jelas:** teks siap dikekalkan; PCM belum diproses yang terhad disimpan dalam memori selama 30 saat selepas Batal atau sehingga lima minit selepas kegagalan. Cuba semula memerlukan tindakan dan tidak menggunakan kemasan jauh.
 - **Ruang kerja kecil:** halaman hasil, kamus, tetapan dan bar rakaman terapung. Tema cerah/gelap, kontras tinggi, pengurangan gerakan dan fokus papan kekunci telah dilaksanakan.
 - **Kemasan ringan pilihan:** tanda baca, pembahagian perenggan dan pembuangan ketidaklancaran pertuturan melalui perkhidmatan teks Chat Completions. Jika gagal atau mencapai had 12 saat, draf yang dibetulkan secara setempat masih boleh digunakan.
 
-Kelebihan praktikalnya ialah kawalan terhadap perkataan, peraturan kamus luar talian dan pemulihan tanpa perlu terus merakam semula. Kami tidak membuat dakwaan menyeluruh tentang ketepatan, kependaman, penggunaan memori atau prestasi berbanding pesaing. Terjemahan, soal jawab, pengembangan teks, penampalan automatik dan papan pemuka sejarah yang besar berada di luar skop.
+Kelebihan praktikalnya ialah kawalan terhadap perkataan, peraturan kamus luar talian dan pemulihan tanpa perlu terus merakam semula. Kami tidak membuat dakwaan menyeluruh tentang ketepatan, kependaman, penggunaan memori atau prestasi berbanding pesaing. Terjemahan, soal jawab, pengembangan teks, papan pemuka sejarah yang besar berada di luar skop.
 
 ## Aliran kerja
 
@@ -58,7 +58,21 @@ Mula sendiri → mikrofon dipilih → pengecaman setempat
              → semak / sunting → salin sendiri
 ```
 
-Hanya satu segmen diproses pada satu-satu masa. Setiap segmen rakaman dihadkan kepada 60 saat; rakaman berhenti pada kira-kira 58 saat. Semasa kemasan, **复制文字** (Salin teks) menyalin versi yang sedang dipaparkan dan menamatkan kemasan. Dalam tetingkap utama, `Ctrl+Enter` menyalin keseluruhan hasil manakala `Ctrl+C` mengekalkan fungsi biasa untuk teks yang dipilih. Pintasan global pilihan “salin hasil terkini” tidak ditetapkan pada permulaan.
+Hanya satu sesi rakaman dan satu penyahkod setempat berjalan. Henti menyelesaikan segmen yang diterima sebelum kemasan dan penghantaran pilihan. Sunting atau salin semasa kemasan menamatkannya. `Ctrl+Enter` menyalin seluruh hasil; `Ctrl+C` kekal menyalin pilihan biasa. Pintasan salin pilihan tidak ditetapkan secara lalai.
+
+## Imlak panjang, sambung teks dan tampalan terlindung
+
+Rakaman kini dihantar ke saluran setempat yang terhad kapasiti semasa anda bercakap. Segmen mengutamakan jeda dan dihadkan kepada 20 saat; satu pekerja SenseVoice memprosesnya mengikut turutan, dengan pratonton dan simpanan teks semasa rakaman. Had sesi 60 saat telah dibuang. Perlindungan menghentikan sesi pada 30 minit, 100,000 aksara atau apabila barisan pengecaman bertambah; audio yang diterima tidak dipotong secara senyap.
+
+**Append more** mengekalkan draf terdahulu termasuk suntingan manual dan menyambung rakaman berikutnya. Pilihan sambung melalui pintasan juga tersedia. Teks lama tidak dikemas semula; penghantaran automatik hanya menghantar bahagian baharu supaya dokumen tidak ditampal dua kali. Salin masih merangkumi keseluruhan hasil. Pratonton adalah baca sahaja sehingga pengecaman selesai; menyunting atau menyalin semasa kemasan akan menamatkannya.
+
+**Tampalan terlindung dimatikan secara lalai.** Bina pembantu Windows berasingan, hidupkan pilihan dalam tetapan dan simpan, kemudian mulakan melalui pintasan dari medan boleh sunting yang disokong. Selepas Henti yang jelas, satu tampalan dicuba. Kata laluan, terminal, aplikasi berkeistimewaan tinggi, kawalan yang tidak dapat disahkan serta perubahan fokus, kursor, proses atau papan klip akan menyekatnya. Fokus hanya boleh dipulihkan selepas Henti yang jelas dalam Dictpin; aplikasi lain tidak diaktifkan secara paksa. Rakaman yang bermula dari aplikasi kekal menggunakan salinan manual.
+
+Penghantaran menggantikan papan klip dengan teks baharu tanpa membaca atau menyandarkan kandungan lama. Kekunci dihantar tidak membuktikan penerimaan oleh aplikasi sasaran. Jika hasil tidak pasti, semak medan asal; tiada cubaan semula automatik. Mula, sambung dan sunting disekat semasa penghantaran. Hentian perlindungan dan pemulihan tidak membenarkan tampalan automatik.
+
+Teks yang siap disimpan. Hanya koleksi PCM **belum diproses** yang terhad boleh dipulihkan dalam memori: 30 saat selepas Batal atau sehingga lima minit selepas kegagalan. Cuba semula secara jelas, tanpa kemasan jauh. Ini bukan arkib keseluruhan rakaman panjang. Luput, kosongkan dan keluar membuang audio sementara.
+
+Pemisahan paksa boleh menjejaskan perkataan yang disebut tanpa jeda. Mikrofon sebenar, kawalan input, fokus, papan klip dan perbandingan prestasi masih memerlukan penerimaan berasingan. Tiada dakwaan mengatasi Typeless. Lihat [log perubahan](../../CHANGELOG.md).
 
 ## Mula pantas: persediaan pembangunan
 
@@ -68,6 +82,7 @@ Selepas sumber disediakan, jalankan dari akar repositori:
 
 ```powershell
 .\native\build-local03.cmd
+.\native\build-delivery.cmd
 npm run doctor
 npm run check
 node scripts/package-inputs.cjs

@@ -15,6 +15,8 @@ Non-sensitive defects can be reported in [GitHub Issues](https://github.com/chen
 - API keys can use OS-backed encryption; this does not protect against another process acting as the same OS user.
 - Cancelled/failed audio is temporary process memory, not crash-proof storage.
 - URL validation and environment isolation are guardrails, not a security audit.
+- Opt-in native delivery can replace the clipboard and send Ctrl+V after explicit Stop. It does not read the earlier clipboard. Target/identity/caret/focus checks fail closed, but a key batch is not atomic with target ownership or proof of application consumption. Ambiguous delivery is never automatically retried.
+- Native target metadata is temporary; do not log tokens, control details or user text. Keep delivery pending while its safety fences are active, and preserve uncertainty if cancellation cannot retract an already dispatched operation.
 
 Read [Privacy](docs/PRIVACY.md), [API configuration](docs/API_CONFIGURATION.md).
 

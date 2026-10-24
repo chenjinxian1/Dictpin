@@ -78,4 +78,5 @@ textarea{font:15px/1.8 var(--ef-font-text);color:var(--ef-ink);border:1px solid 
 
 .result-content{resize:none}.result-content:focus-visible{padding-inline:0;outline:1px solid var(--ef-rule);outline-offset:4px}
 .result-actions{flex-wrap:wrap;justify-content:flex-end}.delivery-message{padding:6px 0;margin:0 0 8px;line-height:1.6;border-bottom:1px solid var(--ef-rule)}
+.task-status[data-segmented=true]{flex-wrap:wrap}.task-status[data-segmented=true]>p{display:block;margin:0;font-size:12px}
 @media(max-width:390px){.result-actions{gap:5px}.result-actions button{font-size:11px;padding-inline:8px;min-width:58px}}
