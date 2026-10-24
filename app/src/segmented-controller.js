@@ -72,6 +72,13 @@ class Controller extends ProductController{
  drainStream(s){
   if(this.finishing.has(s))return;
   if(!s.original.trim()){s.pipeline.restoreLastSilent();this.streamFail(s,'未检测到可识别的语音，已完成文字仍保留。');return;}
+  // Reconcile once from immutable raw text, so an explicit alias crossing a segment
+  // boundary works without recursively replacing an already corrected preview.
+  const correction=correctText(s.original,s.config.dictionary);
+  if(correction.changes.length+(s.appendBase?.corrections?.length||0)<=1000&&correction.text.length+(s.appendBase?.text?.length||0)+(s.appendBase?.text?1:0)<=100000){
+   if(correction.text!==s.text)s.revision++;
+   s.corrected=s.text=correction.text;s.corrections=correction.changes;s.source=correction.changes.length?'dictionary':'original';
+  }else s.storageWarnings.push('跨段词典纠正达到资源上限，已保留逐段纠正稿和完整原文。');
   this.finishing.add(s);this.clearTimers();s.durationMs=s.pipeline.totalSamples/16;
   void super.finishText(s).catch(error=>{if(this.currentSession(s))this.streamFail(s,error?.message||'文字收尾失败。');}).finally(()=>{s.pipeline.dispose();if(!this.active())this.publish({pipeline:null});});
  }
