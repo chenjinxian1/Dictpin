@@ -1,0 +1,99 @@
+{
+  "name": "local-dictation",
+  "version": "0.2.1-dev.23",
+  "description": "Compact Windows local dictation, optional light text editing and personal dictionary",
+  "productName": "Local Dictation",
+  "author": "chenjinxian1",
+  "license": "MIT",
+  "private": true,
+  "main": "src/dictation-entry.cjs",
+  "scripts": {
+    "start": "node ../scripts/dev.cjs",
+    "test": "node scripts/run-tests.cjs",
+    "check": "node ../scripts/verify.cjs",
+    "preview": "node ../scripts/preview.cjs"
+  },
+  "devDependencies": {
+    "electron": "44.8.0",
+    "electron-builder": "26.15.3",
+    "jsdom": "30.1.3",
+    "playwright": "1.64.1"
+  },
+  "build": {
+    "appId": "org.independent.localdictation",
+    "asar": true,
+    "files": [
+      "renderer/dictation-i18n.js",
+      "renderer/dictation-app.js",
+      "renderer/dictation-capture.js",
+      "renderer/dictation-ui-state.js",
+      "renderer/dictation-motion.js",
+      "renderer/dictation.css",
+      "renderer/endfield-tokens.css",
+      "renderer/dictation.html",
+      "renderer/local-audio.js",
+      "renderer/provider-endpoint.js",
+      "renderer/token-usage.js",
+      "renderer/voice-bar.css",
+      "renderer/voice-bar.html",
+      "renderer/voice-bar.js",
+      "src/api.js",
+      "src/asr-protocol.js",
+      "src/controller.js",
+      "src/delivery-planner.js",
+      "src/dictation-actions.js",
+      "src/dictation-controller.js",
+      "src/dictation-edit.js",
+      "src/dictation-entry.cjs",
+      "src/dictation-ipc.js",
+      "src/dictation-main.js",
+      "src/dictation-overlay-lifecycle.js",
+      "src/dictation-preload.js",
+      "src/dictation-store.js",
+      "src/dictionary.js",
+      "src/local-asr.js",
+      "src/local-dictionary.js",
+      "src/provider-checks.js",
+      "src/refinement-policy.js",
+      "src/settings.js",
+      "src/shortcut-manager.js",
+      "src/source-citations.js",
+      "src/store.js",
+      "src/usage-ledger.js",
+      "assets/**/*",
+      "package.json"
+    ],
+    "extraResources": [],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "signAndEditExecutable": false,
+      "artifactName": "Local-Dictation-${version}-Windows-x64-Setup.${ext}",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico"
+    },
+    "electronLanguages": [
+      "en-US",
+      "zh-CN"
+    ],
+    "portable": {
+      "artifactName": "Local-Dictation-${version}-Windows-x64-Portable.${ext}",
+      "requestExecutionLevel": "user"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chenjinxian1/Dictpin.git"
+  }
+}

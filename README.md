@@ -1,0 +1,123 @@
+# Dictpin
+
+**Compact desktop dictation. Speak, keep control of your words, and move on.**
+
+**English** · [简体中文](docs/i18n/README.zh-CN.md) · [Français](docs/i18n/README.fr.md) · [日本語](docs/i18n/README.ja.md) · [한국어](docs/i18n/README.ko.md) · [Bahasa Melayu](docs/i18n/README.ms.md)
+
+![Dictpin concept artwork: sound becoming clear text](docs/branding/hero.png)
+
+**AI-generated concept artwork — not a software screenshot or evidence of implemented features.**
+
+Dictpin is a Windows desktop voice-to-text development candidate built with Electron, local SenseVoice recognition, explicit personal dictionary rules, and optional text cleanup through a compatible service. For short messages, notes, names, and technical terms: start, speak, review, copy.
+
+> **Source-code development candidate.** Source: [chenjinxian1/Dictpin](https://github.com/chenjinxian1/Dictpin). The project code and original project assets are MIT-licensed by chenjinxian1; third-party components keep their own terms. There is no verified installer or release download. Dictpin follows preliminary [name screening](docs/branding/NAME-CHECK.md), not trademark clearance. Package IDs and data paths retain their existing names. This project is independent of Typeless and has no official affiliation.
+
+## See the application
+
+### Main interface · English presentation
+
+![Dictpin main interface in English with a demo result](docs/images/results.png)
+
+Actual production Electron renderer in optional English presentation mode, with English demo text and simulated system adapters. The seeded transcript is corrected by the real local dictionary rules; no microphone or acoustic recognition was used.
+
+### API configuration · English presentation
+
+![Dictpin API configuration in English with an empty key](docs/images/settings.png)
+
+Example Qwen address and model, with the API key empty. No connection test, paid request, connected badge or latency claim. See [capture details](docs/SCREENSHOTS.md).
+
+The [English generation prompt](docs/branding/hero-prompt.en.txt) and [brand guidance](docs/branding/README.md) document the concept artwork above. The Electron captures in this section show the actual application with synthetic data.
+
+## What works today
+
+- **Local recognition:** CPU SenseVoice with Silero voice activity detection; no automatic cloud recognition fallback.
+- **Explicit dictionary correction:** save a correct term and optional common misspellings. Local, single-pass replacement uses the longest matching rule; no inferred homophones or automatic learning. Review corrections and undo them.
+- **Text before cleanup finishes:** edit or copy immediately. Either action ends pending cleanup; a late response cannot replace that version. The recognition original remains available.
+- **Deliberate recovery:** complete cancelled audio can be recovered for 30 seconds, and failed-recognition audio for up to five minutes, in memory only. Retry requires a click; recovery disables remote cleanup.
+- **A small workspace:** results, dictionary, settings, and a floating recording strip. Light/dark themes, high contrast, reduced motion, and keyboard focus are implemented.
+- **Optional light cleanup:** punctuation, paragraphing, and disfluency removal through a text Chat Completions service. Failure or a 12-second deadline leaves the local corrected draft usable.
+
+The practical advantages are control over wording, offline dictionary rules, and recovery without immediately recording again. We make no universal accuracy, latency, memory, or competitive-performance claim. Translation, question answering, expansion, automatic pasting, and a large history dashboard are outside the scope.
+
+## Workflow
+
+```text
+Explicit start → selected microphone → local recognition
+              → explicit dictionary rules → optional text cleanup
+              → review / edit → explicit copy
+```
+
+One segment is processed at a time. Recorded segments are limited to 60 seconds; recording stops at about 58 seconds. During cleanup, **复制文字** (Copy text) copies the visible version and ends cleanup. In the main window, `Ctrl+Enter` copies the whole result and `Ctrl+C` keeps normal selection behavior. The optional “copy latest result” global shortcut starts unassigned.
+
+## Quick start: developer setup
+
+**Current target: Windows x64.** Install Node.js **24 or later**. Prepare the full external Electron **44.8.0** distribution, sherpa-onnx **1.13.8** shared runtime, SenseVoice int8 model and tokens, Silero VAD model, and separate Local03 native worker. These resources are not bundled. Follow the exact layout and official sources in [Installation](docs/INSTALL.md).
+
+From the repository root, after preparing the resources:
+
+```powershell
+.\native\build-local03.cmd
+npm run doctor
+npm test
+npm run check
+node scripts/package-inputs.cjs
+npm run dev
+```
+
+Root scripts use Node built-ins; there is no root dependency installation step. `doctor` checks the existing layout, not a fresh installation or recognition quality. `dev` deliberately opens a development profile without starting recording. Do not launch through historical bootstrap or resume scripts.
+
+For **local use without an API**, keep **轻整理** (light cleanup) off. Open **设置** (Settings), select the microphone actually used by Windows Recorder, click **保存更改** (Save changes), then explicitly start dictation. Unsaved device selections are not active. Stop, inspect, and copy. Configure a shortcut only if wanted.
+
+`npm run preview` serves a safe loopback-only documentation and screenshot preview, not the live app. `npm run check` runs portable source, ignore-boundary and document checks without the original private workspace. `npm run test:ui` runs the current Local03 matrix after external Electron and the native candidate are prepared. See [validation and build status](docs/INSTALL.md#validation-and-build-status). No installer build command is represented as working.
+
+## Optional API setup
+
+In **设置 → 模型连接** (Settings → Model connection), enter the API address, exact text model ID, and key. Choose whether to save the key using system secure storage. Save while idle, then enable light cleanup. No restart is needed. There is no supported API environment-variable or `.env` configuration.
+
+Only **text Chat Completions** is supported here, not ASR, TTS, Responses, or native DashScope audio endpoints. Qwen is optional: use the matching region/workspace address, key, and an available text model such as `qwen-plus`. Copy the compatible address from your provider console; one example is not universal. A compatible local text server can be configured but is not included.
+
+See [API configuration](docs/API_CONFIGURATION.md) for exact fields, official key links, examples, and troubleshooting. **Connection tests and deliberate cleanup retries can cost money.**
+
+## Privacy and local storage
+
+- Local recognition and dictionary correction need no API. The current product saves no new recording files. Audio recovery is temporary memory; expiry, clear, and exit discard it. Crashes cannot promise recovery.
+- **The latest result is saved locally as plaintext**, including original and edited text, even with multi-item history off. There is no transcript auto-expiry or retention switch. Development data is under ignored `work/dev/profile/`; never commit it.
+- Enabling cleanup sends the corrected transcript and a bounded list of saved correct dictionary terms to the configured service. Raw audio and misspelling aliases are not included. Provider retention and billing apply.
+- New keys are session-only unless encrypted persistence is selected. Saved keys use Electron's OS-backed storage, with no plaintext fallback if unavailable. This does not protect against malware acting as your OS user.
+- Usage records contain request/model/timing/token metadata, not text bodies or keys. Missing usage or pricing means unknown cost, not zero.
+
+Read [Privacy](docs/PRIVACY.md) before using private material. Local recognition does not mean that optional cleanup uploads nothing or that text is never written to disk.
+
+## Languages, limits, and verification
+
+The UI defaults to **Simplified Chinese**, with an optional **English presentation mode** used in these examples. Six documentation languages do not imply six UI or recognition languages. Upstream SenseVoice lists Mandarin, Cantonese, English, Japanese, and Korean. Earlier fixed-file evaluation covered Mandarin and English; French and Malay recognition are not claimed.
+
+To open the optional English UI, run `npm run dev -- --ui-language=en`; omit the flag for the default Chinese UI. This changes presentation only, not transcript or dictionary data.
+
+Fresh checks are recorded in [Release verification](docs/release/VERIFICATION.md); earlier Local03 results are historical. Synthetic pages and generated audio do not certify hardware. Global shortcuts, clipboard delivery, device hot-plugging, focus, multiple displays, Windows DPI, real service quality, and clean-machine installation still require separate acceptance.
+
+Earlier benchmarks apply to their machine and corpus, not universal speed or accuracy. Packaging inspection explicitly reports **`distributionReady:false`**.
+
+## Troubleshooting
+
+| Problem | What to try |
+| --- | --- |
+| Missing runtime/model | Run `npm run doctor`; check complete external layout, versions, and notices. |
+| No level movement or no speech | Select the actual working microphone by name, save, check Windows permission/mute, then record deliberately. The system default can be a different input. |
+| No API configured | Switch cleanup off; local recognition and dictionary rules still work. |
+| 401/403 or 404 | Check key/region/permission, model ID, and Chat Completions address. Never paste a key into an issue. |
+| Rate limit or timeout | Keep the preserved text. Retry deliberately; the earlier request may still be billable. |
+| Save failed | Keep the draft, copy important text, and check disk space/write permission before retrying. |
+| TLS/network failure | Check official host, OS clock, trust chain, and firewall. Never disable certificate verification. |
+
+## Roadmap and contributions
+
+Next: clean-machine setup and packaging, broader device acceptance, transcript retention/deletion controls, and measured recognition improvements. These are plans, not existing features. The application will remain a compact dictation tool.
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for safe local checks and [SECURITY.md](SECURITY.md) for disclosure limitations. [CHANGELOG.md](CHANGELOG.md) records the unreleased state. About text, suggested topics, and an unnumbered release draft are in the [publication checklist](docs/release/PUBLISHING.md).
+
+## License and acknowledgements
+
+The original project code, documentation and original project assets are available under the [MIT License](LICENSE), copyright 2026 chenjinxian1. The [license scope](docs/release/LICENSE-AUDIT.md) distinguishes project material from third-party fonts, generated declarations, runtimes and model weights.
+
+Third-party components retain their own terms: Electron/Chromium, sherpa-onnx/ONNX Runtime, SenseVoice weights, Silero VAD, and Saira. Model terms are separate from any application-code license. Read [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Thanks to these maintainers and FLEURS contributors. The restrained industrial direction draws inspiration from [endfield-ui-skill](https://github.com/hhikr/endfield-ui-skill); no game characters, logos, or artwork are used as brand assets.

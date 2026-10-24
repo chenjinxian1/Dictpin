@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self';script-src 'self';style-src 'self';connect-src 'none';object-src 'none';base-uri 'none'">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>听写条</title>
+  <link rel="stylesheet" href="endfield-tokens.css">
+  <link rel="stylesheet" href="voice-bar.css">
+  <script src="dictation-i18n.js" defer></script><script src="dictation-ui-state.js" defer></script><script src="dictation-motion.js" defer></script><script src="voice-bar.js" defer></script>
+</head>
+<body>
+  <main class="voice-stage">
+    <div id="voice-pill" class="voice-pill" data-phase="starting" aria-label="准备录音">
+      <div class="bar-leading"><button id="bar-cancel" class="cancel" type="button" aria-label="取消本次听写">取消</button><button id="bar-dismiss" class="dismiss" type="button" aria-label="收起听写条" hidden>×</button></div>
+      <div class="voice-center"><span id="bar-symbol" class="bar-symbol" aria-hidden="true"></span><div id="voice-wave" class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span id="bar-status" role="status">准备中</span></div>
+      <div class="bar-trailing"><button id="bar-stop" class="stop" type="button" aria-label="结束录音并处理" hidden><span aria-hidden="true">■</span>结束</button><div id="bar-ready-actions" class="ready-actions" hidden><button id="bar-view" class="view" type="button">查看</button><button id="bar-copy" class="copy" type="button">复制</button></div></div>
+    </div>
+    <p id="bar-feedback" class="bar-feedback" role="alert" hidden></p>
+  </main>
+</body>
+</html>

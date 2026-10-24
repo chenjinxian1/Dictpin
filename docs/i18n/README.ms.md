@@ -1,0 +1,123 @@
+# Dictpin
+
+**Alat imlak desktop yang ringkas. Bercakap, kekalkan kawalan terhadap teks anda, kemudian teruskan kerja.**
+
+[English](../../README.md) · [简体中文](README.zh-CN.md) · [Français](README.fr.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · **Bahasa Melayu**
+
+![Ilustrasi konsep Dictpin: suara menjadi teks yang jelas](../branding/hero.png)
+
+**Ilustrasi konsep yang dijana AI, bukan tangkapan skrin perisian atau bukti fungsi yang telah dilaksanakan.**
+
+Dictpin ialah calon pembangunan aplikasi suara kepada teks untuk desktop Windows, dibina menggunakan Electron, pengecaman SenseVoice setempat, peraturan kamus peribadi yang ditetapkan secara jelas, serta kemasan teks pilihan melalui perkhidmatan yang serasi. Untuk mesej pendek, nota, nama dan istilah teknikal: mula, bercakap, semak, salin.
+
+> **Calon pembangunan yang diedarkan sebagai kod sumber.** Repositori: [chenjinxian1/Dictpin](https://github.com/chenjinxian1/Dictpin). Kod dan aset asal projek dilesenkan di bawah MIT atas nama chenjinxian1; komponen pihak ketiga mengekalkan syarat masing-masing. Belum ada pemasang atau muat turun keluaran yang disahkan. Nama Dictpin telah melalui [saringan nama](../branding/NAME-CHECK.md) awal, bukan jaminan ketersediaan cap dagangan. Pengenal pakej dan laluan data kekal dengan nama sedia ada. Projek ini bebas daripada Typeless dan tiada hubungan rasmi dengannya.
+
+## Lihat aplikasi
+
+### Antara muka utama · paparan bahasa Inggeris
+
+![Antara muka utama Dictpin dalam bahasa Inggeris dengan hasil demo](../images/results.png)
+
+Rendiran sebenar UI Electron produksi dalam mod paparan bahasa Inggeris pilihan, menggunakan teks demo bahasa Inggeris dan penyesuai sistem simulasi. Teks yang disediakan diproses oleh peraturan kamus setempat sebenar; tiada mikrofon atau pengecaman akustik digunakan.
+
+### Konfigurasi API · paparan bahasa Inggeris
+
+![Konfigurasi API Dictpin dalam bahasa Inggeris dengan kunci kosong](../images/settings.png)
+
+Alamat dan model Qwen ialah contoh konfigurasi, manakala kunci API kosong. Tiada ujian sambungan, permintaan berbayar, status tersambung rekaan atau dakwaan kependaman. Lihat [butiran tangkapan](../SCREENSHOTS.md).
+
+[Prom penjanaan imej bahasa Inggeris](../branding/hero-prompt.en.txt) dan [panduan jenama](../branding/README.md) menerangkan ilustrasi konsep di atas. Tangkapan Electron dalam bahagian ini menunjukkan aplikasi sebenar dengan data ujian rekaan.
+
+## Fungsi yang sudah dilaksanakan
+
+- **Pengecaman setempat:** SenseVoice pada CPU dengan pengesanan aktiviti suara Silero; tiada pertukaran automatik kepada pengecaman awan.
+- **Pembetulan kamus yang jelas:** simpan istilah yang betul dan, jika perlu, ejaan salah yang kerap berlaku. Penggantian setempat dilakukan sekali sahaja dengan mengutamakan padanan peraturan terpanjang; tiada tekaan homofon atau pembelajaran automatik. Anda boleh menyemak pembetulan dan membuat asal.
+- **Teks tersedia sebelum kemasan selesai:** terus sunting atau salin. Kedua-dua tindakan menamatkan kemasan yang sedang berjalan; respons lewat tidak boleh menggantikan versi itu. Transkrip asal kekal tersedia.
+- **Pemulihan atas pilihan pengguna:** rakaman lengkap yang dibatalkan boleh dipulihkan selama 30 saat, manakala rakaman yang gagal dikenal pasti boleh disimpan sehingga lima minit, dalam memori sahaja. Cubaan semula memerlukan klik; pemulihan menyahaktifkan kemasan jauh.
+- **Ruang kerja kecil:** halaman hasil, kamus, tetapan dan bar rakaman terapung. Tema cerah/gelap, kontras tinggi, pengurangan gerakan dan fokus papan kekunci telah dilaksanakan.
+- **Kemasan ringan pilihan:** tanda baca, pembahagian perenggan dan pembuangan ketidaklancaran pertuturan melalui perkhidmatan teks Chat Completions. Jika gagal atau mencapai had 12 saat, draf yang dibetulkan secara setempat masih boleh digunakan.
+
+Kelebihan praktikalnya ialah kawalan terhadap perkataan, peraturan kamus luar talian dan pemulihan tanpa perlu terus merakam semula. Kami tidak membuat dakwaan menyeluruh tentang ketepatan, kependaman, penggunaan memori atau prestasi berbanding pesaing. Terjemahan, soal jawab, pengembangan teks, penampalan automatik dan papan pemuka sejarah yang besar berada di luar skop.
+
+## Aliran kerja
+
+```text
+Mula sendiri → mikrofon dipilih → pengecaman setempat
+             → peraturan kamus jelas → kemasan teks pilihan
+             → semak / sunting → salin sendiri
+```
+
+Hanya satu segmen diproses pada satu-satu masa. Setiap segmen rakaman dihadkan kepada 60 saat; rakaman berhenti pada kira-kira 58 saat. Semasa kemasan, **复制文字** (Salin teks) menyalin versi yang sedang dipaparkan dan menamatkan kemasan. Dalam tetingkap utama, `Ctrl+Enter` menyalin keseluruhan hasil manakala `Ctrl+C` mengekalkan fungsi biasa untuk teks yang dipilih. Pintasan global pilihan “salin hasil terkini” tidak ditetapkan pada permulaan.
+
+## Mula pantas: persediaan pembangunan
+
+**Sasaran semasa: Windows x64.** Pasang Node.js **24 atau lebih baharu**. Sediakan pengedaran penuh Electron **44.8.0** luaran, masa jalan dikongsi sherpa-onnx **1.13.8**, model SenseVoice int8 dan token, model Silero VAD, serta worker natif Local03 yang berasingan. Sumber ini tidak disertakan. Ikuti susun atur tepat dan sumber rasmi dalam [Pemasangan](../INSTALL.md).
+
+Selepas sumber disediakan, jalankan dari akar repositori:
+
+```powershell
+.\native\build-local03.cmd
+npm run doctor
+npm test
+npm run check
+node scripts/package-inputs.cjs
+npm run dev
+```
+
+Skrip di akar menggunakan modul terbina dalam Node; tiada langkah pemasangan kebergantungan di akar repositori. `doctor` memeriksa susun atur sedia ada, bukan pemasangan baharu atau mutu pengecaman. `dev` membuka profil pembangunan tanpa memulakan rakaman. Jangan lancarkan aplikasi melalui skrip bootstrap atau resume lama.
+
+Untuk **penggunaan setempat tanpa API**, biarkan **轻整理** (kemasan ringan) dimatikan. Buka **设置** (Tetapan), pilih mikrofon yang benar-benar digunakan oleh Windows Recorder, klik **保存更改** (Simpan perubahan), kemudian mulakan imlak sendiri. Pilihan peranti yang belum disimpan belum berkuat kuasa. Hentikan, semak dan salin. Tetapkan pintasan hanya jika diperlukan.
+
+`npm run preview` hanya memaparkan pratonton dokumen awam dan tangkapan skrin melalui alamat gelung balik, bukan menjalankan aplikasi. `npm run check` menyemak sumber, sempadan pengecualian dan dokumen tanpa ruang kerja peribadi asal. Selepas Electron luaran dan program natif yang dibina disediakan, `npm run test:ui` menjalankan matriks Local03 semasa. Lihat [status pengesahan dan binaan](../INSTALL.md#validation-and-build-status). Tiada arahan pembinaan pemasang yang dinyatakan sebagai sudah disahkan.
+
+## Persediaan API pilihan
+
+Dalam **设置 → 模型连接** (Tetapan → Sambungan model), masukkan alamat API, ID model teks yang tepat dan kunci. Pilih sama ada mahu menyimpan kunci menggunakan storan selamat sistem. Simpan ketika tiada tugas berjalan, kemudian aktifkan kemasan ringan. Aplikasi tidak perlu dimulakan semula. Tetapan API melalui pemboleh ubah persekitaran atau `.env` tidak disokong.
+
+Hanya **Chat Completions untuk teks** disokong di sini, bukan ASR, TTS, Responses atau titik akhir audio natif DashScope. Qwen adalah pilihan: gunakan alamat rantau/ruang kerja, kunci dan model teks yang tersedia seperti `qwen-plus`, dengan padanan yang betul. Salin alamat serasi daripada konsol penyedia anda; satu contoh tidak sesuai untuk semua keadaan. Pelayan teks setempat yang serasi boleh dikonfigurasikan tetapi tidak disertakan.
+
+Lihat [Konfigurasi API](../API_CONFIGURATION.md) untuk medan tepat, pautan rasmi kunci, contoh dan penyelesaian masalah. **Ujian sambungan dan cubaan semula kemasan yang anda mulakan boleh dikenakan bayaran.**
+
+## Privasi dan storan setempat
+
+- Pengecaman setempat dan pembetulan kamus tidak memerlukan API. Produk semasa tidak menyimpan fail rakaman baharu. Audio pemulihan disimpan sementara dalam memori; luput tempoh, tindakan padam dan keluar aplikasi akan membuangnya. Pemulihan selepas aplikasi ranap tidak boleh dijamin.
+- **Hasil terkini disimpan secara setempat sebagai teks biasa**, termasuk teks asal dan teks yang disunting, walaupun sejarah berbilang item dimatikan. Tiada luput automatik transkrip atau suis pengekalan. Data pembangunan berada di bawah `work/dev/profile/` yang diabaikan oleh Git; jangan sekali-kali memasukkannya dalam komit.
+- Mengaktifkan kemasan menghantar transkrip yang dibetulkan serta senarai terhad istilah kamus yang betul kepada perkhidmatan yang dikonfigurasikan. Audio mentah dan alias ejaan salah tidak disertakan. Dasar pengekalan data dan pengebilan penyedia terpakai.
+- Kunci baharu hanya digunakan untuk sesi semasa melainkan penyimpanan disulitkan dipilih. Kunci yang disimpan menggunakan storan berasaskan sistem operasi melalui Electron; tiada simpanan teks biasa sebagai gantian jika storan selamat tidak tersedia. Ini tidak melindungi daripada perisian hasad yang bertindak sebagai pengguna sistem operasi anda.
+- Rekod penggunaan mengandungi metadata permintaan, model, masa dan token, bukan isi teks atau kunci. Maklumat penggunaan atau harga yang tiada bermaksud kos tidak diketahui, bukannya sifar.
+
+Baca [Privasi](../PRIVACY.md) sebelum menggunakan bahan peribadi. Pengecaman setempat tidak bermaksud kemasan pilihan tidak memuat naik apa-apa, atau teks tidak pernah ditulis ke cakera.
+
+## Bahasa, had dan pengesahan
+
+UI menggunakan **bahasa Cina Ringkas** secara lalai, dengan **mod paparan bahasa Inggeris** pilihan yang digunakan dalam contoh ini. Dokumentasi enam bahasa tidak bermaksud UI atau pengecaman menyokong keenam-enam bahasa tersebut. SenseVoice asal menyenaraikan Mandarin, Kantonis, bahasa Inggeris, bahasa Jepun dan bahasa Korea. Penilaian fail tetap terdahulu meliputi Mandarin dan bahasa Inggeris; tiada dakwaan sokongan pengecaman bahasa Perancis atau bahasa Melayu.
+
+Untuk membuka UI bahasa Inggeris, jalankan `npm run dev -- --ui-language=en`; tanpa pilihan ini, UI lalai bahasa Cina dikekalkan. Pilihan ini hanya menukar paparan, bukan teks transkripsi atau kandungan kamus.
+
+Semakan baharu direkodkan dalam [Pengesahan keluaran](../release/VERIFICATION.md); hasil Local03 terdahulu ialah rekod sejarah. Halaman simulasi dan audio janaan tidak mengesahkan perkakasan. Pintasan global, penghantaran papan klip, sambung/cabut peranti, fokus, berbilang paparan, DPI Windows, mutu perkhidmatan sebenar dan pemasangan pada mesin bersih masih memerlukan pengesahan berasingan.
+
+Penanda aras terdahulu hanya terpakai pada mesin dan korpus berkenaan, bukan kelajuan atau ketepatan sejagat. Pemeriksaan pembungkusan secara jelas melaporkan **`distributionReady:false`**.
+
+## Penyelesaian masalah
+
+| Masalah | Langkah yang boleh dicuba |
+| --- | --- |
+| Masa jalan/model tiada | Jalankan `npm run doctor`; semak susun atur luaran yang lengkap, versi dan notis. |
+| Penunjuk aras tidak bergerak atau tiada pertuturan | Pilih mikrofon yang benar-benar berfungsi mengikut nama, simpan, semak kebenaran/senyap dalam Windows, kemudian rakam sendiri. Peranti lalai sistem mungkin input yang berbeza. |
+| API belum dikonfigurasikan | Matikan kemasan; pengecaman setempat dan peraturan kamus masih berfungsi. |
+| 401/403 atau 404 | Semak kunci/rantau/kebenaran, ID model dan alamat Chat Completions. Jangan tampal kunci dalam isu. |
+| Had kadar atau tamat masa | Kekalkan teks yang telah dipelihara. Cuba semula dengan sengaja; permintaan terdahulu mungkin masih dikenakan bayaran. |
+| Gagal menyimpan | Kekalkan draf, salin teks penting dan semak ruang cakera/kebenaran menulis sebelum mencuba semula. |
+| Kegagalan TLS/rangkaian | Semak hos rasmi, jam sistem operasi, rantaian kepercayaan sijil dan tembok api. Jangan nyahaktifkan pengesahan sijil. |
+
+## Pelan seterusnya dan sumbangan
+
+Seterusnya: persediaan pada mesin bersih dan pembungkusan, pengesahan peranti yang lebih luas, kawalan pengekalan/pemadaman transkrip serta penambahbaikan pengecaman yang diukur. Ini ialah rancangan, bukan ciri sedia ada. Aplikasi akan kekal sebagai alat imlak yang ringkas.
+
+Baca [CONTRIBUTING.md](../../CONTRIBUTING.md) untuk semakan setempat yang selamat dan [SECURITY.md](../../SECURITY.md) untuk had saluran pelaporan keselamatan. [CHANGELOG.md](../../CHANGELOG.md) merekodkan status yang belum dikeluarkan. Teks About, cadangan Topics dan draf keluaran tanpa nombor versi tersedia dalam [senarai semak penerbitan](../release/PUBLISHING.md).
+
+## Lesen dan penghargaan
+
+Kod asal, dokumentasi dan aset asal projek ditawarkan di bawah [Lesen MIT](../../LICENSE), hak cipta 2026 chenjinxian1. [Skop lesen](../release/LICENSE-AUDIT.md) membezakan bahan projek daripada fon, pengisytiharan janaan, masa jalan dan pemberat model pihak ketiga.
+
+Komponen pihak ketiga mengekalkan syarat masing-masing: Electron/Chromium, sherpa-onnx/ONNX Runtime, pemberat SenseVoice, Silero VAD dan Saira. Syarat model berasingan daripada sebarang lesen kod aplikasi. Baca [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md). Terima kasih kepada penyelenggara komponen ini dan penyumbang FLEURS. Arah visual perindustrian yang terkawal diinspirasikan oleh [endfield-ui-skill](https://github.com/hhikr/endfield-ui-skill); tiada watak permainan, logo atau karya seni permainan digunakan sebagai aset jenama.

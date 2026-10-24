@@ -1,0 +1,15 @@
+* text=auto
+*.js text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.cmd text eol=crlf
+*.exe binary
+*.ttf binary
+*.png binary
+*.ico binary
+
+# Preserve the bundled font license exactly, including upstream whitespace.
+app/assets/fonts/Saira-OFL.txt -text -whitespace

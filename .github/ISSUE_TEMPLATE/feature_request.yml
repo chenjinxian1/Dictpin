@@ -1,0 +1,25 @@
+name: Focused improvement
+description: Suggest a compact dictation improvement
+title: "[Idea] "
+body:
+  - type: markdown
+    attributes:
+      value: "Keep scope to recording, local recognition, light cleanup, dictionary, review/copy, and recovery. No private text or credentials."
+  - type: textarea
+    id: need
+    attributes:
+      label: What user problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Proposed behavior
+      description: Explain a concrete before/after and how to check it.
+    validations:
+      required: true
+  - type: textarea
+    id: limits
+    attributes:
+      label: Alternatives and limits
+      description: Mention any added network call, cost, storage, dependency, or permission.

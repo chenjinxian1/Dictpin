@@ -1,0 +1,95 @@
+{
+  "capturedOn": "2026-10-24",
+  "kind": "Actual production English renderer/preload/IPC/Store. Seeded English demo transcript with real local dictionary correction; no acoustic recognition or paid service. Native adapters simulated.",
+  "uiLanguage": "en",
+  "defaultUiLanguage": "zh-CN",
+  "demoData": true,
+  "acousticRecognitionRun": false,
+  "paidServiceUsed": false,
+  "microphoneCommands": 0,
+  "networkRequests": 0,
+  "systemClipboardUsed": false,
+  "checks": 5,
+  "failed": 0,
+  "naturalExit": {
+    "exitCode": 0,
+    "signal": null,
+    "elapsedMs": 1545,
+    "observedExit": true
+  },
+  "sourceFiles": [
+    {
+      "file": "app/src/dictation-main.js",
+      "sha256": "9cf411ea3120a8502f5c573c5c777aa7b7ca3cb7543ce4d181e12a68bb5dfd06"
+    },
+    {
+      "file": "app/src/dictation-preload.js",
+      "sha256": "351df023d7fbe567fda01059af7bf00606e6e87bb492db18058ca31eece11640"
+    },
+    {
+      "file": "app/renderer/endfield-tokens.css",
+      "sha256": "b098865fbdea6222cb8f2cfd92e63e9104320120f02bb8d87fa3ca8c14ae93cc"
+    },
+    {
+      "file": "app/renderer/dictation.css",
+      "sha256": "26794a353342aa82b0088dd19860e4684f6c71a05588b12957832f4289a765b8"
+    },
+    {
+      "file": "app/renderer/dictation-i18n.js",
+      "sha256": "a973916211fa7233c4f5f79a382688dd18f177bab7440de7a4d6357a218a1301"
+    },
+    {
+      "file": "app/renderer/local-audio.js",
+      "sha256": "8c92a2447bb3865173187e4692dfa9cd98bd69f0d485884abe931b81ea3ed40b"
+    },
+    {
+      "file": "app/renderer/token-usage.js",
+      "sha256": "51d094eff883819733532b4c5aca986ed8d2220757d0c119b2937eda99163dca"
+    },
+    {
+      "file": "app/renderer/dictation-capture.js",
+      "sha256": "786059d8ec36cbc1d46a62e49666654937465ce9649b786f3313c54860510be2"
+    },
+    {
+      "file": "app/renderer/dictation-ui-state.js",
+      "sha256": "0cb8635909757e7ac0838cb9e9d9abce12a4b28294038ba3140d408a3358a3b1"
+    },
+    {
+      "file": "app/renderer/dictation-motion.js",
+      "sha256": "b36a7373682ee8e0cf927b9306bf2e96cf70ead50b8352e9767d7d2d6864c262"
+    },
+    {
+      "file": "app/renderer/dictation-app.js",
+      "sha256": "4590a0d09ecd5150548883cc5059c0b9c8c319c971447fb1f9a5aa4d73033ec5"
+    },
+    {
+      "file": "app/renderer/dictation.html",
+      "sha256": "48d90751143349517cb0d044fb2b97fdf057fb5b2513e7c25661b28eb333a28a"
+    }
+  ],
+  "images": [
+    {
+      "file": "results.png",
+      "width": 640,
+      "height": 480,
+      "bytes": 20288,
+      "sha256": "3565828c1203c1bc13832a52e07e545567bd39f1f7afd1326667c70eff96ad74",
+      "sourceFixture": "English documentation demo",
+      "privacyReviewed": true,
+      "role": "software-screenshot"
+    },
+    {
+      "file": "settings.png",
+      "width": 640,
+      "height": 480,
+      "bytes": 22642,
+      "sha256": "7b513af3398cfb5cc694eb9d823e4d9af313ebfd488009329f171572333c0b94",
+      "sourceFixture": "English documentation demo",
+      "privacyReviewed": true,
+      "role": "software-screenshot"
+    }
+  ],
+  "classification": "production-electron-renderer-capture",
+  "isSoftwareScreenshot": true,
+  "sourceHashEncoding": "utf-8-lf"
+}

@@ -1,0 +1,5 @@
+'use strict';
+const {spawn}=require('node:child_process');const path=require('node:path');const fs=require('node:fs');
+const root=path.resolve(__dirname,'../work/codec');fs.mkdirSync(root,{recursive:true});
+const child=spawn(path.resolve(__dirname,'../../runtime/electron.exe'),['--disable-audio-input','--disable-audio-output','--disable-extensions',path.join(__dirname,'codec-main.cjs')],{windowsHide:true,cwd:root,env:{SystemRoot:process.env.SystemRoot||'C:\\Windows',WINDIR:process.env.WINDIR||'C:\\Windows',TEMP:root,TMP:root,APPDATA:root,LOCALAPPDATA:root,USERPROFILE:root},stdio:['ignore','pipe','pipe']});
+let out='',err='';child.stdout.on('data',b=>{out+=b;if(out.length>8192)child.kill();});child.stderr.on('data',b=>{err+=b;if(err.length>8192)child.kill();});const timer=setTimeout(()=>child.kill(),30000);child.on('close',code=>{clearTimeout(timer);fs.writeFileSync(path.join(root,'launcher.json'),JSON.stringify({code,stdout:out,stderrBytes:Buffer.byteLength(err)}));console.log(out);console.log(JSON.stringify({code,stderrBytes:Buffer.byteLength(err)}));process.exitCode=code??1;});

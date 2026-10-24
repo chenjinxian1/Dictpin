@@ -1,0 +1,5 @@
+/* Only the standalone native-window host owns document/outer geometry. */
+:root{--outer-top:24px;--outer-bottom:64px}
+html{height:100%;overflow:hidden}
+body{box-sizing:border-box;margin:0;height:100vh;padding:var(--outer-top) 8px var(--outer-bottom);display:flex;justify-content:center;align-items:flex-start;background:transparent;overflow:hidden}
+@media(max-height:240px){:root{--outer-top:8px;--outer-bottom:8px}}

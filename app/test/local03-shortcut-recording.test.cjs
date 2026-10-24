@@ -1,0 +1,29 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {createShortcutManager}=require('../src/shortcut-manager'),product=require('../src/dictation-main'),{fixture}=require('./dictation-electron-fixture.cjs');
+function shortcuts(){const registered=new Map(),fired=[];const native={register(key,fn){registered.set(key,fn);return true;},unregister:key=>registered.delete(key),isRegistered:key=>registered.has(key)};const manager=createShortcutManager({globalShortcut:native,onTrigger:mode=>fired.push(mode)});return {registered,fired,native,manager};}
+test('Local03 recording a shortcut releases only owned voice keys and gates a stale native callback',()=>{
+ const f=shortcuts();f.registered.set('Alt+Control+X',()=>{});f.manager.apply({current:'Ctrl+Shift+Space',copy:'Ctrl+Shift+Enter'});const old=f.registered.get('Control+Shift+Space');f.manager.setRecording(true);assert.equal(f.registered.size,1);assert.equal(f.registered.has('Alt+Control+X'),true);old();assert.deepEqual(f.fired,[]);assert.equal(f.manager.snapshot().suspended,true);assert.equal(f.manager.snapshot().statuses.current.registered,false);
+ f.manager.setRecording(false);assert.equal(f.registered.size,3);f.registered.get('Control+Shift+Space')();assert.deepEqual(f.fired,['current']);f.manager.dispose();assert.equal(f.registered.size,1);
+});
+test('Local03 a saved key may change during key recording without registering behind the focused field',()=>{
+ const f=shortcuts();f.manager.apply({current:'Ctrl+Shift+Space'});f.manager.setRecording(true);f.manager.apply({current:'Ctrl+Shift+F8',copy:'Ctrl+Shift+Enter'});assert.equal(f.registered.size,0);f.manager.setRecording(false);assert.equal(f.registered.has('Control+Shift+F8'),true);assert.equal(f.registered.has('Control+Shift+Space'),false);f.manager.dispose();
+});
+test('Local03 a native pause failure cannot trigger recording and resume conflicts remain truthful',()=>{
+ const f=shortcuts();f.manager.apply({current:'Ctrl+Shift+Space'});const callback=f.registered.get('Control+Shift+Space'),unregister=f.native.unregister;f.native.unregister=()=>{};assert.throws(()=>f.manager.setRecording(true),/解除|暂停/);callback();assert.equal(f.fired.length,0);assert.equal(f.manager.snapshot().degraded,true);f.native.unregister=unregister;f.manager.setRecording(true);f.native.register=()=>false;assert.throws(()=>f.manager.setRecording(false),/恢复|占用/);assert.equal(f.manager.snapshot().statuses.current.registered,false);assert.equal(f.manager.snapshot().degraded,true);f.manager.dispose();
+});
+async function host(t){const f=fixture(),h=await product.start(f.electron,{StoreClass:f.FakeStore,LocalAsrClass:f.FakeLocal});t.after(()=>h.dispose());const event=window=>({sender:window.webContents,senderFrame:window.webContents.mainFrame});return {f,h,event};}
+test('Local03 only main can enter shortcut recording and window blur restores real registrations',async t=>{
+ const {f,h,event}=await host(t),rpc=input=>f.handlers.get('shortcut:recording')(event(h.mainWindow),input);const stale=[...f.registered.values()][0];await rpc({active:true});assert.equal(f.registered.size,0);stale();assert.equal(h.controller.state.phase,'idle');assert.equal(h.snapshot(false).shortcutStatus.suspended,true);h.mainWindow.emit('blur');assert.equal(f.registered.size,1);assert.equal(h.snapshot(false).shortcutStatus.suspended,false);await assert.rejects(rpc({active:'yes'}));
+ await h.controller.toggle();await new Promise(r=>setImmediate(r));const bar=f.windows.find(w=>w.options.frame===false);await assert.rejects(f.handlers.get('shortcut:recording')(event(bar),{active:true}));
+});
+test('Local03 hiding after a successful flush restores suspended keys without activating audio',async t=>{
+ const {f,h,event}=await host(t),rpc=(route,input)=>f.handlers.get(route)(event(h.mainWindow),input);await rpc('shortcut:recording',{active:true});let command;h.mainWindow.webContents.send=(channel,value)=>{if(channel==='command')command=value;};h.mainWindow.emit('close',{preventDefault(){}});await rpc('editor:flushed',{token:command.token,ok:true});await new Promise(r=>setImmediate(r));assert.equal(h.mainWindow.isVisible(),false);assert.equal(f.registered.size,1);assert.equal(h.controller.state.phase,'idle');
+});
+test('Local03 returning to a still-focused shortcut editor pauses keys again until explicit field blur',async t=>{
+ const {f,h,event}=await host(t),rpc=input=>f.handlers.get('shortcut:recording')(event(h.mainWindow),input);await rpc({active:true});h.mainWindow.emit('blur');assert.equal(f.registered.size,1);h.mainWindow.emit('focus');assert.equal(f.registered.size,0);assert.equal(h.snapshot(false).shortcutStatus.suspended,true);await rpc({active:false});h.mainWindow.emit('blur');h.mainWindow.emit('focus');assert.equal(f.registered.size,1);assert.equal(h.snapshot(false).shortcutStatus.suspended,false);
+});
+test('Local03 the bar can recover its exact complete local segment but cannot mutate unrelated state',async t=>{
+ const {f,h,event}=await host(t),c=h.controller,s=c.begin(c.prepare({}),'recording');c.stageRecovery(s,{bytes:new Uint8Array(1200),mimeType:'audio/webm',durationMs:100,localPcm:new Uint8Array(3200),sampleRate:16000,channels:1});c.offerRecovery(s.id);c.session=null;c.publish({phase:'error',sessionId:null,message:'合成识别失败'});await new Promise(r=>setImmediate(r));const bar=f.windows.find(w=>w.options.frame===false),e=event(bar),token=c.recoverySummary().token;c.localAsr.transcribe=async()=> '完整合成恢复文本。';
+ const snapshot=await f.handlers.get('recovery:retry')(e,{token});assert.equal(snapshot.result.hasText,true);assert.equal('text' in snapshot.result,false);assert.equal(h.snapshot(false).recentResult.text,'完整合成恢复文本。');assert.equal(snapshot.recovery,null);for(const route of ['recovery:discard','result:update','result:restore','settings:patch','shortcut:recording'])await assert.rejects(f.handlers.get(route)(e,{}));
+});

@@ -1,0 +1,36 @@
+'use strict';
+const {contextBridge,ipcRenderer}=require('electron');
+const uiLanguage=typeof process==='object'&&Array.isArray(process.argv)&&process.argv.includes('--dictpin-ui-language=en')?'en':'zh-CN';
+function subscribe(channel,callback){if(typeof callback!=='function')return()=>{};const handler=(_event,value)=>callback(value);ipcRenderer.on(channel,handler);return()=>ipcRenderer.removeListener(channel,handler);}
+contextBridge.exposeInMainWorld('dictation',Object.freeze({
+ uiLanguage,
+ getSnapshot:()=>ipcRenderer.invoke('snapshot'),
+ start:input=>input===undefined?ipcRenderer.invoke('capture:start'):ipcRenderer.invoke('capture:start',input),
+ toggle:()=>ipcRenderer.invoke('capture:toggle'),
+ stop:input=>ipcRenderer.invoke('capture:stop',input),
+ cancel:input=>ipcRenderer.invoke('capture:cancel',input),
+ recordingReady:input=>ipcRenderer.invoke('audio:ready',input),
+ submitAudio:input=>ipcRenderer.invoke('audio:submit',input),
+ submitCancelledAudio:input=>ipcRenderer.invoke('audio:cancelled',input),
+ reportRecordingError:input=>ipcRenderer.invoke('audio:error',input),
+ reportLevel:level=>ipcRenderer.send('audio:level',level),
+ copyResult:id=>ipcRenderer.invoke('result:copy',id),
+ updateResult:input=>ipcRenderer.invoke('result:update',input),
+ restoreResult:input=>ipcRenderer.invoke('result:restore',input),
+ retryCleanup:input=>ipcRenderer.invoke('result:retry-cleanup',input),
+ retryRecovery:input=>ipcRenderer.invoke('recovery:retry',input),
+ discardRecovery:input=>ipcRenderer.invoke('recovery:discard',input),
+ editorFlushed:input=>ipcRenderer.invoke('editor:flushed',input),
+ setShortcutRecording:input=>ipcRenderer.invoke('shortcut:recording',input),
+ showRecent:id=>ipcRenderer.invoke('result:view',id),
+ dismissBar:()=>ipcRenderer.invoke('bar:dismiss'),
+ saveSettings:input=>ipcRenderer.invoke('settings:patch',input),
+ checkTextService:()=>ipcRenderer.invoke('provider:check-text'),
+ cancelTextCheck:()=>ipcRenderer.invoke('provider:cancel-text'),
+ upsertWord:input=>ipcRenderer.invoke('word:upsert',input),
+ removeWord:id=>ipcRenderer.invoke('word:delete',id),
+ undoWord:token=>ipcRenderer.invoke('word:undo',token),
+ onState:callback=>subscribe('state',callback),
+ onCommand:callback=>subscribe('command',callback),
+ onLevel:callback=>subscribe('level',callback)
+}));

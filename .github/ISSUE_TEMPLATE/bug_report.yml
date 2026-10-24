@@ -1,0 +1,39 @@
+name: Bug report
+description: Report a reproducible, non-sensitive problem
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "Do not include keys, profiles, recordings, private transcripts, device IDs, or full local paths. Security issues: read SECURITY.md first; no confidential channel is configured yet."
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Expected behavior and actual behavior, using fictional text.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include whether cleanup was off or on, without credentials.
+    validations:
+      required: true
+  - type: input
+    id: revision
+    attributes:
+      label: Source revision
+      description: Commit identifier; do not invent a release number.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Windows, Node, and Electron versions
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Optional fictional screenshot or minimal error. No whole workspace/log/profile attachments.

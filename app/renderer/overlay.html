@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'">
+ <title>Local Dictation · 状态</title>
+ <link rel="stylesheet" href="overlay.css">
+ <script src="output-languages.js" defer></script>
+ <script src="overlay-presentation.js" defer></script>
+ <script src="overlay.js" defer></script>
+</head>
+<body>
+ <div id="overlay-host" class="overlay-container" data-aux-visible="false">
+  <div id="overlay-aux" class="overlay-aux">
+   <div id="overlay-language-menu" class="language-menu" role="menu" aria-label="翻译目标与首选语言" hidden>
+    <p>切换后记住首选语言，下次继续使用</p>
+    <div id="overlay-language-options"></div>
+   </div>
+   <div id="overlay-feedback" class="overlay-feedback" hidden>
+    <div id="overlay-hint" class="overlay-hint" role="status" aria-live="polite"></div>
+    <div id="overlay-errors" class="overlay-errors" hidden>
+     <button id="overlay-open" type="button">查看 / 处理</button>
+     <button id="overlay-dismiss" type="button">关闭</button>
+    </div>
+   </div>
+   <div id="overlay-toolbar" class="overlay-toolbar">
+    <button id="overlay-retain" class="overlay-retain" type="button" hidden>停止并保留，不上传</button>
+    <button id="overlay-mode" class="overlay-mode" type="button" aria-haspopup="menu" aria-expanded="false" hidden>翻译为中文</button>
+   </div>
+  </div>
+  <div class="overlay-pill" id="overlay-pill" data-phase="idle" data-presentation="idle" tabindex="-1" role="status" aria-live="polite">
+   <div class="overlay-accent" aria-hidden="true"></div>
+   <button id="overlay-cancel" class="overlay-action cancel" type="button" aria-label="取消本次处理" title="取消" hidden>
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 6 8 8M14 6l-8 8"/></svg>
+   </button>
+   <div id="overlay-body" class="overlay-body">
+    <div id="overlay-wave" class="overlay-wave" aria-hidden="true" hidden><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <span id="overlay-label" hidden>准备就绪</span>
+    <span id="overlay-time" hidden aria-hidden="true"></span>
+    <span id="overlay-countdown" hidden></span>
+   </div>
+   <button id="overlay-stop" class="overlay-action stop" type="button" aria-label="结束录音并处理" title="完成" hidden>
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 10 3 3 7-7"/></svg>
+   </button>
+  </div>
+ </div>
+</body>
+</html>

@@ -1,0 +1,123 @@
+# Dictpin
+
+**La dictée de bureau en petit format. Parlez, gardez la maîtrise de vos mots, puis passez à la suite.**
+
+[English](../../README.md) · [简体中文](README.zh-CN.md) · **Français** · [日本語](README.ja.md) · [한국어](README.ko.md) · [Bahasa Melayu](README.ms.md)
+
+![Illustration conceptuelle de Dictpin : du son à un texte clair](../branding/hero.png)
+
+**Illustration conceptuelle générée par IA : ce n’est ni une capture du logiciel ni une preuve de fonctions implémentées.**
+
+Dictpin est une version de développement d’une application Windows de transcription vocale, construite avec Electron, la reconnaissance locale SenseVoice, des règles explicites de dictionnaire personnel et un nettoyage facultatif du texte par un service compatible. Pour les messages courts, les notes, les noms et les termes techniques : démarrez, parlez, relisez, copiez.
+
+> **Version de développement distribuée sous forme de code source.** Dépôt : [chenjinxian1/Dictpin](https://github.com/chenjinxian1/Dictpin). Le code et les ressources originales du projet sont sous licence MIT, au nom de chenjinxian1 ; les composants tiers conservent leurs propres conditions. Aucun installateur ni téléchargement de version n’est validé. Le nom Dictpin a fait l’objet d’une [première recherche d’homonymes](../branding/NAME-CHECK.md), sans garantie de disponibilité juridique de la marque. Les identifiants du paquet et les chemins de données restent inchangés. Ce projet est indépendant de Typeless et n’a aucun lien officiel avec lui.
+
+## Découvrir l’application
+
+### Interface principale · affichage en anglais
+
+![Interface principale de Dictpin en anglais avec un résultat de démonstration](../images/results.png)
+
+Rendu réel de l’interface Electron de production, en mode d’affichage anglais facultatif, avec du texte de démonstration anglais et des adaptateurs système simulés. Le texte préchargé passe par les véritables règles du dictionnaire local ; aucun microphone ni aucune reconnaissance acoustique n’a été utilisé.
+
+### Configuration API · affichage en anglais
+
+![Configuration API de Dictpin en anglais avec une clé vide](../images/settings.png)
+
+Adresse et modèle Qwen donnés en exemple ; le champ de clé API est vide. Aucun test de connexion, appel facturé, état connecté fictif ou mesure de latence. Voir les [conditions de capture](../SCREENSHOTS.md).
+
+Le [prompt de génération en anglais](../branding/hero-prompt.en.txt) et les [consignes de marque](../branding/README.md) décrivent l’illustration conceptuelle ci-dessus. Les captures Electron de cette section montrent l’application réelle avec des données de test fictives.
+
+## Fonctions déjà disponibles
+
+- **Reconnaissance locale :** SenseVoice sur processeur, avec détection d’activité vocale Silero ; aucun basculement automatique vers une reconnaissance dans le cloud.
+- **Corrections explicites du dictionnaire :** enregistrez un terme correct et, si nécessaire, ses erreurs de transcription fréquentes. Les remplacements locaux s’effectuent en un seul passage, en privilégiant la règle correspondante la plus longue, sans déduction d’homophones ni apprentissage automatique. Vous pouvez examiner et annuler les corrections.
+- **Texte disponible avant la fin du nettoyage :** modifiez ou copiez immédiatement. Ces deux actions arrêtent le nettoyage en attente ; une réponse tardive ne peut plus remplacer cette version. Le texte original de la reconnaissance reste accessible.
+- **Récupération volontaire :** un enregistrement complet annulé peut être récupéré pendant 30 secondes ; après un échec de reconnaissance, il reste disponible jusqu’à cinq minutes, uniquement en mémoire. La nouvelle tentative exige un clic et la récupération désactive le nettoyage distant.
+- **Un espace de travail compact :** résultat, dictionnaire, paramètres et petite barre flottante d’enregistrement. Les thèmes clair et sombre, le contraste élevé, la réduction des animations et le focus clavier sont déjà implémentés.
+- **Nettoyage léger facultatif :** ponctuation, paragraphes et suppression des hésitations par un service texte Chat Completions. En cas d’échec ou au bout de 12 secondes, le brouillon corrigé localement reste utilisable.
+
+Les avantages concrets sont la maîtrise du texte, des règles de dictionnaire utilisables hors ligne et la possibilité de récupérer un enregistrement sans devoir recommencer immédiatement. Nous ne revendiquons aucune précision, latence, consommation mémoire ou supériorité concurrentielle universelle. La traduction, les questions-réponses, l’enrichissement du texte, le collage automatique et un grand tableau de bord d’historique ne font pas partie du projet.
+
+## Déroulement
+
+```text
+Démarrage explicite → microphone sélectionné → reconnaissance locale
+                    → règles explicites du dictionnaire → nettoyage facultatif
+                    → relecture / modification → copie explicite
+```
+
+Un seul segment est traité à la fois. Chaque enregistrement est limité à 60 secondes ; l’enregistrement s’arrête vers 58 secondes. Pendant le nettoyage, **复制文字** (Copier le texte) copie la version visible et arrête le nettoyage. Dans la fenêtre principale, `Ctrl+Enter` copie le résultat complet et `Ctrl+C` conserve son comportement habituel de copie de la sélection. Le raccourci global facultatif « copier le dernier résultat » n’est pas attribué par défaut.
+
+## Démarrage rapide : environnement de développement
+
+**Plateforme cible actuelle : Windows x64.** Installez Node.js **24 ou ultérieur**. Préparez la distribution externe complète d’Electron **44.8.0**, les bibliothèques partagées sherpa-onnx **1.13.8**, le modèle SenseVoice int8 et ses tokens, le modèle Silero VAD et le programme natif Local03 séparé. Ces ressources ne sont pas incluses. Respectez l’arborescence exacte et utilisez les sources officielles indiquées dans [Installation](../INSTALL.md).
+
+Depuis la racine du dépôt, une fois les ressources prêtes :
+
+```powershell
+.\native\build-local03.cmd
+npm run doctor
+npm test
+npm run check
+node scripts/package-inputs.cjs
+npm run dev
+```
+
+Les scripts à la racine utilisent les modules intégrés de Node ; aucune installation de dépendances n’est nécessaire à la racine. `doctor` contrôle l’arborescence existante, sans valider une nouvelle installation ni la qualité de reconnaissance. `dev` ouvre volontairement un profil de développement sans lancer d’enregistrement. N’utilisez pas les anciens scripts de démarrage ou de reprise de session.
+
+Pour une **utilisation locale sans API**, laissez **轻整理** (nettoyage léger) désactivé. Ouvrez **设置** (Paramètres), choisissez le microphone effectivement utilisé par l’Enregistreur Windows, cliquez sur **保存更改** (Enregistrer les modifications), puis démarrez explicitement la dictée. Un choix de microphone non enregistré n’est pas actif. Arrêtez, vérifiez et copiez le texte. Configurez un raccourci seulement si vous le souhaitez.
+
+`npm run preview` propose uniquement un aperçu local des documents et captures sur l’interface de boucle locale, pas l’application. `npm run check` contrôle le code source, les exclusions et les documents sans dépendre de l’espace de travail privé d’origine. Une fois Electron externe et le programme natif préparés, `npm run test:ui` exécute la matrice Local03 actuelle. Consultez [l’état des vérifications et de la construction](../INSTALL.md#validation-and-build-status). Aucune commande de création d’installateur n’est présentée comme validée.
+
+## Configuration facultative de l’API
+
+Dans **设置 → 模型连接** (Paramètres → Connexion du modèle), renseignez l’adresse de l’API, l’identifiant exact du modèle texte et la clé. Choisissez si la clé doit être conservée dans le stockage sécurisé du système. Enregistrez lorsque l’application est inactive, puis activez le nettoyage léger. Aucun redémarrage n’est nécessaire. La configuration de l’API par variables d’environnement ou fichier `.env` n’est pas prise en charge.
+
+Seul le protocole **Chat Completions pour le texte** est pris en charge ici, à l’exclusion d’ASR, TTS, Responses et des points d’accès audio natifs de DashScope. Qwen est facultatif : utilisez une adresse et une clé correspondant à la même région et au même espace de travail, ainsi qu’un modèle texte disponible, par exemple `qwen-plus`. Copiez l’adresse compatible depuis la console de votre fournisseur ; un exemple unique ne convient pas à toutes les situations. Un serveur texte local compatible peut être configuré, mais il n’est pas fourni.
+
+Consultez [Configuration de l’API](../API_CONFIGURATION.md) pour les champs exacts, les liens officiels d’obtention des clés, les exemples et le dépannage. **Les tests de connexion et les nouvelles tentatives de nettoyage peuvent être facturés.**
+
+## Confidentialité et stockage local
+
+- La reconnaissance locale et les corrections du dictionnaire ne nécessitent aucune API. Le produit actuel ne crée pas de nouveaux fichiers d’enregistrement. La récupération audio utilise une mémoire temporaire ; l’expiration, l’effacement et la fermeture de l’application la vident. La récupération après un plantage n’est pas garantie.
+- **Le dernier résultat est enregistré localement en texte clair**, avec le texte original et le texte modifié, même lorsque l’historique de plusieurs éléments est désactivé. Il n’existe ni expiration automatique des transcriptions ni option permettant de désactiver cette conservation. Les données de développement se trouvent dans `work/dev/profile/`, exclu de Git ; ne les ajoutez jamais à un commit.
+- L’activation du nettoyage envoie au service configuré la transcription corrigée et une liste de taille limitée de termes corrects enregistrés dans le dictionnaire. L’audio brut et les variantes erronées ne sont pas inclus. Les règles de conservation et de facturation du fournisseur s’appliquent.
+- Les nouvelles clés restent limitées à la session, sauf si leur conservation chiffrée est choisie. Les clés enregistrées utilisent le stockage Electron adossé au système d’exploitation ; aucun repli en texte clair n’est prévu si ce stockage est indisponible. Cette protection n’arrête pas un logiciel malveillant agissant sous votre compte système.
+- Les relevés d’utilisation contiennent des métadonnées de requête, modèle, durée et tokens, sans corps de texte ni clé. L’absence de données d’utilisation ou de tarification signifie que le coût est inconnu, pas qu’il est nul.
+
+Lisez [Confidentialité](../PRIVACY.md) avant d’utiliser du contenu privé. La reconnaissance locale ne signifie pas que le nettoyage facultatif n’envoie rien ou qu’aucun texte n’est jamais écrit sur disque.
+
+## Langues, limites et vérification
+
+L’interface utilise par défaut le **chinois simplifié** et propose un **affichage anglais facultatif**, utilisé dans ces exemples. La documentation en six langues ne signifie pas que l’interface ou la reconnaissance prend en charge ces six langues. Le projet SenseVoice d’origine indique le mandarin, le cantonais, l’anglais, le japonais et le coréen. Une évaluation antérieure sur fichiers fixes couvrait le mandarin et l’anglais ; nous ne revendiquons pas la reconnaissance du français ou du malais.
+
+Pour ouvrir l’interface anglaise, lancez `npm run dev -- --ui-language=en` ; sans ce paramètre, l’interface reste en chinois par défaut. Ce choix ne modifie que l’affichage, pas les transcriptions ni le dictionnaire.
+
+Les nouvelles vérifications sont consignées dans [Vérification avant publication](../release/VERIFICATION.md) ; les anciens résultats Local03 restent des résultats historiques. Les pages simulées et l’audio généré ne certifient pas le matériel. Les raccourcis globaux, la transmission au presse-papiers, le branchement à chaud des périphériques, le focus, les écrans multiples, le DPI Windows, la qualité des services réels et l’installation sur une machine vierge exigent encore des validations séparées.
+
+Les anciens tests de performance concernent leur machine et leur corpus, sans promettre une vitesse ou une précision universelles. L’inspection de préparation à la distribution indique explicitement **`distributionReady:false`**.
+
+## Dépannage
+
+| Problème | Vérifications à effectuer |
+| --- | --- |
+| Ressource d’exécution ou modèle manquant | Lancez `npm run doctor` ; vérifiez l’arborescence externe complète, les versions et les mentions de licence. |
+| Aucun mouvement du niveau ou aucune parole détectée | Choisissez par son nom le microphone qui fonctionne réellement, enregistrez, vérifiez les permissions Windows et le mode muet, puis lancez volontairement un enregistrement. L’entrée système par défaut peut être différente. |
+| Aucune API configurée | Désactivez le nettoyage ; la reconnaissance locale et les règles du dictionnaire restent utilisables. |
+| 401/403 ou 404 | Vérifiez la clé, la région, les droits, l’identifiant du modèle et l’adresse Chat Completions. Ne collez jamais de clé dans un ticket. |
+| Limitation de débit ou délai dépassé | Conservez le texte préservé. Relancez volontairement ; la requête précédente peut malgré tout être facturée. |
+| Échec d’enregistrement des modifications | Gardez le brouillon, copiez le texte important et vérifiez l’espace disque ainsi que les droits d’écriture avant de réessayer. |
+| Erreur TLS ou réseau | Vérifiez l’hôte officiel, l’horloge système, la chaîne de confiance et le pare-feu. Ne désactivez jamais la vérification des certificats. |
+
+## Feuille de route et contributions
+
+Prochaines étapes : configuration et distribution sur une machine vierge, validation d’un plus grand nombre de périphériques, commandes de conservation et de suppression des transcriptions, puis améliorations de reconnaissance étayées par des mesures. Il s’agit de projets, pas de fonctions déjà disponibles. L’application restera un outil de dictée compact.
+
+Lisez [CONTRIBUTING.md](../../CONTRIBUTING.md) pour les vérifications locales sûres et [SECURITY.md](../../SECURITY.md) pour les limites du canal de signalement. [CHANGELOG.md](../../CHANGELOG.md) décrit l’état non publié. La description About, les sujets suggérés et un brouillon de notes de version sans numéro figurent dans la [liste de préparation à la publication](../release/PUBLISHING.md).
+
+## Licence et remerciements
+
+Le code original, la documentation et les ressources originales du projet sont proposés sous la [licence MIT](../../LICENSE), copyright 2026 chenjinxian1. La [portée des licences](../release/LICENSE-AUDIT.md) distingue ces éléments des polices, déclarations générées, bibliothèques et modèles tiers.
+
+Les composants tiers conservent leurs propres conditions : Electron/Chromium, sherpa-onnx/ONNX Runtime, les poids SenseVoice, Silero VAD et Saira. Les conditions des modèles sont distinctes d’une éventuelle licence du code de l’application. Lisez [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md). Merci à leurs équipes de maintenance et aux contributeurs de FLEURS. L’orientation industrielle sobre s’inspire d’[endfield-ui-skill](https://github.com/hhikr/endfield-ui-skill) ; aucun personnage, logo ou visuel de jeu n’est utilisé comme élément de marque.

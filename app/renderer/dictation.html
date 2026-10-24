@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN" data-ef-accent="yellow" data-ef-paper="neutral" data-ef-cut="tight" data-ef-ground="plain" data-ef-density="compact" data-ef-motion="calm">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self';script-src 'self';style-src 'self';img-src 'self' data:;connect-src 'none';media-src 'self' blob:;object-src 'none';base-uri 'none';form-action 'none'">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>本地听写</title>
+  <link rel="stylesheet" href="endfield-tokens.css"><link rel="stylesheet" href="dictation.css">
+  <script src="dictation-i18n.js" defer></script><script src="local-audio.js" defer></script><script src="token-usage.js" defer></script><script src="dictation-capture.js" defer></script><script src="dictation-ui-state.js" defer></script><script src="dictation-motion.js" defer></script><script src="dictation-app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#content">跳到内容</a>
+  <header class="app-header">
+    <span class="app-name"><svg class="app-mark" viewBox="0 0 20 20" aria-hidden="true"><rect x="7" y="2" width="6" height="10" rx="3"/><path d="M4 9a6 6 0 0 0 12 0M10 15v3M7 18h6"/></svg><span>本地听写</span></span>
+    <nav class="tabs" aria-label="管理"><button type="button" data-page="recent" aria-current="page">结果</button><button type="button" data-page="dictionary">词典</button><button type="button" data-page="settings">设置</button></nav>
+    <div class="header-actions"><span id="session-status" class="sr-only" role="status">正在连接桌面程序</span><button id="capture-cancel" class="text-button" type="button" hidden>取消</button><button id="capture-toggle" class="primary capture-button" type="button" disabled><span class="record-dot" aria-hidden="true"><svg viewBox="0 0 20 20"><rect x="7" y="2" width="6" height="10" rx="3"/><path d="M4 9a6 6 0 0 0 12 0M10 15v3M7 18h6"/></svg></span><span id="capture-label">连接中</span></button></div>
+  </header>
+  <main id="content" tabindex="-1">
+    <div id="notice" class="notice" role="alert" hidden></div>
+    <section id="page-recent" aria-labelledby="recent-heading">
+      <div class="page-heading"><h1 id="recent-heading">最近结果</h1><button id="copy-result" class="primary copy-button" type="button" disabled><span>复制</span></button></div>
+      <div id="recent-scroll" class="page-body">
+        <div id="task-status" class="task-status" role="status" aria-atomic="true" hidden><strong id="task-status-title"></strong><p id="task-status-detail"></p><ol class="task-steps" aria-label="听写阶段" hidden><li data-step="recording">录音</li><li data-step="recognition">本机识别</li><li data-step="cleanup">轻整理</li></ol></div>
+        <div class="result-meta"><p id="recent-time" class="metadata"></p><p id="result-message" class="result-message" role="status"></p></div>
+        <div id="empty-result" class="empty"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 4h12l5 5v19H8zM19 4v6h6M12 16h9M12 21h6"/></svg><h2>把想说的，变成文字。</h2><p>在本机识别，完成后由你复制。</p><button id="empty-start" class="primary" type="button">开始听写</button></div>
+        <div id="shortcut-guide" class="shortcut-guide"><span id="shortcut-prefix">按</span><kbd id="effective-shortcut">快捷键未生效</kbd><span id="shortcut-suffix">开始说话，再按一次结束</span><button id="setup-shortcut" class="text-button" type="button" hidden>设置快捷键</button></div>
+        <textarea id="result-content" class="result-content" aria-label="最近听写结果，可直接修改" spellcheck="false" hidden></textarea><div id="edit-state" class="hint" role="status" hidden></div><div id="recovery-strip" class="recovery-strip" role="status" hidden><span id="recovery-message"></span><button id="retry-segment" class="primary" type="button">恢复本段识别</button><button id="clear-segment" class="text-button" type="button">清除</button></div>
+        <details id="result-details" hidden><summary>查看识别原文</summary><div class="details-body"><h3>识别原文</h3><pre id="original-text"></pre><div class="original-actions"><button id="copy-original" class="secondary" type="button">复制原文</button><button id="restore-original" class="text-button" type="button">还原原文</button><button id="undo-text" class="text-button" type="button" hidden>撤销还原</button></div></div></details><details id="correction-details" hidden><summary id="correction-summary">词典纠正</summary><div class="details-body"><ul id="correction-list"></ul><button id="undo-corrections" type="button" class="text-button">撤销词典纠正</button></div></details><button id="retry-cleanup" class="text-button" type="button" hidden>重试轻整理</button><details id="usage-details" hidden><summary>本次用量</summary><div class="details-body"><h3>本次模型用量</h3><div id="usage-detail" class="usage-detail"></div><p class="hint">未知用量与费用不按零计算。本地识别不产生模型 token。</p></div></details>
+      </div>
+    </section>
+    <section id="page-dictionary" hidden aria-labelledby="dictionary-heading">
+      <div class="page-heading"><h1 id="dictionary-heading">个人词典 <span class="count"><span id="word-count">0</span><span class="count-unit">词</span></span></h1><button id="new-word" class="secondary add-button" type="button"><span aria-hidden="true">+</span>添加词语</button></div>
+      <div class="search"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5"/><path d="m12.5 12.5 4 4"/></svg><label class="sr-only" for="word-search">搜索词语</label><input id="word-search" type="search" placeholder="搜索词语" autocomplete="off" aria-controls="word-list"><button id="clear-word-search" class="clear-search" type="button" aria-label="清除搜索" hidden>×</button></div>
+      <div id="word-undo" class="undo-strip" role="status" hidden><span id="word-undo-text"></span><button id="undo-word" type="button">撤销</button><button id="dismiss-undo" type="button" aria-label="收起撤销提示">×</button></div>
+      <div id="dictionary-scroll" class="page-body"><p class="dictionary-intro">保存正确写法，也可指定常见错写。在本机纠正，无需轻整理。</p><div id="word-list" class="word-list" role="list" aria-label="词语"></div><p id="empty-words" class="empty-copy">添加常用人名、产品名和术语。</p><details class="dictionary-help"><summary>词典如何生效？</summary><div class="details-body"><p>只有你明确填写的错写会自动纠正；不猜同音词，不改变本地识别模型。原文始终保留，纠正可撤销。</p></div></details></div>
+    </section>
+    <section id="page-settings" hidden aria-labelledby="settings-heading">
+      <div class="page-heading"><h1 id="settings-heading">设置</h1></div>
+      <form id="settings-form" class="page-body">
+        <details id="save-error-report" class="save-error-report" hidden><summary>保存失败 · 查看原因</summary><p id="save-error-detail"></p></details>
+        <div class="setting-field"><div class="field-label-row"><label for="microphone">麦克风</label></div><div><div class="inline"><select id="microphone" aria-describedby="device-message"><option value="">系统默认麦克风</option></select><button id="refresh-devices" class="secondary" type="button">刷新</button></div><p id="device-message" class="hint" role="status">开始听写时才启用。</p></div></div>
+        <div class="setting-field"><div class="field-label-row"><label for="shortcut">听写快捷键</label><span id="shortcut-message" class="hint" role="status"></span></div><div><div class="inline"><input id="shortcut" aria-label="点击后按下听写快捷键组合" type="text" autocomplete="off" spellcheck="false" placeholder="点击后按下组合键" aria-describedby="shortcut-message shortcut-help"><button id="retry-shortcut" class="secondary" type="button" hidden>重新启用</button></div><p id="shortcut-help" class="hint">点击输入框后按组合键，再按一次结束听写。</p></div></div>
+        <div class="toggle-row"><label for="light-edit">轻整理</label><div class="toggle-control"><p class="hint">补标点、断句和明显口吃，保留原意。<br>文字与词典会发送到模型服务。</p><label class="switch-hit" for="light-edit"><input id="light-edit" type="checkbox" role="switch"></label></div></div>
+        <details id="provider-details" class="provider-details"><summary><span>模型连接</span><span id="provider-summary" class="metadata"></span></summary><div id="provider-fields" class="details-body">
+          <div class="field"><label for="model-url">API 地址</label><div><input id="model-url" type="url" autocomplete="off" spellcheck="false" placeholder="https://example.com/v1" aria-describedby="model-url-error"><p id="model-url-error" class="field-error" hidden></p></div></div>
+          <div class="field"><label for="model-name">模型</label><input id="model-name" type="text" autocomplete="off" spellcheck="false" maxlength="160"></div>
+          <div class="field"><label for="model-key">API 密钥</label><div><input id="model-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="留空保留当前密钥"><label class="check-row"><input id="remember-key" type="checkbox">用系统安全存储保存</label><p id="key-message" class="hint"></p></div></div>
+          <div class="test-row"><button id="test-model" class="secondary" type="button">测试已保存连接</button><button id="cancel-test" type="button" class="text-button" hidden>取消测试</button><span class="hint">发送合成文本，可能计费。</span></div><p id="test-message" role="status" class="hint"></p>
+        </div></details>
+        <details class="privacy-details"><summary>其他选项</summary><div class="details-body"><label for="copy-shortcut">复制最近结果快捷键（可选）</label><div class="inline"><input id="copy-shortcut" type="text" autocomplete="off" placeholder="未设置" aria-label="点击后按下复制快捷键组合"><button id="clear-copy-shortcut" type="button" class="text-button">清除</button></div><p id="copy-shortcut-message" class="hint" role="status">只复制，不自动粘贴。</p></div></details><details class="privacy-details"><summary>隐私与数据</summary><div class="details-body"><p class="privacy-note">语音只在本机识别。最近一次结果保存在本机，不会自动粘贴到其他应用。取消的录音仅在内存保留30秒，识别失败保留5分钟；清除或退出即丢弃。开启轻整理时，文字会发送给已保存的模型服务；失败时保留当前文字。</p></div></details>
+      </form>
+      <div class="save-row"><span id="save-message" role="status" class="hint"></span><button id="reset-settings" class="text-button" type="button" aria-controls="draft-dialog" hidden>还原更改</button><button id="save-error-link" class="text-button" type="button" aria-controls="save-error-report" hidden>查看原因</button><button id="save-settings" class="primary" type="submit" form="settings-form" aria-keyshortcuts="Control+S" title="保存更改 (Ctrl+S)" disabled>保存更改</button></div>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status" hidden><span class="toast-mark" aria-hidden="true"></span><span id="toast-text"></span><button id="dismiss-toast" type="button" aria-label="关闭提示">×</button></div>
+  <dialog id="word-dialog" aria-labelledby="word-dialog-title"><form id="word-form"><h2 id="word-dialog-title">添加词语</h2><label class="sr-only" for="word-input">词语</label><input id="word-input" aria-describedby="word-error" type="text" autocomplete="off" maxlength="200" placeholder="正确词语，例如：陈晋贤" required><label class="alias-label" for="word-aliases">常见错写（可选，每行一个）</label><textarea id="word-aliases" rows="3" maxlength="2500" placeholder="陈静贤"></textarea><p class="hint">只纠正你明确指定的错写，可撤销。不要添加单字、数字或否定表达规则。</p><p id="word-error" class="error" role="alert"></p><div class="dialog-actions"><button id="cancel-word" type="button" class="secondary">取消</button><button id="save-word" type="submit" class="primary">保存</button></div></form></dialog>
+  <dialog id="draft-dialog" aria-labelledby="draft-title"><h2 id="draft-title">有未保存的设置</h2><p>继续编辑，或丢弃本次更改。</p><div class="dialog-actions"><button id="keep-editing" type="button" class="primary">继续编辑</button><button id="discard-draft" type="button" class="secondary">丢弃更改</button></div></dialog>
+<dialog id="confirm-dialog" aria-labelledby="confirm-title"><h2 id="confirm-title"></h2><p id="confirm-description"></p><div class="dialog-actions"><button id="confirm-keep" type="button" class="primary">返回</button><button id="confirm-apply" type="button" class="secondary">确认</button></div></dialog></body>
+</html>
