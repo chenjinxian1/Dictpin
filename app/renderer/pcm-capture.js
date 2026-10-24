@@ -7,7 +7,7 @@
   async function fail(c,message){if(c.failed||c.discarded)return;c.failed=true;close(c);try{await bridge.reportRecordingError({sessionId:c.id,message:String(message).slice(0,250)});}catch{}c.segmenter?.finish();if(active===c)active=null;c.resolve({accepted:false});}
   function requestStop(c){
    if(c.stopping||c.discarded)return;c.stopping=true;
-   if(c.node){c.node.port.postMessage({type:'flush'});c.stopTimer=setTimeout(()=>void fail(c,'录音尾段未确认，已完成文字仍保留。'),3000);}
+   if(c.node){c.stopTimer=setTimeout(()=>void fail(c,'录音尾段未确认，已完成文字仍保留。'),3000);c.node.port.postMessage({type:'flush'});}
    else{close(c);void Promise.resolve(bridge.sealSegments({sessionId:c.id,sequence:0,startSample:0})).finally(()=>{if(active===c)active=null;c.resolve({accepted:true});});}
   }
   async function start(command){

@@ -50,7 +50,7 @@ class SegmentPipeline{
  restoreLastSilent(){if(!this.lastSilent)return false;this.pending.unshift(this.lastSilent);this.lastSilent=null;this.paused=true;this.notify();return true;}
  async resume(sessionId){
   if(this.disposed||!this.paused||typeof sessionId!=='string'||!sessionId)return{accepted:false};
-  await this.running;if(this.disposed)return{accepted:false};this.sessionId=sessionId;this.paused=false;this.generation++;this.finalized=false;this.notify();this.pump();return this.finished;
+  const generation=this.generation;await this.running;if(this.disposed||generation!==this.generation||!this.paused)return{accepted:false};this.sessionId=sessionId;this.paused=false;this.generation++;this.finalized=false;this.notify();this.pump();return this.finished;
  }
  dispose(){if(this.disposed)return;this.disposed=true;this.generation++;this.abort?.abort();for(const item of this.pending)item.pcm.fill(0);this.pending=[];this.lastSilent?.pcm.fill(0);this.lastSilent=null;this.resolveFinished({disposed:true});}
 }

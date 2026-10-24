@@ -47,7 +47,7 @@ class Controller extends ProductController{
   r.segmentCount=s.pipeline.completed;r.segmented=true;r.sampleCount=s.pipeline.totalSamples;r.deliveryText=r.text;r.deliveryAllowed=s.userStopped===true;
   if(status==='completed'&&!r.deliveryAllowed)r.message=[r.message,'录音已因资源保护停止，请检查文字后手动复制。'].filter(Boolean).join(' ');
   if(s.appendBase){
-   const base=s.appendBase,rawPrefix=base.original?base.original+'\n':'',textPrefix=base.text?base.text+'\n':'';
+   const base=s.appendBase,rawPrefix=(base.original||'')+(base.original&&r.original?'\n':''),textPrefix=(base.text||'')+(base.text&&r.text?'\n':'');
    if(textPrefix.length+r.text.length>100000){r.text=s.corrected;r.refined=false;r.deliveryText=s.corrected;r.message='轻整理超出追加后的文字上限，已保留本地纠正稿。';}
    r.original=rawPrefix+r.original;r.corrected=textPrefix+r.corrected;r.text=textPrefix+r.text;r.previousText=base.text;r.source='appended';r.durationMs=Math.min(86400000,(base.durationMs||0)+r.durationMs);
    r.corrections=[...(base.corrections||[]),...r.corrections.map(c=>({...c,start:c.start+rawPrefix.length,end:c.end+rawPrefix.length}))];r.deliveryText=r.deliveryText?textPrefix?'\n'+r.deliveryText:r.deliveryText:'';
@@ -83,7 +83,7 @@ class Controller extends ProductController{
  }
  keepStreamRecovery(s,reason){
   const expiresAt=this.now()+(reason==='cancelled'?30000:300000);
-  this.streamRecovery={token:randomUUID(),queue:s.pipeline,session:s,expiresAt,reason};s.keys={};clearTimeout(this.streamRecoveryTimer);
+  this.streamRecovery={token:randomUUID(),queue:s.pipeline,session:s,expiresAt,expiresMono:this.monotonicNow()+(reason==='cancelled'?30000:300000),reason};s.keys={};clearTimeout(this.streamRecoveryTimer);
   this.streamRecoveryTimer=setTimeout(()=>{this.recoverySummary();this.publish({});},Math.max(1,expiresAt-this.now()));this.streamRecoveryTimer.unref?.();
  }
  streamFail(s,message){
@@ -99,7 +99,7 @@ class Controller extends ProductController{
   this.publish({phase:'cancelled',sessionId:null,result:r,pipeline:null,message:r.message,level:0});this.emit('command',{type:'cancel-retain',sessionId:s.id});return true;
  }
  recoverySummary(){
-  const slot=this.streamRecovery;if(slot&&this.now()>=slot.expiresAt)this.clearRecovery();
+  const slot=this.streamRecovery;if(slot&&(this.now()>=slot.expiresAt||this.monotonicNow()>=slot.expiresMono))this.clearRecovery();
   const current=this.streamRecovery;if(!current)return super.recoverySummary();
   const summary=current.queue.summary();if(!summary.pending)return null;
   return{token:current.token,sessionId:current.session.id,mode:'dictate',durationMs:current.queue.pending.reduce((n,p)=>n+p.frames/16,0),audioBytes:current.queue.pending.reduce((n,p)=>n+p.pcm.byteLength,0),expiresAt:current.expiresAt,reason:current.reason,segments:summary.pending,tailPending:!!this.tailPending};
@@ -110,11 +110,15 @@ class Controller extends ProductController{
  async retryRecovery(token){
   const summary=this.recoverySummary();if(!this.streamRecovery)return super.retryRecovery(token);
   if(this.active()||!summary||token!==summary.token||this.tailPending)return{accepted:false};
-  const slot=this.streamRecovery;await slot.queue.pause();if(this.streamRecovery!==slot||this.now()>=slot.expiresAt)return{accepted:false};
+  const slot=this.streamRecovery;await slot.queue.pause();if(this.streamRecovery!==slot||!this.recoverySummary())return{accepted:false};
   this.streamRecovery=null;clearTimeout(this.streamRecoveryTimer);this.recoveryAttempt=true;let s;
   try{const prepared=this.prepare({});this.requireKeys(prepared,{asr:false});s=this.begin(prepared,'retry');}finally{this.recoveryAttempt=false;}
   const old=slot.session;Object.assign(s,{original:old.original,corrected:old.corrected,text:old.text,corrections:old.corrections,revision:old.revision,source:old.source,previousText:old.previousText,appendBase:old.appendBase,createdAt:old.createdAt,durationMs:old.durationMs,origin:'recovery'});this.attachPipeline(s,slot.queue);
-  this.publish({phase:'processing',sessionId:s.id,result:this.result(s,'processing'),pipeline:slot.queue.summary(),message:'正在本机恢复剩余片段；不会调用轻整理。',level:0});await slot.queue.resume(s.id);return{accepted:true};
+  this.publish({phase:'processing',sessionId:s.id,result:this.result(s,'processing'),pipeline:slot.queue.summary(),message:'正在本机恢复剩余片段；不会调用轻整理。',level:0});
+  if(!this.currentSession(s))return{accepted:false};
+  // A retry acknowledges this attempt. Completion/failure arrives through state; the lifetime
+  // queue promise deliberately survives another failure and must not hold an IPC reply open.
+  void slot.queue.resume(s.id).catch(error=>{if(this.currentSession(s))this.streamFail(s,error?.message||'恢复识别失败。');});return{accepted:true};
  }
  dispose(){const q=this.session?.pipeline;super.dispose();q?.dispose();this.clearRecovery();clearTimeout(this.tailTimer);this.tailPending=null;}
 }
