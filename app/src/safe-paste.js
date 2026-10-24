@@ -6,8 +6,8 @@ const REASONS=new Set(['unsupported','password','readonly','terminal','own','int
 const reason=value=>REASONS.has(value)?value:'native';
 const textValid=text=>typeof text==='string'&&text.trim().length>0&&text.length<=100000&&!text.includes('\0');
 class NativeDelivery{
- constructor({ownPid=process.pid,spawnImpl=spawn,exePath=path.resolve(__dirname,'../../native/dictpin-delivery.exe'),platform=process.platform,exists=fs.existsSync,timeoutMs=2500,closeTimeoutMs=1000}={}){
-  this.ownPid=ownPid;this.spawnImpl=spawnImpl;this.exe=exePath;this.platform=platform;this.exists=exists;this.timeoutMs=Math.max(1,Math.min(5000,timeoutMs));this.closeTimeoutMs=Math.max(1,Math.min(5000,closeTimeoutMs));this.child=null;this.pending=new Map();this.sequence=0;this.disposed=false;this.ready=false;this.stopping=false;this.buffer='';this.closedPromise=null;this.closedResolve=null;
+ constructor({ownPid=process.pid,spawnImpl=spawn,exePath=path.resolve(__dirname,'../../native/dictpin-delivery.exe'),platform=process.platform,exists=fs.existsSync,timeoutMs=2500,closeTimeoutMs=1000,wallNow=()=>Date.now()}={}){
+  this.ownPid=ownPid;this.spawnImpl=spawnImpl;this.exe=exePath;this.platform=platform;this.exists=exists;this.timeoutMs=Math.max(1,Math.min(5000,timeoutMs));this.closeTimeoutMs=Math.max(1,Math.min(5000,closeTimeoutMs));this.wallNow=wallNow;this.child=null;this.pending=new Map();this.sequence=0;this.disposed=false;this.ready=false;this.stopping=false;this.buffer='';this.closedPromise=null;this.closedResolve=null;
  }
  get available(){return !this.disposed&&this.platform==='win32'&&Number.isSafeInteger(this.ownPid)&&this.ownPid>0&&this.exists(this.exe);}
  _rejectPending(){
@@ -18,7 +18,11 @@ class NativeDelivery{
   this._rejectPending();
   // A kill request is not evidence of exit. Keep ownership and quarantine the pipe
   // until this exact child emits close; otherwise a timed-out broker could still paste.
-  const child=this.child;if(!child||this.stopping)return;this.stopping=true;try{child.kill();}catch{}
+  const child=this.child;if(!child||this.stopping)return;this.stopping=true;
+  // The independent native reader revokes active work even if its UIA STA is
+  // blocked. A deadline still prevents late action if this best-effort frame is lost.
+  try{child.stdin.write(JSON.stringify({id:++this.sequence,op:'cancel'})+'\n');child.stdin.end();}catch{}
+  try{child.kill();}catch{}
  }
  _closed(child){
   if(this.child!==child)return;this._rejectPending();this.child=null;this.stopping=false;
@@ -47,7 +51,10 @@ class NativeDelivery{
  }
  async _request(op,input={}){
   await this._ensureReady();if(!this.child||!this.ready||this.pending.size>=8)throw Error('native');
-  const id=++this.sequence,frame=JSON.stringify({id,op,...input})+'\n';if(Buffer.byteLength(frame)>512000)throw Error('protocol');
+  const budgetMs=Math.max(1,Math.min(2000,this.timeoutMs-100));
+  const deadline=op==='capture'||op==='paste'?{budgetMs,expiresAt:this.wallNow()+budgetMs}:{};
+  if(Object.keys(deadline).length&&!Number.isSafeInteger(deadline.expiresAt))throw Error('protocol');
+  const id=++this.sequence,frame=JSON.stringify({id,op,...input,...deadline})+'\n';if(Buffer.byteLength(frame)>512000)throw Error('protocol');
   return new Promise((resolve,reject)=>{const timer=setTimeout(()=>this._broken(),this.timeoutMs);this.pending.set(id,{resolve,reject,timer});try{this.child.stdin.write(frame);}catch{this._broken();}});
  }
  async capture(){

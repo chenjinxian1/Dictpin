@@ -19,11 +19,14 @@ internal static class WindowsDelivery {
  static readonly Stopwatch Clock=Stopwatch.StartNew();
  static int OwnerPid; static Control Dispatcher; static volatile Lease Current; static WinEventCallback Callback;
  static volatile Control MonitorDispatcher;static Thread MonitorThread;static int MonitorRunning;static long EventVersion;
+ static long OwnerStart,CancellationGeneration;static int ReaderAlive,PendingWork;static volatile WorkItem ActiveOperation;
+ static readonly object OutputLock=new object();
  static IntPtr ForegroundHook,FocusHook,ValueHook,SelectionHook;
  sealed class Lease {
   public string Token,Invalid;public bool Consumed;public IntPtr Window,Focus,Caret;public uint Thread;public int Pid;public long ProcessStart,Created;
-  public RECT CaretRect;public AutomationElement Element;public int[] RuntimeId;public TextPatternRange Selection;public uint ClipboardSequence;
+  public RECT CaretRect;public AutomationElement Element;public int[] RuntimeId;public TextPatternRange Selection;public uint ClipboardSequence;public long Generation;
  }
+ sealed class WorkItem{public long Id,Generation,DeadlineTicks,ExpiresAt;public string Op,Token,Text;public bool Restore;public int Cancelled;}
  [StructLayout(LayoutKind.Sequential)] struct RECT{public int Left,Top,Right,Bottom;}
  [StructLayout(LayoutKind.Sequential)] struct GUIINFO{public int Size;public uint Flags;public IntPtr Active,Focus,Capture,MenuOwner,MoveSize,Caret;public RECT CaretRect;}
  [StructLayout(LayoutKind.Sequential)] struct KEYINPUT{public ushort Key,Scan;public uint Flags,Time;public UIntPtr Extra;}
@@ -69,6 +72,28 @@ internal static class WindowsDelivery {
  static void Invalidate(Lease lease,string reason){if(lease!=null)Interlocked.CompareExchange(ref lease.Invalid,reason,null);}
  static string InvalidReason(Lease lease){return lease==null?"missing":Volatile.Read(ref lease.Invalid);}
  static long ProcessStart(int pid){using(var process=Process.GetProcessById(pid))return process.StartTime.ToUniversalTime().Ticks;}
+ static long UtcMillis(){return(DateTime.UtcNow.Ticks-621355968000000000L)/TimeSpan.TicksPerMillisecond;}
+ static bool OwnerAlive(){try{using(var owner=Process.GetProcessById(OwnerPid))return !owner.HasExited&&owner.StartTime.ToUniversalTime().Ticks==OwnerStart;}catch{return false;}}
+ static string PureFence(WorkItem work,long monotonic,long utc,bool ownerAlive,bool readerAlive,long generation){
+  if(work==null||Volatile.Read(ref work.Cancelled)!=0||!readerAlive||work.Generation!=generation)return "cancelled";
+  if(monotonic>=work.DeadlineTicks||utc>=work.ExpiresAt)return "expired";
+  return ownerAlive?null:"missing";
+ }
+ static string OperationFence(WorkItem work){
+  string early=PureFence(work,Clock.Elapsed.Ticks,UtcMillis(),true,Volatile.Read(ref ReaderAlive)==1,Interlocked.Read(ref CancellationGeneration));
+  if(early!=null)return early;
+  // Parent identity is independent of target focus. PID reuse or an orphaned
+  // pipe must never allow a delayed UIA operation to touch another application.
+  bool alive=OwnerAlive();return PureFence(work,Clock.Elapsed.Ticks,UtcMillis(),alive,Volatile.Read(ref ReaderAlive)==1,Interlocked.Read(ref CancellationGeneration));
+ }
+ static void RevokeAll(){
+  Interlocked.Increment(ref CancellationGeneration);Invalidate(Current,"cancelled");
+  var operation=ActiveOperation;if(operation!=null)Interlocked.Exchange(ref operation.Cancelled,1);
+ }
+ static bool RevokeToken(string token){
+  bool found=false;var lease=Current;if(lease!=null&&lease.Token==token){Invalidate(lease,"cancelled");found=true;}
+  var operation=ActiveOperation;if(operation!=null&&operation.Token==token){Interlocked.Exchange(ref operation.Cancelled,1);found=true;}return found;
+ }
  static int Integrity(int pid){
   IntPtr token=IntPtr.Zero,buffer=IntPtr.Zero;
   try{using(var process=Process.GetProcessById(pid)){if(!OpenProcessToken(process.Handle,TokenQuery,out token))return -1;}
@@ -108,8 +133,9 @@ internal static class WindowsDelivery {
   if(lease.Selection!=null){var current=Selection(lease.Element);return current!=null&&lease.Selection.CompareEndpoints(TextPatternRangeEndpoint.Start,current,TextPatternRangeEndpoint.Start)==0&&lease.Selection.CompareEndpoints(TextPatternRangeEndpoint.End,current,TextPatternRangeEndpoint.End)==0;}
   var gui=Gui(lease.Thread);return gui.Focus==lease.Focus&&gui.Caret!=IntPtr.Zero&&gui.Caret==lease.Caret&&Same(gui.CaretRect,lease.CaretRect);
  }
- static string Basic(Lease lease){
-  if(lease==null)return "missing";if(Volatile.Read(ref MonitorRunning)!=1)return "native";string invalid=InvalidReason(lease);if(invalid!=null)return invalid;
+ static string Basic(Lease lease,WorkItem operation){
+  string fence=OperationFence(operation);if(fence!=null)return fence;
+  if(lease==null)return "missing";if(lease.Generation!=operation.Generation)return "cancelled";if(Volatile.Read(ref MonitorRunning)!=1)return "native";string invalid=InvalidReason(lease);if(invalid!=null)return invalid;
   if(Clock.Elapsed.Ticks-lease.Created>=LeaseTicks)return "expired";
   if(!IsWindow(lease.Window)||!IsWindowVisible(lease.Window)||!IsWindowEnabled(lease.Window))return "missing";
   int pid;uint thread=GetWindowThreadProcessId(lease.Window,out pid);if(pid!=lease.Pid||thread!=lease.Thread||ProcessStart(pid)!=lease.ProcessStart)return "missing";
@@ -117,18 +143,20 @@ internal static class WindowsDelivery {
   if(TerminalProcess(pid))return "terminal";
   if(!Same(lease.RuntimeId,lease.Element.GetRuntimeId()))return "focus";
   var editable=Editable(lease.Element,lease.Pid,false);if(editable!=null)return editable;
-  if(!SelectionSame(lease))return "caret";return InvalidReason(lease);
+  if(!SelectionSame(lease))return "caret";return InvalidReason(lease)??OperationFence(operation);
  }
- static string Guard(Lease lease,bool restore){
-  string basic=Basic(lease);if(basic!=null)return basic;IntPtr foreground=GetForegroundWindow();
+ static string Guard(Lease lease,bool restore,WorkItem operation){
+  string basic=Basic(lease,operation);if(basic!=null)return basic;IntPtr foreground=GetForegroundWindow();
   if(foreground!=lease.Window){
    if(!restore||WindowPid(foreground)!=OwnerPid)return "focus";
    // No synthetic Alt, AttachThreadInput or foreground-lock bypass. Denial is a safe fallback.
+   string fence=OperationFence(operation);if(fence!=null)return fence;
    if(!SetForegroundWindow(lease.Window))return "focus";
+   fence=OperationFence(operation);if(fence!=null)return fence;
    lease.Element.SetFocus();
   }
   if(GetForegroundWindow()!=lease.Window||!Same(lease.RuntimeId,AutomationElement.FocusedElement.GetRuntimeId()))return "focus";
-  string editable=Editable(lease.Element,lease.Pid,true);if(editable!=null)return editable;if(!SelectionSame(lease))return "caret";return InvalidReason(lease);
+  string editable=Editable(lease.Element,lease.Pid,true);if(editable!=null)return editable;if(!SelectionSame(lease))return "caret";return InvalidReason(lease)??OperationFence(operation);
  }
  // Called on the independent monitor thread. This path has no UI Automation or
  // provider calls: a hung UIA read must not delay detection of a switch and return.
@@ -172,17 +200,19 @@ internal static class WindowsDelivery {
   try{if(monitor!=null)monitor.BeginInvoke((Action)(()=>Application.ExitThread()));}catch{}
   if(MonitorThread!=null&&MonitorThread!=Thread.CurrentThread)MonitorThread.Join(1000);
  }
- static Dictionary<string,object> Capture(){
+ static Dictionary<string,object> Capture(WorkItem operation){
   Current=null;long eventVersion=Interlocked.Read(ref EventVersion);
   try{
+   string fence=OperationFence(operation);if(fence!=null)return FailureCapture(fence);
    IntPtr window=GetForegroundWindow();int pid;uint thread=GetWindowThreadProcessId(window,out pid);
    if(window==IntPtr.Zero||pid<=0||pid==OwnerPid||pid==Process.GetCurrentProcess().Id)return FailureCapture("own");
    int integrity=Integrity(pid);if(integrity<0||integrity>0x2000||Integrity(Process.GetCurrentProcess().Id)!=0x2000)return FailureCapture("integrity");
    if(TerminalProcess(pid))return FailureCapture("terminal");
    var element=AutomationElement.FocusedElement;string error=Editable(element,pid,true);if(error!=null)return FailureCapture(error);
    var gui=Gui(thread);var selection=Selection(element);if(selection==null&&gui.Caret==IntPtr.Zero)return FailureCapture("caret");
-   var lease=new Lease{Token=Guid.NewGuid().ToString("D"),Window=window,Pid=pid,Thread=thread,ProcessStart=ProcessStart(pid),Created=Clock.Elapsed.Ticks,Element=element,RuntimeId=element.GetRuntimeId(),Selection=selection,Focus=gui.Focus,Caret=gui.Caret,CaretRect=gui.CaretRect,ClipboardSequence=GetClipboardSequenceNumber()};
-   Current=lease;error=Guard(lease,false);
+   uint clipboardSequence=GetClipboardSequenceNumber();if(clipboardSequence==0)return FailureCapture("clipboard");
+   var lease=new Lease{Token=Guid.NewGuid().ToString("D"),Window=window,Pid=pid,Thread=thread,ProcessStart=ProcessStart(pid),Created=Clock.Elapsed.Ticks,Element=element,RuntimeId=element.GetRuntimeId(),Selection=selection,Focus=gui.Focus,Caret=gui.Caret,CaretRect=gui.CaretRect,ClipboardSequence=clipboardSequence,Generation=operation.Generation};
+   Current=lease;error=Guard(lease,false,operation);
    if(error==null&&(eventVersion!=Interlocked.Read(ref EventVersion)||InvalidReason(lease)!=null))error=InvalidReason(lease)??"focus";
    if(error!=null){Current=null;return FailureCapture(error);}
    return new Dictionary<string,object>{{"available",true},{"token",lease.Token}};
@@ -192,58 +222,81 @@ internal static class WindowsDelivery {
  static Dictionary<string,object> PasteResult(string status,string reason,bool changed){return new Dictionary<string,object>{{"status",status},{"reason",reason},{"clipboardChanged",changed}};}
  static bool KeysReleased(){foreach(int key in new[]{0x10,0x11,0x12,0x5b,0x5c,0x56})if((GetAsyncKeyState(key)&0x8000)!=0)return false;return true;}
  static INPUT Key(ushort key,bool up){return new INPUT{Type=InputKeyboard,Data=new INPUTDATA{Keyboard=new KEYINPUT{Key=key,Flags=up?KeyUp:0}}};}
- static bool WriteClipboard(string text,Lease lease,out uint sequence,out bool changed){
+ static bool WriteClipboard(string text,Lease lease,WorkItem operation,out uint sequence,out bool changed){
   sequence=0;changed=false;IntPtr data=GlobalAlloc(GmemMoveable,(UIntPtr)((text.Length+1)*2));if(data==IntPtr.Zero)return false;bool opened=false,transferred=false;
   try{
    IntPtr memory=GlobalLock(data);if(memory==IntPtr.Zero)return false;
    try{char[] chars=(text+"\0").ToCharArray();Marshal.Copy(chars,0,memory,chars.Length);Array.Clear(chars,0,chars.Length);}finally{GlobalUnlock(data);}
+   if(OperationFence(operation)!=null)return false;
    if(!OpenClipboard(Dispatcher.Handle))return false;opened=true;
    // Respect a user's clipboard update during recording without inspecting its contents.
-   if(GetClipboardSequenceNumber()!=lease.ClipboardSequence||InvalidReason(lease)!=null)return false;
+   if(lease.ClipboardSequence==0||GetClipboardSequenceNumber()!=lease.ClipboardSequence||InvalidReason(lease)!=null||OperationFence(operation)!=null)return false;
    if(!EmptyClipboard())return false;changed=true;
    if(SetClipboardData(UnicodeText,data)==IntPtr.Zero)return false;transferred=true;
   }finally{if(opened)CloseClipboard();if(!transferred)GlobalFree(data);}
   sequence=GetClipboardSequenceNumber();return sequence!=0;
  }
- static Dictionary<string,object> Paste(string token,string text,bool restore){
+ static Dictionary<string,object> Paste(string token,string text,bool restore,WorkItem operation){
   var lease=Current;if(lease==null||lease.Token!=token||lease.Consumed)return PasteResult("blocked","missing",false);
   // Consume before any action, even if a guard fails. A paste is never retried automatically.
   lease.Consumed=true;bool changed=false;uint sequence=0;
   try{
-   string error=Basic(lease);if(error!=null)return PasteResult("blocked",error,false);
+   string error=Basic(lease,operation);if(error!=null)return PasteResult("blocked",error,false);
    if(!KeysReleased())return PasteResult("blocked","keys",false);
-   if(GetClipboardSequenceNumber()!=lease.ClipboardSequence)return PasteResult("blocked","clipboard",false);
-   error=Guard(lease,restore);if(error!=null)return PasteResult("blocked",error,false);
-   if(!WriteClipboard(text,lease,out sequence,out changed))return PasteResult("failed","clipboard",changed);
-   error=Guard(lease,false);if(error!=null)return PasteResult("blocked",error,changed);
+   if(lease.ClipboardSequence==0||GetClipboardSequenceNumber()!=lease.ClipboardSequence)return PasteResult("blocked","clipboard",false);
+   error=Guard(lease,restore,operation);if(error!=null)return PasteResult("blocked",error,false);
+   error=OperationFence(operation);if(error!=null)return PasteResult("blocked",error,false);
+   if(!WriteClipboard(text,lease,operation,out sequence,out changed))return PasteResult("failed","clipboard",changed);
+   error=Guard(lease,false,operation);if(error!=null)return PasteResult("blocked",error,changed);
    if(!KeysReleased()||GetClipboardSequenceNumber()!=sequence)return PasteResult("blocked","keys",changed);
    // Windows has no atomic focus-bound SendInput transaction. Final checks reduce that
    // unavoidable OS race; success only means the key batch was accepted, not consumed.
    if(GetForegroundWindow()!=lease.Window||InvalidReason(lease)!=null||Volatile.Read(ref MonitorRunning)!=1)return PasteResult("blocked","focus",changed);
    var keys=new[]{Key(0x11,false),Key(0x56,false),Key(0x56,true),Key(0x11,true)};
+   error=OperationFence(operation);if(error!=null)return PasteResult("blocked",error,changed);
    uint sent=SendInput((uint)keys.Length,keys,Marshal.SizeOf(typeof(INPUT)));
    if(!CompleteBatch(sent)){if(sent>0){var release=new[]{Key(0x56,true),Key(0x11,true)};SendInput((uint)release.Length,release,Marshal.SizeOf(typeof(INPUT)));}return PasteResult("failed","partial",changed);}
    return PasteResult("sent","native",changed);
   }catch{return PasteResult("failed","native",changed);}finally{if(Current==lease)Current=null;}
  }
  static bool KnownKeys(Dictionary<string,object> request,params string[] allowed){foreach(var key in request.Keys)if(Array.IndexOf(allowed,key)<0)return false;return true;}
- static void Execute(string line){
-  long id=0;Dictionary<string,object> response;
+ static void Respond(long id,Dictionary<string,object> response){response["type"]="response";response["id"]=id;lock(OutputLock)Console.WriteLine(Json.Serialize(response));}
+ static bool Integer(Dictionary<string,object> request,string key,out long value){object raw;value=0;if(!request.TryGetValue(key,out raw)||!(raw is int||raw is long))return false;value=Convert.ToInt64(raw);return value>0&&value<=9007199254740991L;}
+ static void Execute(WorkItem operation){
+  ActiveOperation=operation;Dictionary<string,object> response;
   try{
-   var request=Json.Deserialize<Dictionary<string,object>>(line);object rawId;if(request==null||!request.TryGetValue("id",out rawId)||!(rawId is int||rawId is long))throw new InvalidOperationException();id=Convert.ToInt64(rawId);if(id<=0||id>9007199254740991L)throw new InvalidOperationException();
-   object rawOp;if(!request.TryGetValue("op",out rawOp)||!(rawOp is string))throw new InvalidOperationException();string op=(string)rawOp;
-   if(op=="capture"&&KnownKeys(request,"id","op"))response=Capture();
-   else if(op=="discard"&&KnownKeys(request,"id","op","token")&&request.ContainsKey("token")&&request["token"] is string&&ValidToken((string)request["token"])){
-    bool discarded=Current!=null&&Current.Token==(string)request["token"];if(discarded)Current=null;response=new Dictionary<string,object>{{"discarded",discarded}};
-   }else if(op=="paste"&&KnownKeys(request,"id","op","token","text","restore")&&request.ContainsKey("token")&&request["token"] is string&&ValidToken((string)request["token"])&&request.ContainsKey("text")&&request["text"] is string&&ValidText((string)request["text"])&&request.ContainsKey("restore")&&request["restore"] is bool)response=Paste((string)request["token"],(string)request["text"],(bool)request["restore"]);
-   else throw new InvalidOperationException();
+   string fence=OperationFence(operation);
+   if(fence!=null)response=operation.Op=="capture"?FailureCapture(fence):PasteResult("blocked",fence,false);
+   else response=operation.Op=="capture"?Capture(operation):Paste(operation.Token,operation.Text,operation.Restore,operation);
   }catch{response=PasteResult("blocked","protocol",false);}
-  response["type"]="response";response["id"]=id;Console.WriteLine(Json.Serialize(response));
+  finally{ActiveOperation=null;operation.Text=null;Interlocked.Decrement(ref PendingWork);}
+  Respond(operation.Id,response);
+ }
+ // The reader never invokes UIA and never waits on the UIA dispatcher. Discard,
+ // cancellation and EOF revoke work even while an external provider is stalled.
+ static void Receive(string line){
+  long id=0,receivedAt=Clock.Elapsed.Ticks;
+  try{
+   var parser=new JavaScriptSerializer{MaxJsonLength=MaxLine,RecursionLimit=12};var request=parser.Deserialize<Dictionary<string,object>>(line);
+   if(request==null||!Integer(request,"id",out id))throw new InvalidOperationException();
+   object rawOp;if(!request.TryGetValue("op",out rawOp)||!(rawOp is string))throw new InvalidOperationException();string op=(string)rawOp;
+   if(op=="cancel"&&KnownKeys(request,"id","op")){RevokeAll();Respond(id,new Dictionary<string,object>{{"discarded",true}});return;}
+   object rawToken;
+   if(op=="discard"&&KnownKeys(request,"id","op","token")&&request.TryGetValue("token",out rawToken)&&rawToken is string&&ValidToken((string)rawToken)){Respond(id,new Dictionary<string,object>{{"discarded",RevokeToken((string)rawToken)}});return;}
+   long budget,expires;if(!Integer(request,"budgetMs",out budget)||budget>2000||!Integer(request,"expiresAt",out expires))throw new InvalidOperationException();
+   var operation=new WorkItem{Id=id,Op=op,DeadlineTicks=receivedAt+budget*TimeSpan.TicksPerMillisecond,ExpiresAt=expires};
+   if(op=="capture"&&KnownKeys(request,"id","op","budgetMs","expiresAt"))RevokeAll();
+   else if(op=="paste"&&KnownKeys(request,"id","op","token","text","restore","budgetMs","expiresAt")&&request.TryGetValue("token",out rawToken)&&rawToken is string&&ValidToken((string)rawToken)&&request.ContainsKey("text")&&request["text"] is string&&ValidText((string)request["text"])&&request.ContainsKey("restore")&&request["restore"] is bool){operation.Token=(string)rawToken;operation.Text=(string)request["text"];operation.Restore=(bool)request["restore"];}
+   else throw new InvalidOperationException();
+   operation.Generation=Interlocked.Read(ref CancellationGeneration);
+   if(Interlocked.Increment(ref PendingWork)>8){Interlocked.Decrement(ref PendingWork);RevokeAll();Respond(id,PasteResult("blocked","busy",false));return;}
+   try{Dispatcher.BeginInvoke((Action)(()=>Execute(operation)));}catch{Interlocked.Decrement(ref PendingWork);throw;}
+  }catch{RevokeAll();Respond(id,PasteResult("blocked","protocol",false));}
  }
  static string ReadLine(){var buffer=new StringBuilder();while(true){int next=Console.In.Read();if(next<0)return buffer.Length==0?null:buffer.ToString();if(next=='\n')return buffer.ToString();if(next=='\r')continue;if(buffer.Length>=MaxLine)throw new InvalidOperationException();buffer.Append((char)next);}}
  static bool PureSelfTest(){
   string changed=ForegroundChange(null,(IntPtr)10,(IntPtr)20,2,99);changed=ForegroundChange(changed,(IntPtr)10,(IntPtr)10,1,99);
-  return ValidText("hello\nworld")&&!ValidText(" ")&&!ValidText("x\0y")&&!ValidText(new String('x',100001))&&ValidToken("11111111-1111-4111-8111-111111111111")&&!ValidToken("missing")&&Same(new[]{1,2},new[]{1,2})&&!Same(new[]{1,2},new[]{1,3})&&Marshal.SizeOf(typeof(INPUT))==40&&changed=="focus"&&ForegroundChange(null,(IntPtr)10,(IntPtr)99,99,99)==null&&CompleteBatch(4)&&!CompleteBatch(3)&&!CompleteBatch(0)&&PureMonitorSelfTest();
+  return ValidText("hello\nworld")&&!ValidText(" ")&&!ValidText("x\0y")&&!ValidText(new String('x',100001))&&ValidToken("11111111-1111-4111-8111-111111111111")&&!ValidToken("missing")&&Same(new[]{1,2},new[]{1,2})&&!Same(new[]{1,2},new[]{1,3})&&Marshal.SizeOf(typeof(INPUT))==40&&changed=="focus"&&ForegroundChange(null,(IntPtr)10,(IntPtr)99,99,99)==null&&CompleteBatch(4)&&!CompleteBatch(3)&&!CompleteBatch(0)&&PureMonitorSelfTest()&&PureDeadlineSelfTest();
  }
  static bool PureMonitorSelfTest(){
   int savedOwner=OwnerPid;OwnerPid=99;
@@ -260,15 +313,37 @@ internal static class WindowsDelivery {
    lease=new Lease{Window=(IntPtr)10,Pid=1};Current=lease;ObserveEvent(ForegroundEvent,IntPtr.Zero,0);return InvalidReason(lease)=="focus";
   }finally{Current=null;OwnerPid=savedOwner;}
  }
+ static bool PureDeadlineSelfTest(){
+  var operation=new WorkItem{Generation=7,DeadlineTicks=100,ExpiresAt=1000,Token="11111111-1111-4111-8111-111111111111"};
+  if(PureFence(operation,10,100,true,true,7)!=null)return false;
+  if(PureFence(operation,100,100,true,true,7)!="expired"||PureFence(operation,10,1000,true,true,7)!="expired")return false;
+  if(PureFence(operation,10,100,false,true,7)!="missing"||PureFence(operation,10,100,true,false,7)!="cancelled"||PureFence(operation,10,100,true,true,8)!="cancelled")return false;
+  long savedGeneration=Interlocked.Read(ref CancellationGeneration);int savedReader=Volatile.Read(ref ReaderAlive);var savedCurrent=Current;var savedActive=ActiveOperation;
+  try{
+   Interlocked.Exchange(ref CancellationGeneration,7);Volatile.Write(ref ReaderAlive,1);ActiveOperation=operation;Current=new Lease{Token=operation.Token};
+   bool revoked=false;using(var returnedFromUia=new ManualResetEvent(false)){
+    // Simulate a provider stall on the action thread. The control path revokes
+    // the token on another thread without needing that action dispatcher.
+    var control=new Thread(()=>{revoked=RevokeToken(operation.Token);returnedFromUia.Set();});control.IsBackground=true;control.Start();
+    if(!returnedFromUia.WaitOne(1000)||!control.Join(1000)||!revoked||PureFence(operation,10,100,true,true,7)!="cancelled")return false;
+   }
+   operation.Cancelled=0;Current=new Lease{Token=operation.Token};RevokeAll();
+   if(PureFence(operation,10,100,true,true,Interlocked.Read(ref CancellationGeneration))!="cancelled"||InvalidReason(Current)!="cancelled")return false;
+   long value;if(Integer(new Dictionary<string,object>{{"budgetMs",1.5}},"budgetMs",out value))return false;
+   return Integer(new Dictionary<string,object>{{"budgetMs",2000}},"budgetMs",out value)&&value==2000;
+  }finally{Current=savedCurrent;ActiveOperation=savedActive;Interlocked.Exchange(ref CancellationGeneration,savedGeneration);Volatile.Write(ref ReaderAlive,savedReader);}
+ }
  [STAThread] public static int Main(string[] args){
   if(args.Length==1&&args[0]=="--self-test"){bool ok=PureSelfTest();Console.WriteLine(ok?"{\"selfTest\":\"passed\",\"nativeActions\":0}":"{\"selfTest\":\"failed\"}");return ok?0:1;}
   if(args.Length!=3||args[0]!="--broker"||args[1]!="--owner-pid"||!Int32.TryParse(args[2],out OwnerPid)||OwnerPid<=0||OwnerPid==Process.GetCurrentProcess().Id)return 2;
-  try{using(var owner=Process.GetProcessById(OwnerPid))if(owner.HasExited)return 2;}catch{return 2;}
+  try{using(var owner=Process.GetProcessById(OwnerPid)){if(owner.HasExited)return 2;OwnerStart=owner.StartTime.ToUniversalTime().Ticks;}}catch{return 2;}
   Console.InputEncoding=Encoding.UTF8;Console.OutputEncoding=new UTF8Encoding(false);Dispatcher=new Control();IntPtr handle=Dispatcher.Handle;
   if(!StartMonitor()){StopMonitor();Dispatcher.Dispose();return 3;}
   Console.WriteLine("{\"type\":\"ready\",\"version\":1}");
-  var reader=new Thread(()=>{try{string line;while((line=ReadLine())!=null){string input=line;Dispatcher.Invoke((Action)(()=>Execute(input)));}}catch{}finally{try{Dispatcher.BeginInvoke((Action)(()=>Application.ExitThread()));}catch{}}});reader.IsBackground=true;reader.Start();
-  try{Application.Run();}finally{Current=null;StopMonitor();Dispatcher.Dispose();}
+  Volatile.Write(ref ReaderAlive,1);
+  var ownerMonitor=new System.Threading.Timer(_=>{if(!OwnerAlive()){Volatile.Write(ref ReaderAlive,0);RevokeAll();}},null,250,250);
+  var reader=new Thread(()=>{try{string line;while((line=ReadLine())!=null)Receive(line);}catch{}finally{Volatile.Write(ref ReaderAlive,0);RevokeAll();try{Dispatcher.BeginInvoke((Action)(()=>Application.ExitThread()));}catch{}}});reader.IsBackground=true;reader.Start();
+  try{Application.Run();}finally{Volatile.Write(ref ReaderAlive,0);RevokeAll();Current=null;ownerMonitor.Dispose();StopMonitor();Dispatcher.Dispose();}
   return 0;
  }
 }
