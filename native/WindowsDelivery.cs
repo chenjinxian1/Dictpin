@@ -86,6 +86,7 @@ internal static class WindowsDelivery {
   // pipe must never allow a delayed UIA operation to touch another application.
   bool alive=OwnerAlive();return PureFence(work,Clock.Elapsed.Ticks,UtcMillis(),alive,Volatile.Read(ref ReaderAlive)==1,Interlocked.Read(ref CancellationGeneration));
  }
+ static string AfterFence(Func<string> fence,Func<string> targetGuard){return fence()??targetGuard();}
  static void RevokeAll(){
   Interlocked.Increment(ref CancellationGeneration);Invalidate(Current,"cancelled");
   var operation=ActiveOperation;if(operation!=null)Interlocked.Exchange(ref operation.Cancelled,1);
@@ -253,7 +254,10 @@ internal static class WindowsDelivery {
    // unavoidable OS race; success only means the key batch was accepted, not consumed.
    if(GetForegroundWindow()!=lease.Window||InvalidReason(lease)!=null||Volatile.Read(ref MonitorRunning)!=1)return PasteResult("blocked","focus",changed);
    var keys=new[]{Key(0x11,false),Key(0x56,false),Key(0x56,true),Key(0x11,true)};
-   error=OperationFence(operation);if(error!=null)return PasteResult("blocked",error,changed);
+   error=AfterFence(()=>OperationFence(operation),()=>{
+    if(GetForegroundWindow()!=lease.Window||InvalidReason(lease)!=null||Volatile.Read(ref MonitorRunning)!=1)return "focus";
+    if(!KeysReleased()||GetClipboardSequenceNumber()!=sequence)return "keys";return null;
+   });if(error!=null)return PasteResult("blocked",error,changed);
    uint sent=SendInput((uint)keys.Length,keys,Marshal.SizeOf(typeof(INPUT)));
    if(!CompleteBatch(sent)){if(sent>0){var release=new[]{Key(0x56,true),Key(0x11,true)};SendInput((uint)release.Length,release,Marshal.SizeOf(typeof(INPUT)));}return PasteResult("failed","partial",changed);}
    return PasteResult("sent","native",changed);
@@ -314,6 +318,7 @@ internal static class WindowsDelivery {
   }finally{Current=null;OwnerPid=savedOwner;}
  }
  static bool PureDeadlineSelfTest(){
+  bool focusChanged=false;if(AfterFence(()=>{focusChanged=true;return null;},()=>focusChanged?"focus":null)!="focus")return false;
   var operation=new WorkItem{Generation=7,DeadlineTicks=100,ExpiresAt=1000,Token="11111111-1111-4111-8111-111111111111"};
   if(PureFence(operation,10,100,true,true,7)!=null)return false;
   if(PureFence(operation,100,100,true,true,7)!="expired"||PureFence(operation,10,1000,true,true,7)!="expired")return false;
