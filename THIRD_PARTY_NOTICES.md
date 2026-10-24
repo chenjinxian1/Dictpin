@@ -10,7 +10,7 @@ Checked 2026-10-24. This inventory distinguishes bundled source/assets from exte
 
 ### sherpa-onnx generated ABI declarations
 
-The ABI declarations in `native/LocalAsrWorker.cs` and `native/LocalAsrWorker.Local03.cs` were generated from the sherpa-onnx v1.13.8 C API header by `native/generate-worker.py`. They are translated declarations, not an upstream C# worker. Local worker behavior, lifecycle and threading code were added separately. The original header identifies:
+The ABI declarations in `native/LocalAsrWorker.Local03.cs` were generated from the sherpa-onnx v1.13.8 C API header. The generator and older worker remain in the full local maintenance workspace. These are translated declarations, not an upstream C# worker. Local worker behavior, lifecycle and threading code were added separately. The original header identifies:
 
 Copyright (c) 2023 Xiaomi Corporation.
 
