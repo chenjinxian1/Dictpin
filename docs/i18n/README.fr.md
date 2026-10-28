@@ -1,4 +1,4 @@
-<h1 align="center">Dictpin v0.2.2-dev.30</h1>
+<h1 align="center">Dictpin v0.2.2-dev.31</h1>
 
 <p align="center">
   <strong>La dictée de bureau en petit format. Parlez, gardez la maîtrise de vos mots, puis passez à la suite.</strong>
