@@ -4,7 +4,7 @@
   const $=id=>document.getElementById(id),P=root.ProviderPresets,D=new root.ProviderDrafts.Drafts(P),en=bridge.uiLanguage==='en',t=(zh,english)=>en?english:zh;
   let ready=false,operation=null,operationProfile=null,operationRevision=null,sequence=0,locked=false,secure=false;
   const label=p=>P.providerLabel(p,en?'en':'zh-CN');
-  function cancel(){if(operation){const id=operation,d=D.items.get(operationProfile);if(d?.draftRevision===operationRevision&&['running','loading'].includes(d.status.category))d.status={category:'changed'};operation=null;void bridge.cancelProviderDiagnostic({requestId:id}).catch(()=>{});onBusy(false);}}
+  function cancel(){if(operation){const id=operation,d=D.items.get(operationProfile);if(d?.draftRevision===operationRevision&&['running','loading'].includes(d.status.category))d.status={category:'changed'};operation=null;renderStatus();void bridge.cancelProviderDiagnostic({requestId:id}).catch(()=>{});onBusy(false);}}
   function changed(){cancel();renderStatus();renderInfo();onChange();}
   function options(select,entries){select.replaceChildren(...entries.map(([value,text])=>{const o=document.createElement('option');o.value=value;o.textContent=text;return o;}));}
   options($('model-provider'),P.PROVIDERS.map(p=>[p.id,en?p.en:p.label]));
