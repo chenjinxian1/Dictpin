@@ -44,7 +44,11 @@ Use the provider's official key guidance or console: [Qwen key guide](https://he
 
 The interface shows untested, checking, sample passed, failed and changed states. Address, region, model, key or request-parameter edits invalidate the old result; cancelled/superseded replies cannot update the new draft. Expandable safe details identify the tested model, final address, category, HTTP status, elapsed time and test time. Raw error bodies and authorization are not shown. A green verification state is not persisted across restarts.
 
-**获取模型** (Get models) is a separate explicit metadata request: at most **10 seconds**, **500 models** and **2 MiB** of response data in total. It does not download models or prove cleanup compatibility. Suggestions and manual entry remain available on failure or truncation.
+**内置模型建议（无需联网）** (Built-in model suggestions, offline) is a separate menu of editable presets. Choosing one fills the model field without a key or any service request; manual entry remains available.
+
+**在线获取模型** (Fetch models online) deliberately queries the current service. For a remote service without a usable key, clicking it immediately shows **请先填写密钥** (Please enter an API key first), highlights and focuses the key field, and sends no request. An anonymous loopback service does not require a key. While a request is running, the button shows **正在获取…** (Fetching…); nearby feedback reports cancellation, failure or the number of models received.
+
+This metadata request is limited to **10 seconds**, **500 models** and **2 MiB** of response data in total. It does not download models or prove cleanup compatibility. Built-in suggestions and manual entry remain available on failure or truncation.
 
 Listing uses provider-specific same-origin routes. Qwen uses `/api/v1/models` with bounded pagination, not `compatible-mode/v1/models`. Addresses without a verified same-origin adapter, including new Singapore/Hong Kong workspace hosts in this version, retain suggestions/manual entry. This is a limitation of Dictpin's adapter, not a claim that the service cannot support listing. Keys are not forwarded to another origin. See [Qwen model-list documentation](https://help.aliyun.com/zh/model-studio/list-models).
 

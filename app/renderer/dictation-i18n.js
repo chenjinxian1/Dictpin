@@ -8,6 +8,7 @@
  const protectedAttributes='#original-text,#correction-list,#provider-summary,.word-title,.word-aliases,[data-user-text]';
  const chrome='title,button,label,summary,h1,h2,h3,.app-name,.skip,.hint,.empty-copy,.dictionary-intro,.dictionary-help,.privacy-note,.count-unit,#notice,#session-status,#task-status-title,#task-status-detail,#result-message,#recent-time,#shortcut-prefix,#shortcut-suffix,#toast-text,#word-undo-text,#word-error,#confirm-description,#bar-status,#bar-feedback,#voice-pill';
  const english=Object.freeze({
+  '内置模型建议（无需联网）':'Built-in model suggestions (offline)','在线获取模型':'Fetch models online',
   '模型厂商':'Provider','服务区域':'Region','业务空间 ID':'Workspace ID','恢复预设':'Restore preset','已自定义':'Customized','获取模型':'Get models','可选择建议或手动填写；列表不代表兼容。':'Choose a suggestion or enter a model; listing does not prove compatibility.','查看':'Show','隐藏':'Hide','移除密钥':'Remove key','撤销移除':'Undo removal','获取 API 密钥':'Get an API key','测试轻整理':'Test cleanup','取消检查':'Cancel check','发送虚构样例，可能计费。':'Sends a fictional sample; charges may apply.','检查详情':'Check details',
   '本次使用本地文字，模型连接待配置。':'Using local text for this task; configure the model connection when ready.',
   '已取消；已完成文字保留，未处理片段仅在内存保留30秒。':'Cancelled. Completed text is kept; unfinished audio stays in memory for 30 seconds.',

@@ -10,9 +10,9 @@ The real local dictionary changes the seeded misspellings `dict pin` and `sense 
 
 ## API configuration
 
-![English API configuration with an empty key](images/settings.png)
+![English API configuration with separate offline suggestions and online fetching](images/settings.png)
 
-The provider selector, OpenAI address and `gpt-6-luna` are configuration examples. The key field is empty. The capture fixture exercises sample tests with in-memory responses only; no live connection test or paid request was made. No connected state or service latency result is implied. Read [API configuration](API_CONFIGURATION.md) for the correct address/model for your account.
+The provider selector, OpenAI address and `gpt-6-luna` are configuration examples. The offline suggestion menu and explicit online-fetch button have separate labels. The settings pane scrolls to the key and test controls below; no real key is shown. The capture fixture exercises sample tests with in-memory responses only; no live connection test or paid request was made. No connected state or service latency result is implied. Read [API configuration](API_CONFIGURATION.md) for the correct address/model for your account.
 
 ## Separate concept artwork
 

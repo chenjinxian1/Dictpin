@@ -3,6 +3,7 @@
  const clone=value=>JSON.parse(JSON.stringify(value));
  const fields=['id','presetId','region','workspaceId','baseUrl','endpointMode','model','customized','revision'];
  const metadata=p=>Object.fromEntries(fields.filter(k=>p[k]!==undefined).map(k=>[k,p[k]]));
+ function modelFetchAccess(draft,endpoint){if(!endpoint||typeof endpoint.local!=='boolean')return {allowed:false,reason:'configuration'};const hasKey=draft?.keyAction==='replace'?typeof draft.key==='string'&&!!draft.key.trim():draft?.keyAction==='retain'&&draft.keyStatus?.hasKey===true;return endpoint.local||hasKey?{allowed:true,reason:null}:{allowed:false,reason:'credentials_missing'};}
  class Drafts{
   constructor(presets){this.presets=presets;this.view=null;this.items=new Map();this.selected=null;this.conflicted=false;}
   accept(view){if(!view)return;this.latest=clone(view);if(!this.view){this.saved(view);return;}if(view.revision!==this.view.revision){if(this.isDirty()){this.conflicted=true;return;}this.saved(view);}}
@@ -22,5 +23,5 @@
   status(){return this.current()?.status||{category:'untested'};}
   result(revision,result,id=this.selected){const d=this.items.get(id);if(id!==this.selected||!d||d.draftRevision!==revision)return false;d.status=clone(result);return true;}
  }
- return {Drafts};
+ return {Drafts,modelFetchAccess};
 });
