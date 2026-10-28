@@ -1,6 +1,7 @@
 'use strict';
 (()=>{
  const bridge=window.dictation,model=window.DictationUiState,$=id=>document.getElementById(id),ACTIVE=new Set(['starting','recording','stopping','processing','transcribing','refining']);
+ if(bridge?.windowControlsOverlay){const titlebar=$('window-titlebar'),brand=document.querySelector('.app-name');if(titlebar&&brand){titlebar.append(brand);titlebar.hidden=false;document.documentElement.dataset.windowChrome='overlay';}}
  if(!bridge||!model){$('notice').hidden=false;$('notice').textContent='未连接桌面程序，无法开始听写。';return;}
  const language=bridge.uiLanguage,t=(key,values)=>window.DictpinI18n.t(key,language,values);
  const dismissedNotices=new Set();let noticeSignature='',noticeTask=null,clockTimer=null,recordAnchor=null,recoveryAnchor=null;

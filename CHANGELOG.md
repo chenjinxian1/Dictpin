@@ -2,7 +2,13 @@
 
 ## Unreleased
 
-No changes recorded yet.
+### Integrated Windows title bar — local candidate
+
+- Replaced the Windows default caption strip with a compact Dictpin title/drag area in the existing paper/graphite style. Moved the existing brand out of the navigation row, kept native minimize/maximize/close buttons, and reserved their actual overlay area. No new window-control IPC or dependency was added.
+- Synchronized title, native caption symbols and window background with light/dark themes and the Windows high-contrast color pair. Kept the existing native frame on other platforms, without claiming additional platform support.
+- Kept app actions outside the drag region, adjusted the strip to the native geometry at page zoom, and made narrow zoomed layouts wrap their actions instead of expanding beyond the window.
+
+This is an unpublished local candidate. The existing running version, release version and GitHub remain unchanged. Real-window and synthetic verification details are kept in the local review record; native physical dragging, Windows system-menu behavior, multi-display DPI and Snap layouts still require manual acceptance.
 
 ## [0.2.2-dev.31] - 2026-10-28
 

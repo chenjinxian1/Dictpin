@@ -5,6 +5,14 @@ const {SafePaste}=require('./safe-paste');
 const {createShortcutManager}=require('./shortcut-manager'),{createTextServiceDiagnostics}=require('./provider-checks');
 const {createActions,readable}=require('./dictation-actions'),{createOverlayLifecycle}=require('./dictation-overlay-lifecycle');
 const {registerProductIpc,singleShortcutMap}=require('./dictation-ipc');
+function windowAppearance({nativeTheme,systemPreferences,platform=process.platform}={}){
+ const dark=nativeTheme?.shouldUseDarkColors;
+ let color=dark?'#191919':'#f4f4f2',symbolColor=dark?'#ededed':'#161616';
+ if(platform==='win32'&&nativeTheme?.shouldUseHighContrastColors){
+  try{const background=systemPreferences.getColor('window'),text=systemPreferences.getColor('window-text');color=background;symbolColor=text;}catch{/* Keep the complete contrasting theme if OS colors are unavailable. */}
+ }
+ return {backgroundColor:color,...(platform==='win32'?{titleBarStyle:'hidden',titleBarOverlay:{color,symbolColor,height:34}}:{})};
+}
 function configurePaths(app,root){
  const scope=path.resolve(root,'..'),work=path.join(root,'work'),profile=path.resolve(process.env.LOCAL_DICTATION_PROFILE||path.join(work,'profile'));
  if(!profile.toLowerCase().startsWith((scope+path.sep).toLowerCase()))throw Error('Profile must stay in the named test directory.');
@@ -15,7 +23,7 @@ function configurePaths(app,root){
 }
 async function start(electron,{StoreClass=Store,LocalAsrClass=LocalAsr,SafePasteClass=SafePaste,root=path.resolve(__dirname,'../..'),uiLanguage='zh-CN'}={}){
  const english=uiLanguage==='en',languageArguments=english?['--dictpin-ui-language=en']:[],label=(zh,en)=>english?en:zh;
- const {app,BrowserWindow,ipcMain,globalShortcut,clipboard,safeStorage,session,screen,Menu,Tray,nativeImage,powerMonitor,nativeTheme}=electron;
+ const {app,BrowserWindow,ipcMain,globalShortcut,clipboard,safeStorage,session,screen,Menu,Tray,nativeImage,powerMonitor,nativeTheme,systemPreferences}=electron;
  const renderer=path.join(root,'app/renderer'),mainURL=pathToFileURL(path.join(renderer,'dictation.html')).href,barURL=pathToFileURL(path.join(renderer,'voice-bar.html')).href;
  app.setName('Local Dictation');
  const store=new StoreClass(app.getPath('userData'),safeStorage),localAsr=new LocalAsrClass(),controller=new Controller({store,bridge:Object.freeze({}),localAsr});
@@ -44,9 +52,9 @@ async function start(electron,{StoreClass=Store,LocalAsrClass=LocalAsr,SafePaste
  function publish(){if(mainWindow&&!mainWindow.isDestroyed())mainWindow.webContents.send('state',snapshot(false));barManager?.update(snapshot(true));tray?.setToolTip(controller.state.phase==='recording'?label('Dictpin · 录音中','Dictpin · Recording'):'Dictpin');}
  function secure(win){win.webContents.setWindowOpenHandler(()=>({action:'deny'}));win.webContents.on('will-navigate',event=>event.preventDefault());win.webContents.on('will-attach-webview',event=>event.preventDefault());}
  function showMain(view='recent'){requestedView=view;if(mainWindow&&!mainWindow.isDestroyed()){mainWindow.show();mainWindow.focus();publish();}}
- const windowBackground=()=>nativeTheme?.shouldUseDarkColors?'#191919':'#f4f4f2';
- mainWindow=new BrowserWindow({width:640,height:480,minWidth:360,minHeight:300,show:false,title:'Dictpin',icon:path.join(renderer,'../assets/icon.png'),autoHideMenuBar:true,backgroundColor:windowBackground(),webPreferences:{preload:path.join(__dirname,'dictation-preload.js'),additionalArguments:languageArguments,contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,backgroundThrottling:false}});
- const themeChanged=()=>{if(!mainWindow.isDestroyed())mainWindow.setBackgroundColor(windowBackground());};nativeTheme?.on('updated',themeChanged);
+ const appearance=()=>windowAppearance({nativeTheme,systemPreferences}),initialAppearance=appearance();
+ mainWindow=new BrowserWindow({width:640,height:480,minWidth:360,minHeight:300,show:false,title:'Dictpin',icon:path.join(renderer,'../assets/icon.png'),autoHideMenuBar:true,...initialAppearance,webPreferences:{preload:path.join(__dirname,'dictation-preload.js'),additionalArguments:[...languageArguments,...(initialAppearance.titleBarOverlay?['--dictpin-titlebar-overlay']:[])],contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,backgroundThrottling:false}});
+ const themeChanged=()=>{if(mainWindow.isDestroyed())return;const next=appearance();mainWindow.setBackgroundColor(next.backgroundColor);if(next.titleBarOverlay)mainWindow.setTitleBarOverlay(next.titleBarOverlay);};nativeTheme?.on('updated',themeChanged);systemPreferences?.on?.('color-changed',themeChanged);
  secure(mainWindow);
  mainWindow.on('blur',resumeShortcuts);
  mainWindow.on('focus',()=>{if(!shortcutRecordingIntent||disposed||!shortcutManager)return;try{shortcutManager.setRecording(true);}catch{store.notices.push('快捷键未能完全暂停，录入期间已禁止触发，请重试。');}publish();});
@@ -89,7 +97,7 @@ async function start(electron,{StoreClass=Store,LocalAsrClass=LocalAsr,SafePaste
  tray.setContextMenu(Menu.buildFromTemplate([{label:label('最近结果','Recent result'),click:()=>showMain('recent')},{label:label('开始 / 结束听写','Start / stop dictation'),click:()=>void host.toggleFromTray()},{label:label('个人词典','Personal dictionary'),click:()=>showMain('dictionary')},{label:label('设置','Settings'),click:()=>showMain('settings')},{type:'separator'},{label:label('退出','Quit'),click:()=>{quitting=true;app.quit();}}]));
  tray.on('double-click',()=>showMain('recent'));
  mainWindow.show();publish();
- async function dispose(){if(disposed)return;disposed=true;quitting=true;nativeTheme?.removeListener('updated',themeChanged);for(const p of pendingFlushes.values()){clearTimeout(p.timer);p.resolve(false);}pendingFlushes.clear();providerChecks.cancelAll();controller.dispose();barManager.dispose();shortcutManager.dispose();const ownedTray=tray;tray=null;ownedTray?.destroy?.();await Promise.allSettled([localAsr.dispose(),paste.dispose()]);}
+ async function dispose(){if(disposed)return;disposed=true;quitting=true;nativeTheme?.removeListener('updated',themeChanged);systemPreferences?.removeListener?.('color-changed',themeChanged);for(const p of pendingFlushes.values()){clearTimeout(p.timer);p.resolve(false);}pendingFlushes.clear();providerChecks.cancelAll();controller.dispose();barManager.dispose();shortcutManager.dispose();const ownedTray=tray;tray=null;ownedTray?.destroy?.();await Promise.allSettled([localAsr.dispose(),paste.dispose()]);}
  app.on('before-quit',event=>{if(!disposed){event.preventDefault();void flushEditor('quit').then(ok=>{if(ok)return dispose().finally(()=>app.quit());quitting=false;flushNotice='文字尚未确认保存，暂未退出，请先复制当前文字。';showMain('recent');});}});
  return {controller,store,mainWindow,snapshot,dispose,host};
 }
@@ -100,5 +108,5 @@ function boot(electron){
  const uiLanguage=process.argv.includes('--dictpin-ui-language=en')?'en':'zh-CN';
  electron.app.whenReady().then(()=>start(electron,{root,uiLanguage})).then(result=>{running=result;}).catch(()=>{electron.dialog?.showErrorBox(uiLanguage==='en'?'Startup failed':'启动失败',uiLanguage==='en'?'Dictpin could not start. Existing data was not changed and recognition did not switch to the cloud.':'本地听写未能启动；未更改旧数据或切换到云端识别。');electron.app.quit();});
 }
-module.exports={start,boot,configurePaths};
+module.exports={start,boot,configurePaths,windowAppearance};
 if(require.main===module)boot(require('electron'));

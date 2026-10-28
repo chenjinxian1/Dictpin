@@ -4,6 +4,7 @@ const uiLanguage=typeof process==='object'&&Array.isArray(process.argv)&&process
 function subscribe(channel,callback){if(typeof callback!=='function')return()=>{};const handler=(_event,value)=>callback(value);ipcRenderer.on(channel,handler);return()=>ipcRenderer.removeListener(channel,handler);}
 contextBridge.exposeInMainWorld('dictation',Object.freeze({
  uiLanguage,
+ windowControlsOverlay:process.argv.includes('--dictpin-titlebar-overlay'),
  getSnapshot:()=>ipcRenderer.invoke('snapshot'),
  start:input=>input===undefined?ipcRenderer.invoke('capture:start'):ipcRenderer.invoke('capture:start',input),
  toggle:()=>ipcRenderer.invoke('capture:toggle'),

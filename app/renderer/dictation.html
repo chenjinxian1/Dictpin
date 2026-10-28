@@ -10,8 +10,9 @@
 </head>
 <body>
   <a class="skip" href="#content">跳到内容</a>
+  <div id="window-titlebar" class="window-titlebar" hidden></div>
   <header class="app-header">
-    <span class="app-name"><svg class="app-mark" viewBox="0 0 20 20" aria-hidden="true"><rect x="7" y="2" width="6" height="10" rx="3"/><path d="M4 9a6 6 0 0 0 12 0M10 15v3M7 18h6"/></svg><span>Dictpin</span></span>
+    <span class="app-name"><img class="app-mark" src="../assets/icon.png" width="18" height="18" alt="" draggable="false"><span>Dictpin</span></span>
     <nav class="tabs" aria-label="管理"><button type="button" data-page="recent" aria-current="page">结果</button><button type="button" data-page="dictionary">词典</button><button type="button" data-page="settings">设置</button></nav>
     <div class="header-actions"><span id="session-status" class="sr-only" role="status">正在连接桌面程序</span><button id="capture-cancel" class="text-button" type="button" hidden>取消</button><button id="use-local-text" class="secondary" type="button" hidden>使用本地文字</button><button id="capture-toggle" class="primary capture-button" type="button" disabled><span class="record-dot" aria-hidden="true"><svg viewBox="0 0 20 20"><rect x="7" y="2" width="6" height="10" rx="3"/><path d="M4 9a6 6 0 0 0 12 0M10 15v3M7 18h6"/></svg></span><span id="capture-label">连接中</span></button></div>
   </header>
