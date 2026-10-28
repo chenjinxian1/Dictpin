@@ -2,11 +2,13 @@
 
 ## Unreleased
 
-This is an application-source development candidate. No installer release, tag or verified download has been created; package versions remain development metadata.
+No changes recorded yet.
 
-### 2026-10-28
+## [0.2.2-dev.29] - 2026-10-28
 
-#### Provider configuration and draft diagnostics — local development candidate
+This is an application-source development candidate. No installer release, tag or verified download has been created; the version identifies the source update.
+
+### Provider configuration and model discovery
 
 - Added provider presets for Qwen, DeepSeek, OpenAI and SiliconFlow, plus Local/Custom, with separate remembered provider/region configurations and one active service. Explicit Save commits changed drafts and activation atomically; switching presets sends no request.
 - Added draft-bound cleanup sample tests using the same request/response rules and 12-second deadline as actual cleanup. Configuration edits invalidate old test results and superseded replies cannot update the new draft.
@@ -14,11 +16,12 @@ This is an application-source development candidate. No installer release, tag o
 - Separated offline built-in model suggestions from **Fetch models online**. Missing remote credentials now show **请先填写密钥**, focus the key field and send no request. Online fetching has an explicit busy label and nearby result/cancellation feedback; anonymous local services remain supported.
 - Added explicit key removal/undo and session/saved/unavailable states. Keys remain in the main process, scoped to their profile/endpoint; requested encryption or save failure preserves previous data. Legacy configurations remain unchanged on open; unsupported newer data opens read-only.
 - Optional cleanup with unavailable configuration/credentials no longer prevents local dictation. No automatic paid retry, provider switch, physical microphone test or deployed running-version replacement is introduced.
-- Updated API, privacy, installation and all six README explanations. Preset documentation was checked on 2026-10-28; real account access, paid-service quality and billing remain manual acceptance. This candidate is not an installer release or GitHub publication.
+- Updated API, privacy, installation and all six README explanations. Preset documentation was checked on 2026-10-28; real account access, paid-service quality and billing remain manual acceptance. This source candidate is not an installer release.
+- Set the workspace and application versions to `0.2.2-dev.29`, show that version in all six centered README titles, and verify the titles, manifests and changelog stay in agreement. Package identifiers and user-data paths remain unchanged.
 
 Verification for this candidate: **139 local tests** passed, including the existing 74 regression tests. **18 Electron flow checks in each of Chinese and English** passed with natural exit 0, using fictional profiles, in-memory service responses, simulated system adapters and intercepted capture commands. No physical microphone, live API, real key, system clipboard or paid request was used. Checks include missing-key focus/feedback, offline selection, fetch/cancel states, and feedback visibility at 360 × 300 in both themes. Invalid-workspace recovery, conflicting settings restoration and switching away from a pending diagnostic were reproduced before their fixes and then passed. Test fixtures and raw evidence remain outside the public source tree.
 
-### 2026-10-24
+## [0.2.1-dev.24] - 2026-10-24
 
 #### Guarded delivery and long dictation — development candidate
 

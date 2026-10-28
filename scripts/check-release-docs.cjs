@@ -6,6 +6,10 @@ const languages=['README.md',...['zh-CN','fr','ja','ko','ms'].map(id=>`docs/i18n
 function walk(dir){return fs.readdirSync(path.join(root,dir),{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(dir,e.name)):[path.join(dir,e.name).replaceAll('\\','/')]);}
 const files=[...fs.readdirSync(root).filter(f=>f.endsWith('.md')),...walk('docs').filter(f=>f.endsWith('.md'))];
 const problems=[],external=new Set();let localLinks=0,anchors=0;
+const application=JSON.parse(fs.readFileSync(path.join(root,'app/package.json'),'utf8')),workspace=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+const version=application.version;
+if(typeof version!=='string'||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)||workspace.version!==version)problems.push('package.json and app/package.json must have the same valid source version');
+if(!fs.readFileSync(path.join(root,'CHANGELOG.md'),'utf8').includes(`## [${version}] - `))problems.push('CHANGELOG.md: missing current version entry');
 const plain=s=>s.replace(/```[^\n]*\n[\s\S]*?```/g,'');
 const slug=s=>s.replace(/<[^>]+>/g,'').replace(/[`*_~]/g,'').toLowerCase().replace(/[^\p{L}\p{N}_\-\s]/gu,'').replace(/\s/g,'-');
 function headingIds(s){const seen=new Map();return new Set([...plain(s).matchAll(/^#{1,6}\s+(.+)$/gm)].map(m=>{const value=slug(m[1].trim()),count=seen.get(value)||0;seen.set(value,count+1);return value+(count?'-'+count:'');}));}
@@ -30,7 +34,7 @@ const commands=fs.readFileSync(path.join(root,'README.md'),'utf8').replaceAll('\
 for(const file of languages){
  const body=fs.readFileSync(path.join(root,file),'utf8').replaceAll('\r\n','\n');
  const header=body.split(/^## /m,1)[0];
- if(!body.startsWith('<h1 align="center">Dictpin</h1>\n')||(body.match(/^## /gm)||[]).length<10||body.length<4000)problems.push(`${file}: incomplete README`);
+ if(!body.startsWith(`<h1 align="center">Dictpin v${version}</h1>\n`)||(body.match(/^## /gm)||[]).length<10||body.length<4000)problems.push(`${file}: incomplete README or mismatched version title`);
  if((header.match(/<p align="center">/g)||[]).length!==3)problems.push(`${file}: tagline, badges and language navigation must be centered`);
  const badgeImages=[...header.matchAll(/<img\b[^>]*\bsrc="([^"]+)"[^>]*>/g)].map(m=>m[1]);
  if(badgeImages.length!==6||badgeImages.some(src=>!src.startsWith('https://img.shields.io/badge/')))problems.push(`${file}: expected six static project badges`);

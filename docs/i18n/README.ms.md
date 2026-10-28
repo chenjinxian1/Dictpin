@@ -1,4 +1,4 @@
-<h1 align="center">Dictpin</h1>
+<h1 align="center">Dictpin v0.2.2-dev.29</h1>
 
 <p align="center">
   <strong>Alat imlak desktop yang ringkas. Bercakap, kekalkan kawalan terhadap teks anda, kemudian teruskan kerja.</strong>

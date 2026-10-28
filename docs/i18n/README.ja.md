@@ -1,4 +1,4 @@
-<h1 align="center">Dictpin</h1>
+<h1 align="center">Dictpin v0.2.2-dev.29</h1>
 
 <p align="center">
   <strong>小さなデスクトップ音声入力ツール。話して、自分の言葉を確かめて、次の作業へ。</strong>

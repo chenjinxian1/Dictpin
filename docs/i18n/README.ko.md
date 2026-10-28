@@ -1,4 +1,4 @@
-<h1 align="center">Dictpin</h1>
+<h1 align="center">Dictpin v0.2.2-dev.29</h1>
 
 <p align="center">
   <strong>작고 간결한 데스크톱 받아쓰기 도구. 말하고, 내 글을 직접 확인한 뒤, 다음 일로 넘어가세요.</strong>
