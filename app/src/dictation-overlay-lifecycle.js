@@ -29,7 +29,13 @@ function createOverlayLifecycle({createWindow,loadWindow,positionWindow,onFailur
   copiedId=id;copiedRevision=latest.result.revision||1;render();clearTimer();const revision=generation;
   timer=schedule(()=>{if(revision!==generation||taskId!==id||active.has(latest?.state?.phase))return;timer=null;closedTaskId=id;destroy();},650);timer?.unref?.();return true;
  }
+ // A confirmed paste needs no follow-up action, so the strip leaves after a short acknowledgement.
+ function markDelivered(){
+  if(disposed||active.has(latest?.state?.phase)||!ready())return false;
+  const id=taskId,revision=generation;clearTimer();
+  timer=schedule(()=>{if(revision!==generation||taskId!==id||active.has(latest?.state?.phase))return;timer=null;closedTaskId=id;destroy();},1000);timer?.unref?.();return true;
+ }
  function dismiss(){if(active.has(latest?.state?.phase))return false;closedTaskId=taskId;if(latest?.recovery)closedRecoveryToken=latest.recovery.token;if(latest?.state?.phase==='error')closedErrorKey=errorKey();generation++;destroy();return true;}
- return {update,markCopied,dismiss,getWindow:()=>alive()?window:null,dispose(){disposed=true;generation++;destroy();}};
+ return {update,markCopied,markDelivered,dismiss,getWindow:()=>alive()?window:null,dispose(){disposed=true;generation++;destroy();}};
 }
 module.exports={createOverlayLifecycle};

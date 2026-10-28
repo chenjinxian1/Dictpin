@@ -1,12 +1,14 @@
 'use strict';
 (function(root,factory){
- const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;
+ const node=typeof module==='object'&&module.exports,api=factory(node?require('./dictation-i18n-messages'):root.DictpinMessagesEn);if(node)module.exports=api;
  else{root.DictpinI18n=Object.freeze(api);api.install(root.document,root.dictation?.uiLanguage,{Observer:root.MutationObserver});}
-})(typeof globalThis!=='undefined'?globalThis:this,function(){
+})(typeof globalThis!=='undefined'?globalThis:this,function(messageTable){
  // Presentation only. Never translate snapshots, input values, transcript data or dictionary wording.
+ // Everything else on the page is presentation, including messages composed in the main process.
  const protectedText='input,textarea,[contenteditable],#result-content,#original-text,#correction-list,#provider-summary,#effective-shortcut,.word-title,.word-aliases,[data-user-text]';
  const protectedAttributes='#original-text,#correction-list,#provider-summary,.word-title,.word-aliases,[data-user-text]';
- const chrome='title,button,label,summary,h1,h2,h3,.app-name,.skip,.hint,.empty-copy,.dictionary-intro,.dictionary-help,.privacy-note,.count-unit,#notice,#session-status,#task-status-title,#task-status-detail,#result-message,#recent-time,#shortcut-prefix,#shortcut-suffix,#toast-text,#word-undo-text,#word-error,#confirm-description,#bar-status,#bar-feedback,#voice-pill';
+ // Device names are user data; other select options are presentation.
+ const userOptions='#microphone';
  const english=Object.freeze({
   '版本与详情':'Versions & details','改用识别原文':'Use recognition original','改用识别原文？':'Use the recognition original?','提示':'Notifications','使用本地文字':'Use local text','已保存到本机':'Saved locally','正在保存修改…':'Saving edits…','尚未指定错写；添加后才会自动纠正':'No misspellings yet; add one for automatic correction','仅规范英文大小写；可添加常见错写':'English capitalization only; add explicit misspellings if needed','下一步：查看原因或重试本段。':'Next: view details or retry this segment.','查看原因':'View details',
   '内置模型建议（无需联网）':'Built-in model suggestions (offline)','在线获取模型':'Fetch models online',
@@ -14,6 +16,8 @@
   '本次使用本地文字，模型连接待配置。':'Using local text for this task; configure the model connection when ready.',
   '已取消；已完成文字保留，未处理片段仅在内存保留30秒。':'Cancelled. Completed text is kept; unfinished audio stays in memory for 30 seconds.',
   '继续追加':'Append more','继续追加？':'Append more?','撤销追加':'Undo append','安全自动粘贴':'Guarded auto-paste','快捷键继续追加到最近结果':'Append to the latest result with the shortcut','保留前一稿；自动投递只发送新增部分。':'Keep the earlier draft; delivery sends only new text.',
+  '文字整理':'Text cleanup','用模型整理识别文字，不增加内容。':'Cleans up recognized text with a model; adds nothing.','整理程度':'Cleanup level','顺畅（推荐）':'Fluent (recommended)','顺畅：删口头禅和重复，改口只留最终说法，列举整理成列表。轻整理：只补标点、断句。':'Fluent removes fillers and repeats, keeps the final wording after a self-correction and lays out spoken lists. Light only adds punctuation and sentence breaks.',
+  '自动粘贴':'Auto-paste','想说完直接进输入框？开启安全自动粘贴后，快捷键听写结束会粘贴到原输入框；会临时使用剪贴板，焦点变化时不粘贴。':'Want text to land in the field when you finish? With guarded auto-paste, shortcut dictation pastes into the original field. It uses the clipboard briefly and skips the paste if focus changes.','开启自动粘贴':'Turn on auto-paste','不再提示':'Don\'t show again','未能开启自动粘贴，请到设置中重试。':'Could not turn on auto-paste. Try again in Settings.',
   '默认关闭。仅快捷键唤起可投递；焦点变化时保留文字。会替换剪贴板。':'Off by default. Shortcut only; focus changes block delivery. Replaces clipboard.','投递中':'Delivering','正在录音，逐段识别':'Recording with local previews','正在完成剩余片段':'Finishing remaining segments',
   '完成后由你复制。':'Copy manually when ready.','正在确认原输入框。':'Checking the original input field.','结束后将尝试粘贴到原输入框。':'After Stop, attempt one paste to the original input field.','正在安全投递文字…':'Delivering text with safety checks…',
   '已发送粘贴按键；请在原输入框核对，文字也已放入剪贴板。':'Paste keys sent. Check the original field; text is also on the clipboard.','未自动粘贴，文字仍在，请手动复制。':'Auto-paste was blocked. Your text is still here to copy.','自动粘贴未完成，文字仍在，请手动复制。':'Auto-paste did not finish. Your text is still here.',
@@ -56,16 +60,29 @@
  });
  function normalizeLanguage(value){return value==='en'?'en':'zh-CN';}
  function t(key,language='zh-CN',values={}){const entry=keyed[key];if(!entry)throw new Error('Unknown presentation key: '+key);return entry[normalizeLanguage(language)==='en'?1:0].replace(/\{(\w+)\}/g,(_match,name)=>String(values[name]??''));}
- function translate(value){return Object.hasOwn(english,value)?english[value]:value.split(/(?<=。)\s+/).map(part=>Object.hasOwn(english,part)?english[part]:part).join(' ');}
+ function sentence(text){return Object.hasOwn(english,text)?english[text]:messageTable?messageTable.translateMessage(text):text;}
+ // Composed messages join sentences with or without a space, so split on the full stop itself.
+ function translate(value){
+  const whole=sentence(value);if(whole!==value)return whole;
+  const parts=value.split(/(?<=[。！？])\s*/u).filter(Boolean);if(parts.length<2)return value;
+  // A table entry may itself hold several sentences, so match the longest run first.
+  const out=[];let changed=false;
+  for(let i=0;i<parts.length;){
+   let j=parts.length;for(;j>i+1;j--){const run=parts.slice(i,j).join(''),next=sentence(run);if(next!==run){out.push(next);changed=true;break;}}
+   if(j===i+1){const next=sentence(parts[i]);changed||=next!==parts[i];out.push(next);}
+   i=j;
+  }
+  return changed?out.join(' '):value;
+ }
  function closest(element,selector){return !!element?.closest?.(selector);}
  function transform(value,replace){const content=String(value),trimmed=content.trim();if(!trimmed)return content;const next=replace(trimmed);return next===trimmed?content:content.slice(0,content.indexOf(trimmed))+next+content.slice(content.indexOf(trimmed)+trimmed.length);}
  function translateNodeText(element,value,language='en'){
   if(normalizeLanguage(language)!=='en'||!element)return value;
   if(element.tagName==='OPTION'){
-   if(element.value!=='')return value;
+   if(element.value!==''&&closest(element,userOptions))return value;
    return transform(value,text=>text.startsWith('系统默认 · ')?'System default · '+text.slice('系统默认 · '.length):translate(text));
   }
-  if(closest(element,protectedText)||!closest(element,chrome))return value;
+  if(closest(element,protectedText))return value;
   return transform(value,text=>{
    if(element.id==='recent-time')return text.replace(/ 字符$/,' characters');
    if(element.id==='word-undo-text'){const match=text.match(/^已移除“([\s\S]*)”$/);if(match)return 'Removed “'+match[1]+'”';}

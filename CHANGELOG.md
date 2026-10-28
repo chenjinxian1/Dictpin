@@ -2,13 +2,39 @@
 
 ## Unreleased
 
-### Integrated Windows title bar — local candidate
+No changes recorded yet.
+
+## [0.2.2-dev.33] - 2026-10-29
+
+### Integrated Windows title bar
 
 - Replaced the Windows default caption strip with a compact Dictpin title/drag area in the existing paper/graphite style. Moved the existing brand out of the navigation row, kept native minimize/maximize/close buttons, and reserved their actual overlay area. No new window-control IPC or dependency was added.
 - Synchronized title, native caption symbols and window background with light/dark themes and the Windows high-contrast color pair. Kept the existing native frame on other platforms, without claiming additional platform support.
 - Kept app actions outside the drag region, adjusted the strip to the native geometry at page zoom, and made narrow zoomed layouts wrap their actions instead of expanding beyond the window.
 
-This is an unpublished local candidate. The existing running version, release version and GitHub remain unchanged. Real-window and synthetic verification details are kept in the local review record; native physical dragging, Windows system-menu behavior, multi-display DPI and Snap layouts still require manual acceptance.
+- Updated both application manifests and all six README titles to `0.2.2-dev.33`, preserving the already published v0.2.2-dev.32 cleanup, streaming and interface-language changes. This is a source update; no installer, tag or running-version replacement is included.
+
+### Documentation
+
+- Brought README (all six languages), API configuration, installation, privacy and contributing docs in line with 0.2.2-dev.32: Fluent/Light text cleanup instead of light-only cleanup, streaming cleanup requests with the 4-second no-response limit (and the possible HTTP 400 from services that reject streaming parameters), the renamed **文字整理** (Text cleanup) switch, and an interface available in Chinese and English that follows the Windows display language. No application code changed.
+
+Validation after combining the title bar with the published v0.2.2-dev.32 changes: **162 local Node tests**, **37 Electron flow checks in each of Chinese and English**, and **6 real-window layout checks** passed with natural exit 0. The flows also verify that the one-time paste offer can be dismissed without enabling delivery. Source/documentation checks passed for 49 syntax inputs, 55 production inputs, 15 documents, six README languages and 174 local links. Checks use fictional text/profiles, simulated services/system adapters and blocked network access; no physical microphone, live model request, user key or system clipboard was used. Tests and raw evidence remain local.
+
+Native physical dragging, system-window menu behavior, multi-display DPI, actual Windows high-contrast mode and Snap layouts remain manual acceptance items. No microphone, paid request or existing user profile is used for publication verification.
+
+## [0.2.2-dev.32] - 2026-10-28
+
+### Fluent cleanup, auto-paste offer and system interface language
+
+- Added a **Fluent** cleanup level, now the default, with **Light** kept as an option under Settings → Cleanup level. Fluent removes fillers and repeats, keeps only the final wording after a self-correction and lays out spoken lists. A new `checkFluentEdit` guard allows deletion but not invention: numbers must stay in order and come from the original, English terms must come from the original (case may change), new characters are capped at about 8%, negations must survive outside obvious corrections, and length stays bounded. Any failure keeps the local text.
+- Cleanup requests now stream. A service that does not start responding within 4 seconds is abandoned without retry; the 12-second overall limit is unchanged. A service that ignores streaming and returns one JSON document still works.
+- After a completed dictation, the Results page offers guarded auto-paste once (**Turn on** / **Don't show again**). Delivery still stays off until the user turns it on. After a confirmed paste the voice strip shows **Pasted** and closes after one second.
+- The interface now follows the Windows display language (Chinese display languages show Chinese; all others show English) instead of always starting in Chinese, with **Settings → Interface language** to override it after a restart. `--ui-language=en|zh-CN` still forces a development instance.
+- English mode no longer leaves Chinese behind: main-process notices, errors, recognizer and shortcut messages now have English (`app/renderer/dictation-i18n-messages.js`, with rules for composed messages such as HTTP status errors). Translation now covers every non-protected element instead of a fixed whitelist, translates select options other than microphone names, and splits sentences joined without a space. The updated privacy note and the new cleanup/auto-paste controls are included.
+- Added `native/CleanupPolicy.cs`, a C# 5 port of the fluent guard for the planned lightweight .NET host. It builds with the system `csc.exe`.
+- Updated workspace/application versions and all six centered README titles to `0.2.2-dev.32`. This remains a source-code development update; no installer release, tag or running-version replacement is included.
+
+Validation: **40 local Node checks** passed: 27 shared fluent fixtures, light-level strictness, scripted-fetch streaming (split SSE chunks, JSON fallback, first-event stall, provider error events and HTTP errors), English coverage of every Chinese source literal against a reviewed non-UI allowlist, composed-message translation, protected user text, and flag → setting → Windows language resolution. The same 27 fixtures passed against the native port built with the system `csc.exe`. `npm run check` passed. Checks use fictional text and a scripted fetch; no model request, microphone, clipboard or paste target was used, and the application was not launched. Fluent output quality with real providers, Electron flows, the auto-paste offer, English presentation on an English Windows install and visual review remain manual acceptance.
 
 ## [0.2.2-dev.31] - 2026-10-28
 

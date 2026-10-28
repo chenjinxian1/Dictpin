@@ -4,7 +4,7 @@ Local recognition, dictionary rules, editing, copying and recovery do not requir
 
 ## Choose a provider and edit a draft
 
-Open **设置 → 模型连接** (Settings → Model connection). The interface distinguishes the active service from the draft that becomes active after **保存更改** (Save changes). Chinese is the default UI; optional English presentation has the same behavior. Six README languages do not imply six UI languages.
+Open **设置 → 模型连接** (Settings → Model connection). The interface distinguishes the active service from the draft that becomes active after **保存更改** (Save changes). The interface follows the Windows display language (Chinese or English) and can be changed under Settings → Interface language; both languages behave the same. Six README languages do not imply six UI languages.
 
 | Provider | Preset contents | User input |
 | --- | --- | --- |
@@ -23,7 +23,7 @@ Each provider/region has a separate remembered configuration; only one is active
 
 HTTPS is required except for localhost/loopback HTTP. URL credentials, whitespace, query strings and fragments are rejected; redirects are not followed. Base URLs receive `/chat/completions`; complete compatible endpoints are retained. DeepSeek's preset uses its exact complete endpoint instead of the generic bare-host `/v1` rule. Keys belong in the key field, never in URLs.
 
-There is no API environment-variable or `.env` loader. Arbitrary headers, prompts, streaming, retry and timeout controls are not exposed. Only text **Chat Completions** is supported, not Responses, Anthropic Messages, native DashScope audio, ASR or TTS.
+There is no API environment-variable or `.env` loader. Arbitrary headers, prompts, retry and timeout controls are not exposed. Only text **Chat Completions** is supported, not Responses, Anthropic Messages, native DashScope audio, ASR or TTS.
 
 ## Keys: retain, replace or remove
 
@@ -40,7 +40,7 @@ Use the provider's official key guidance or console: [Qwen key guide](https://he
 
 ## Test the draft or get models deliberately
 
-**测试轻整理** (Test cleanup) checks the current API draft without saving. An unrelated microphone draft does not disable it. It sends one fixed fictional Chinese/English sample, with no private transcript or personal dictionary, through the same request builder and response checks as actual cleanup. Both have a **12-second** deadline. Passing that sample is not a quality guarantee for other text.
+**测试轻整理** (Test cleanup, shared by both cleanup levels) checks the current API draft without saving. An unrelated microphone draft does not disable it. It sends one fixed fictional Chinese/English sample, with no private transcript or personal dictionary, through the same request builder and response checks as actual cleanup. Both have a **12-second** deadline. Passing that sample is not a quality guarantee for other text.
 
 The interface shows untested, checking, sample passed, failed and changed states. Address, region, model, key or request-parameter edits invalidate the old result; cancelled/superseded replies cannot update the new draft. Expandable safe details identify the tested model, final address, category, HTTP status, elapsed time and test time. Raw error bodies and authorization are not shown. A green verification state is not persisted across restarts.
 
@@ -58,7 +58,7 @@ Testing, listing and saving are mutually exclusive. Drafts remain editable durin
 
 Actual cleanup sends the **dictionary-corrected transcript**, narrow editing instructions and a bounded list of saved correct dictionary terms. It does not send recording audio, wrong-spelling aliases, full result history or the clipboard. Provider retention and billing apply. See [Privacy](PRIVACY.md).
 
-Requests are non-streaming JSON POSTs with Bearer authorization when a key exists. Replies require complete string `choices[0].message.content` and content/number/negation checks. HTTP success alone is insufficient. Known official preset/model combinations use narrowly allowed non-thinking parameters; arbitrary custom endpoints and unknown models do not inherit them. SiliconFlow's first adapter adds no speculative thinking parameter.
+Requests are streaming (`stream:true`, with `stream_options.include_usage`) JSON POSTs with Bearer authorization when a key exists. If no response starts within 4 seconds the request is abandoned without retry; the overall deadline stays 12 seconds. A service that ignores streaming and returns one JSON document is accepted. Some compatible services reject the streaming parameters with HTTP 400. The assembled reply must be complete text and pass the selected cleanup level's checks: Fluent allows deleting fillers, repeats and abandoned self-corrections but not new numbers, terms or content; Light allows only punctuation and minimal disfluency changes. HTTP success alone is insufficient. Known official preset/model combinations use narrowly allowed non-thinking parameters; arbitrary custom endpoints and unknown models do not inherit them. SiliconFlow's first adapter adds no speculative thinking parameter.
 
 **Sample tests and deliberate cleanup retries can cost money.** Getting models sends the selected service's authentication and normal network metadata; the provider determines applicable charges. There is no automatic paid retry or provider switch. Cancellation, copying, editing and timeout stop accepting a reply locally but cannot guarantee remote processing or billing stops. Failed cleanup preserves the local corrected draft and independent recognition original. Temporary-audio recovery disables cleanup.
 

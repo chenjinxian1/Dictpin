@@ -38,6 +38,58 @@ async function requestJSON(url,body,key,{signal,timeoutMs=90000,fetchImpl=fetch,
     throw new ApiError('网络请求失败，请检查网络和 API 地址。未自动重试。','network');
   }finally{clearTimeout(timer);signal?.removeEventListener('abort',cancel);observe({phase:'finish',at:wallNow(),status,httpStatus,durationMs:Math.max(0,performance.now()-startedAt),usage:reportedUsage});}
 }
+// Streams a chat completion and returns it in the non-streaming response shape.
+// The first-event deadline gives up early on a stalled service; no retry is made.
+async function requestChatStream(url,body,key,{signal,timeoutMs=12000,firstEventMs=4000,fetchImpl=fetch,onUsage,wallNow=()=>Date.now()}={}){
+  if(signal?.aborted)throw new ApiError('已取消。','cancelled');
+  if(typeof body!=='string'||Buffer.byteLength(body,'utf8')>MAX_REQUEST_BYTES)throw new ApiError('请求文本过大，请缩短文字或上下文。','size');
+  const attemptId=randomUUID(),startedAt=performance.now();let status='failed',httpStatus=null,reportedUsage=normalizeUsage(null);
+  const observe=event=>{try{onUsage?.({attemptId,...event});}catch{}};
+  observe({phase:'start',at:wallNow()});
+  const abort=new AbortController();let timedOut=false,stalled=false;
+  const cancel=()=>abort.abort();signal?.addEventListener('abort',cancel,{once:true});
+  const timer=setTimeout(()=>{timedOut=true;abort.abort();},timeoutMs);
+  let firstTimer=setTimeout(()=>{stalled=true;abort.abort();},Math.min(firstEventMs,timeoutMs));
+  const alive=()=>{clearTimeout(firstTimer);firstTimer=null;};
+  try{
+    const headers={'Content-Type':'application/json',Accept:'text/event-stream'};if(key)headers.Authorization=`Bearer ${key}`;
+    const response=await fetchImpl(url,{method:'POST',headers,body,signal:abort.signal,redirect:'error'});
+    httpStatus=Number.isInteger(response.status)?response.status:null;
+    if(signal?.aborted||timedOut||stalled)throw new ApiError('请求已中止。','cancelled');
+    if(!response.ok){await response.body?.cancel();throw new ApiError(`服务返回 HTTP ${response.status}。请检查地址、模型、额度和密钥；未自动重试。`,'http');}
+    const reader=response.body.getReader(),decoder=new TextDecoder('utf-8'),plain=/json/i.test(response.headers?.get?.('content-type')||'');
+    let total=0,buffer='',raw='',text='',finish=null,done=false;
+    const line=row=>{
+      if(!row.startsWith('data:'))return;const payload=row.slice(5).trim();if(!payload)return;if(payload==='[DONE]'){done=true;return;}
+      let event;try{event=JSON.parse(payload);}catch{throw new ApiError('服务流式响应格式无效，请确认接口兼容。','format');}
+      if(event?.error)throw new ApiError('服务返回错误状态，已保留本地文字。','format');
+      const choice=event?.choices?.[0],piece=choice?.delta?.content??choice?.message?.content;
+      if(typeof piece==='string')text+=piece;if(choice?.finish_reason)finish=choice.finish_reason;if(event?.usage)reportedUsage=normalizeUsage(event.usage);
+    };
+    while(!done){
+      const {done:end,value}=await reader.read();if(end)break;alive();
+      total+=value.byteLength;if(total>2*1024*1024){await reader.cancel();throw new ApiError('服务响应过大，已停止读取。','size');}
+      const chunk=decoder.decode(value,{stream:true});
+      if(plain){raw+=chunk;continue;}
+      buffer+=chunk;const rows=buffer.split(/\r?\n/);buffer=rows.pop();for(const row of rows){line(row);if(done)break;}
+    }
+    if(done)await reader.cancel().catch(()=>{});else if(!plain&&buffer)line(buffer);
+    if(signal?.aborted||timedOut)throw new ApiError('请求已中止。','cancelled');
+    if(plain){
+      // A service may ignore stream:true and answer with one JSON document.
+      let data;try{data=JSON.parse(raw+decoder.decode());}catch{throw new ApiError('服务响应不是有效 JSON，请确认接口兼容。','format');}
+      reportedUsage=normalizeUsage(data?.usage);status='responded';return data;
+    }
+    status='responded';
+    return {choices:[{message:{role:'assistant',content:text},finish_reason:finish}],usage:reportedUsage};
+  }catch(e){
+    if(signal?.aborted){status='cancelled';throw new ApiError('已取消。','cancelled');}
+    if(stalled)throw new ApiError(`服务 ${Math.round(firstEventMs/1000)} 秒内没有开始响应，已保留本地文字；未自动重试。`,'timeout');
+    if(timedOut)throw new ApiError('请求超时；服务端可能已处理并计费，未自动重试。','timeout');
+    if(e instanceof ApiError)throw e;
+    throw new ApiError('网络请求失败，请检查网络和 API 地址。未自动重试。','network');
+  }finally{clearTimeout(timer);if(firstTimer)clearTimeout(firstTimer);signal?.removeEventListener('abort',cancel);observe({phase:'finish',at:wallNow(),status,httpStatus,durationMs:Math.max(0,performance.now()-startedAt),usage:reportedUsage});}
+}
 function validatedText(value,label){if(typeof value!=='string'||!value.trim())throw new ApiError(`${label}未返回可用文本。`,'empty');if(value.length>MAX_TEXT)throw new ApiError(`${label}文本过长。`,'size');if(value.includes('\0'))throw new ApiError(`${label}文本包含无效字符。`,'format');return value.trim();}
 function dictionarySummary(config){
   if(config.dictionaryPromptEnabled===false||!Array.isArray(config.dictionary))return {entries:[],omitted:0};
@@ -119,4 +171,4 @@ async function processText({text,mode='ask',context='',task='ask',targetLanguage
   if(op.mode==='ask')return ask(text,config,key,{...opts,context:op.context,task:op.task});
   return refine(text,config,key,opts);
 }
-module.exports={ApiError,requestJSON,transcribe,refine,translate,ask,processText,validatedText,dictionaryEntries,dictionarySummary,MAX_TEXT,MAX_CONTEXT,MAX_REQUEST_BYTES,MAX_AUDIO_BYTES,DICTIONARY_NOTICE};
+module.exports={ApiError,requestJSON,requestChatStream,transcribe,refine,translate,ask,processText,validatedText,dictionaryEntries,dictionarySummary,MAX_TEXT,MAX_CONTEXT,MAX_REQUEST_BYTES,MAX_AUDIO_BYTES,DICTIONARY_NOTICE};

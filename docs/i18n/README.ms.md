@@ -1,4 +1,4 @@
-<h1 align="center">Dictpin v0.2.2-dev.31</h1>
+<h1 align="center">Dictpin v0.2.2-dev.33</h1>
 
 <p align="center">
   <strong>Alat imlak desktop yang ringkas. Bercakap, kekalkan kawalan terhadap teks anda, kemudian teruskan kerja.</strong>
@@ -46,7 +46,7 @@ Pilihan penyedia, alamat dan model ialah contoh konfigurasi, manakala kunci API 
 - **Teks tersedia sebelum kemasan selesai:** terus sunting atau salin. Kedua-dua tindakan menamatkan kemasan yang sedang berjalan; respons lewat tidak boleh menggantikan versi itu. Transkrip asal kekal tersedia.
 - **Pemulihan yang jelas:** teks siap dikekalkan; PCM belum diproses yang terhad disimpan dalam memori selama 30 saat selepas Batal atau sehingga lima minit selepas kegagalan. Cuba semula memerlukan tindakan dan tidak menggunakan kemasan jauh.
 - **Ruang kerja kecil:** halaman hasil, kamus, tetapan dan bar rakaman terapung. Tema cerah/gelap, kontras tinggi, pengurangan gerakan dan fokus papan kekunci telah dilaksanakan.
-- **Kemasan ringan pilihan:** tanda baca, pembahagian perenggan dan pembuangan ketidaklancaran pertuturan melalui perkhidmatan teks Chat Completions. Jika gagal atau mencapai had 12 saat, draf yang dibetulkan secara setempat masih boleh digunakan.
+- **Kemasan teks pilihan:** melalui perkhidmatan teks Chat Completions. **Lancar** (lalai) membuang perkataan pengisi dan ulangan, mengekalkan hanya sebutan akhir selepas pembetulan diri dan menyusun senarai yang dituturkan; **Ringan** hanya menambah tanda baca dan pemisahan ayat. Semakan setempat membenarkan pembuangan tetapi bukan penambahan; jika gagal, tiada respons dalam 4 saat atau mencapai had 12 saat, draf yang dibetulkan secara setempat masih boleh digunakan.
 
 Kelebihan praktikalnya ialah kawalan terhadap perkataan, peraturan kamus luar talian dan pemulihan tanpa perlu terus merakam semula. Kami tidak membuat dakwaan menyeluruh tentang ketepatan, kependaman, penggunaan memori atau prestasi berbanding pesaing. Terjemahan, soal jawab, pengembangan teks, papan pemuka sejarah yang besar berada di luar skop.
 
@@ -91,7 +91,7 @@ npm run dev
 
 Skrip di akar menggunakan modul terbina dalam Node; tiada langkah pemasangan kebergantungan di akar repositori. `doctor` memeriksa susun atur sedia ada, bukan pemasangan baharu atau mutu pengecaman. `dev` membuka profil pembangunan tanpa memulakan rakaman. Jangan lancarkan aplikasi melalui skrip bootstrap atau resume lama.
 
-Untuk **penggunaan setempat tanpa API**, biarkan **轻整理** (kemasan ringan) dimatikan. Buka **设置** (Tetapan), pilih mikrofon yang benar-benar digunakan oleh Windows Recorder, klik **保存更改** (Simpan perubahan), kemudian mulakan imlak sendiri. Pilihan peranti yang belum disimpan belum berkuat kuasa. Hentikan, semak dan salin. Tetapkan pintasan hanya jika diperlukan.
+Untuk **penggunaan setempat tanpa API**, biarkan **文字整理** (kemasan teks) dimatikan. Buka **设置** (Tetapan), pilih mikrofon yang benar-benar digunakan oleh Windows Recorder, klik **保存更改** (Simpan perubahan), kemudian mulakan imlak sendiri. Pilihan peranti yang belum disimpan belum berkuat kuasa. Hentikan, semak dan salin. Tetapkan pintasan hanya jika diperlukan.
 
 `npm run check` menyemak sintaks aplikasi, kebergantungan setempat, fail pengedaran dan dokumentasi. Ujian, penilaian prestasi, antara muka lama serta alat penerbitan dalaman tidak disertakan dalam repositori ini. Lihat [status pengesahan dan binaan](../INSTALL.md#validation-and-build-status). Belum ada arahan pembinaan pemasang yang disahkan.
 
@@ -103,7 +103,7 @@ Dalam **设置 → 模型连接** (Tetapan → Sambungan model), pilih **Qwen, D
 
 Kunci diasingkan mengikut konfigurasi dan titik akhir. Medan kosong mengekalkan kunci profil itu; **Buang kunci** boleh dibatalkan sebelum disimpan. Kunci baharu hanya untuk sesi kecuali penyulitan sistem dipilih. Perubahan alamat memerlukan penggantian atau pembuangan kunci secara jelas; kegagalan penyulitan/tulisan membatalkan seluruh simpanan. Jika kunci tidak tersedia, petikan itu terus menggunakan imlak setempat tanpa menukar pilihan tersimpan atau penyedia secara automatik.
 
-Hanya teks **Chat Completions bukan penstriman** disokong; tiada konfigurasi API melalui pemboleh ubah persekitaran atau `.env`. Dokumentasi pratetap disemak pada 2026-10-28, bukan pengesahan akaun sebenar. Pelayan teks setempat tidak disertakan. Lihat [Konfigurasi API](../API_CONFIGURATION.md) untuk medan, pautan kunci, had rantau/senarai dan penyelesaian masalah. **Ujian contoh serta cubaan semula yang disengajakan mungkin dicaj; pembatalan tidak menjamin pengebilan jauh berhenti.**
+Hanya teks **Chat Completions** disokong; permintaan kemasan dihantar secara penstriman dan perkhidmatan yang memulangkan satu dokumen JSON juga berfungsi; tiada konfigurasi API melalui pemboleh ubah persekitaran atau `.env`. Dokumentasi pratetap disemak pada 2026-10-28, bukan pengesahan akaun sebenar. Pelayan teks setempat tidak disertakan. Lihat [Konfigurasi API](../API_CONFIGURATION.md) untuk medan, pautan kunci, had rantau/senarai dan penyelesaian masalah. **Ujian contoh serta cubaan semula yang disengajakan mungkin dicaj; pembatalan tidak menjamin pengebilan jauh berhenti.**
 
 ## Privasi dan storan setempat
 
@@ -117,9 +117,9 @@ Baca [Privasi](../PRIVACY.md) sebelum menggunakan bahan peribadi. Pengecaman set
 
 ## Bahasa, had dan pengesahan
 
-UI menggunakan **bahasa Cina Ringkas** secara lalai, dengan **mod paparan bahasa Inggeris** pilihan yang digunakan dalam contoh ini. Dokumentasi enam bahasa tidak bermaksud UI atau pengecaman menyokong keenam-enam bahasa tersebut. SenseVoice asal menyenaraikan Mandarin, Kantonis, bahasa Inggeris, bahasa Jepun dan bahasa Korea. Penilaian fail tetap terdahulu meliputi Mandarin dan bahasa Inggeris; tiada dakwaan sokongan pengecaman bahasa Perancis atau bahasa Melayu.
+UI tersedia dalam **bahasa Cina Ringkas** dan **bahasa Inggeris** (digunakan dalam contoh ini). Dokumentasi enam bahasa tidak bermaksud UI atau pengecaman menyokong keenam-enam bahasa tersebut. SenseVoice asal menyenaraikan Mandarin, Kantonis, bahasa Inggeris, bahasa Jepun dan bahasa Korea. Penilaian fail tetap terdahulu meliputi Mandarin dan bahasa Inggeris; tiada dakwaan sokongan pengecaman bahasa Perancis atau bahasa Melayu.
 
-Untuk membuka UI bahasa Inggeris, jalankan `npm run dev -- --ui-language=en`; tanpa pilihan ini, UI lalai bahasa Cina dikekalkan. Pilihan ini hanya menukar paparan, bukan teks transkripsi atau kandungan kamus.
+Bahasa antara muka mengikut bahasa paparan Windows: sistem Cina memaparkan bahasa Cina dan sistem lain memaparkan bahasa Inggeris. Tukar di Tetapan → Bahasa antara muka (berkuat kuasa selepas mula semula), atau tetapkan untuk instans pembangunan dengan `npm run dev -- --ui-language=en` atau `--ui-language=zh-CN`. Pilihan ini hanya menukar paparan, bukan teks transkripsi atau kandungan kamus.
 
 Repositori ini mengandungi kod aplikasi dan panduan penggunaan. Data ujian dalaman dan laporan prestasi tidak disertakan. Pintasan global, papan klip sistem, pertukaran mikrofon, fokus, berbilang paparan, DPI Windows, mutu perkhidmatan sebenar dan pemasangan pada mesin bersih masih memerlukan pengesahan berasingan.
 

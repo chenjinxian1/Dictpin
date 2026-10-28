@@ -1,6 +1,6 @@
 # Dictpin contributor guidance
 
-Read README.md, docs/INSTALL.md and docs/PRIVACY.md. Keep the product compact: local dictation, explicit dictionary rules, optional light text cleanup, editing, explicit copying and opt-in guarded Windows paste. The owner authorized the new delivery/long-dictation scope on 2026-10-24. No translation, Ask, expansion or large history console.
+Read README.md, docs/INSTALL.md and docs/PRIVACY.md. Keep the product compact: local dictation, explicit dictionary rules, optional text cleanup (fluent by default, light as an option; it may delete fillers, repeats and abandoned self-corrections and lay out spoken lists, but never adds content), editing, explicit copying and opt-in guarded Windows paste. The owner authorized the new delivery/long-dictation scope on 2026-10-24 and fluent cleanup with a one-time auto-paste offer on 2026-10-28. No translation, Ask, expansion or large history console.
 
 Delivery must remain off without fresh explicit consent. Block new tasks/append/edit during pending native delivery. Confirm target/process/control/caret, fail closed on focus/clipboard changes or unsupported targets, and never retry an ambiguous paste. Preview segments inside the app; deliver once only after explicit Stop. Preserve old text when appending and deliver only the newly added suffix. Resource/backpressure stops and recovery never grant automatic paste.
 

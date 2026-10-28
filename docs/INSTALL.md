@@ -73,7 +73,7 @@ npm run dev
 
 The launcher uses an isolated development profile under `work/dev/profile/`; it does not start recording by itself. Existing development settings are retained. First-run defaults leave cleanup and global shortcuts off. Test fixtures, legacy entry points, benchmark tools and internal review reports are excluded from this repository.
 
-In **设置** (Settings), choose the microphone actually used by Windows Recorder and click **保存更改** (Save changes). Without an API, keep **轻整理** off. Click **开始听写** to record and **结束听写** to stop, then inspect, edit or explicitly copy. Recording now previews ordered local recognition segments while you speak. Segments prefer pauses and are capped at 20 seconds; a session is guarded at 30 minutes/100,000 characters, with early stop if recognition falls behind. Completed text is preserved and accepted unfinished PCM is retained for explicit recovery.
+In **设置** (Settings), choose the microphone actually used by Windows Recorder and click **保存更改** (Save changes). Without an API, keep **文字整理** (Text cleanup) off. Click **开始听写** to record and **结束听写** to stop, then inspect, edit or explicitly copy. Recording now previews ordered local recognition segments while you speak. Segments prefer pauses and are capped at 20 seconds; a session is guarded at 30 minutes/100,000 characters, with early stop if recognition falls behind. Completed text is preserved and accepted unfinished PCM is retained for explicit recovery.
 
 In **模型连接** (Model connection), select a provider preset or Local/Custom and fill the actual model and key. Provider/region configurations are remembered separately; the active service and unsaved draft are identified. Test cleanup checks the draft with a fictional sample only when clicked; Get models is also explicit. Save changes commits the modified profiles and activation together. Missing cleanup credentials allow local dictation to continue for that passage. See [API configuration](API_CONFIGURATION.md) for limits, key removal and migration.
 
@@ -87,15 +87,18 @@ Use **继续追加** (Append more) for another recording without overwriting the
 
 An uncertain paste result means check the original input first; never assume nothing was inserted. There is no automatic retry. Resource/backpressure stops and recovered audio do not auto-paste. These are development capabilities, not completed physical-input acceptance. See [Privacy](PRIVACY.md) and [Changelog](../CHANGELOG.md).
 
-## Optional English presentation
+## Interface language
 
-Choose English interface labels when starting a new development instance:
+The interface follows the Windows display language: Chinese display languages show Chinese and every other language shows English. Change it under **Settings → Interface language** (System, Simplified Chinese or English); the choice applies after restarting Dictpin.
+
+To force a language for a development instance:
 
 ```powershell
 npm run dev -- --ui-language=en
+npm run dev -- --ui-language=zh-CN
 ```
 
-The flag is process-only. It does not migrate a profile, translate dictated text or dictionary terms, change recognition language, or start recording. An already running instance keeps its current presentation. Omit the flag for the default Chinese interface. Some unmapped system/provider messages retain their original language.
+The flag is process-only and takes priority over the saved setting. Neither changes dictated text, dictionary terms or the recognition language, and neither starts recording. An already running instance keeps its current presentation.
 
 ## Validation and build status
 

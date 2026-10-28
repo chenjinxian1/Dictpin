@@ -8,6 +8,8 @@
  const motion=window.DictationMotion?.createFeedbackMotion();
  let snapshot=null,version=0,page='recent',lastRequested=null,initial=null,dirty=false,saving=false,testing=false,wordBusy=false,copying=false,wordId=null,wordOpener=null,undoToken=null,undoEntryId=null,wordSignature='',deviceRevision=0,discardFocus=null,discardDestination='recent',capturePending=false,copyRevision=0,copyAck=null,copyTimer=null,toastTimer=null,toastOwner=null,resultSignature='';
  const busy=()=>ACTIVE.has(snapshot?.state?.phase);
+ // Per-viewer hint state only; turning auto-paste on still goes through saved settings consent.
+ const OFFER_KEY='dictpin.pasteOfferDismissed';let pasteOfferDismissed=false;try{pasteOfferDismissed=localStorage.getItem(OFFER_KEY)==='1';}catch{}
  const deliveryPending=()=>snapshot?.state?.delivery?.status==='pending';
  const provider=window.ProviderForm.create({bridge,onChange:()=>{if(initial){dirty=Object.keys(settingsPatch()).length>0;$('save-message').dataset.saved='false';sync();}},onBusy:value=>{testing=value;sync();}});
  function settingsPatch(){const after=form();for(const key of ['baseUrl','model','key','remember'])after[key]=initial[key];const patch=model.draftPatch(initial,after),services=provider.patch();if(services)patch.textServices=services;return patch;}
@@ -20,8 +22,8 @@
  function showUndo(operation){undoToken=operation.undoToken;$('word-undo-text').textContent='已移除“'+operation.word+'”';$('word-undo').hidden=false;motion?.respond($('word-undo'));}
  function clearSaveError(){for(const id of ['save-error-report','save-error-link','model-url-error'])$(id).hidden=true;$('save-error-detail').textContent='';$('save-message').classList.remove('error');}
  function saveError(message,summary='保存失败，草稿已保留。'){$('save-message').textContent=summary;$('save-message').classList.add('error');$('save-message').tabIndex=0;$('save-error-detail').textContent=message;$('save-error-report').hidden=false;$('save-error-report').open=false;$('save-error-link').hidden=true;}
- function form(){return {autoPaste:$('auto-paste').checked,appendMode:$('append-mode').checked,copyShortcut:$('copy-shortcut').value.trim(),deviceId:$('microphone').value,shortcut:$('shortcut').value.trim(),enabled:$('light-edit').checked,baseUrl:$('model-url').value.trim(),model:$('model-name').value.trim(),key:$('model-key').value.trim(),remember:$('remember-key').checked};}
- function savedForm(data){return {autoPaste:data.settings.autoPaste===true,appendMode:data.settings.appendMode===true,copyShortcut:data.settings.copyShortcut||'',deviceId:data.settings.deviceId||'',shortcut:data.settings.shortcut||'',enabled:data.settings.refiner.enabled===true,baseUrl:data.settings.refiner.baseUrl||'',endpointMode:data.settings.refiner.endpointMode,model:data.settings.refiner.model||'',key:'',remember:data.keyStatus?.persistent===true};}
+ function form(){return {autoPaste:$('auto-paste').checked,appendMode:$('append-mode').checked,cleanupLevel:$('cleanup-level').value==='light'?'light':'fluent',uiLanguage:$('ui-language').value,copyShortcut:$('copy-shortcut').value.trim(),deviceId:$('microphone').value,shortcut:$('shortcut').value.trim(),enabled:$('light-edit').checked,baseUrl:$('model-url').value.trim(),model:$('model-name').value.trim(),key:$('model-key').value.trim(),remember:$('remember-key').checked};}
+ function savedForm(data){return {autoPaste:data.settings.autoPaste===true,appendMode:data.settings.appendMode===true,cleanupLevel:data.settings.cleanupLevel==='light'?'light':'fluent',uiLanguage:data.settings.uiLanguage||'system',copyShortcut:data.settings.copyShortcut||'',deviceId:data.settings.deviceId||'',shortcut:data.settings.shortcut||'',enabled:data.settings.refiner.enabled===true,baseUrl:data.settings.refiner.baseUrl||'',endpointMode:data.settings.refiner.endpointMode,model:data.settings.refiner.model||'',key:'',remember:data.keyStatus?.persistent===true};}
  let deviceInputs=null,deviceFeedback='';
  function microphoneChanged(){return !!snapshot&&$('microphone').value!==(snapshot.settings.deviceId||'');}
  function microphoneHint(){
@@ -33,7 +35,7 @@
  function setForm(value){
   $('auto-paste').checked=value.autoPaste===true;$('append-mode').checked=value.appendMode===true;
   if(![...$('microphone').options].some(option=>option.value===value.deviceId)){const option=document.createElement('option');option.value=value.deviceId;option.textContent='已保存的麦克风（当前未找到）';$('microphone').append(option);}
-  $('microphone').value=value.deviceId;$('shortcut').value=value.shortcut;$('copy-shortcut').value=value.copyShortcut||'';$('light-edit').checked=value.enabled;
+  $('microphone').value=value.deviceId;$('shortcut').value=value.shortcut;$('copy-shortcut').value=value.copyShortcut||'';$('light-edit').checked=value.enabled;$('cleanup-level').value=value.cleanupLevel||'fluent';$('ui-language').value=value.uiLanguage||'system';
   for(const field of $('settings-form').querySelectorAll('[aria-invalid]'))field.removeAttribute('aria-invalid');
  }
  function setPage(next,focus=false){
@@ -47,7 +49,9 @@
   if(!microphoneChanged()&&toastOwner?.kind==='microphone-draft')clearToast(toastOwner);
   const locked=!snapshot||saving||wordBusy||deliveryPending()||!!snapshot?.state?.pipeline&&(!snapshot.state.pipeline.sealed||snapshot.state.pipeline.pending>0),formLocked=!snapshot||saving||wordBusy||deliveryPending()||snapshot?.dataWritable?.settings===false,wordsLocked=!snapshot||saving||wordBusy||snapshot?.dataWritable?.dictionary===false;
   for(const input of $('settings-form').querySelectorAll('input,select'))input.disabled=formLocked;
-  $('remember-key').disabled=formLocked||snapshot?.secureStorage!==true;
+  $('remember-key').disabled=formLocked||snapshot?.secureStorage!==true;$('cleanup-level').disabled=formLocked||!$('light-edit').checked;
+  const offer=!!snapshot&&!busy()&&!dirty&&!pasteOfferDismissed&&snapshot.settings?.autoPaste!==true&&snapshot.dataWritable?.settings!==false&&snapshot.recentResult?.status==='completed'&&!!snapshot.recentResult?.text?.trim();
+  $('paste-offer').hidden=!offer;$('enable-paste').disabled=saving||deliveryPending();
    const settingsTab=document.querySelector('[data-page=settings]');settingsTab.dataset.dirty=String(dirty);settingsTab.setAttribute('aria-label',dirty?'设置，有未保存的更改':'设置');
    $('reset-settings').hidden=!dirty;$('reset-settings').disabled=formLocked;
    $('retry-shortcut').hidden=!snapshot?.settings?.shortcut||snapshot?.shortcutStatus?.statuses?.current?.registered===true;$('retry-shortcut').disabled=formLocked||dirty;
@@ -205,6 +209,8 @@
  $('settings-form').addEventListener('input',event=>{if(!initial||saving)return;clearSaveError();event.target.removeAttribute('aria-invalid');dirty=Object.keys(settingsPatch()).length>0;$('save-message').dataset.saved='false';sync();});
  $('save-error-link').addEventListener('click',()=>{$('save-error-report').open=true;$('save-error-report').scrollIntoView({block:'start'});$('save-error-report').querySelector('summary').focus({preventScroll:true});});
  $('refresh-devices').addEventListener('click',()=>void devices());
+ $('enable-paste').addEventListener('click',async()=>{if(dirty||saving||busy()||deliveryPending())return;await applySettings({autoPaste:true});if(snapshot?.settings?.autoPaste!==true)$('paste-offer-message').textContent='未能开启自动粘贴，请到设置中重试。';});
+ $('dismiss-paste-offer').addEventListener('click',()=>{pasteOfferDismissed=true;try{localStorage.setItem(OFFER_KEY,'1');}catch{}sync();$('result-content').hidden?$('copy-result').focus({preventScroll:true}):$('result-content').focus({preventScroll:true});});
  $('settings-form').addEventListener('submit',async event=>{
   event.preventDefault();if(!dirty||saving||busy()||testing)return;try{await applySettings(settingsPatch());}catch(error){saveError(failure(error,'请检查服务草稿。'));}
  });

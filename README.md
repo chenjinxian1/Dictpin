@@ -1,4 +1,4 @@
-<h1 align="center">Dictpin v0.2.2-dev.31</h1>
+<h1 align="center">Dictpin v0.2.2-dev.33</h1>
 
 <p align="center">
   <strong>Compact desktop dictation. Speak, keep control of your words, and move on.</strong>
@@ -46,7 +46,7 @@ Example provider selection, address and model, with the API key empty. Only simu
 - **Text before cleanup finishes:** edit or copy immediately. Either action ends pending cleanup; a late response cannot replace that version. The recognition original remains available.
 - **Deliberate recovery:** completed text survives; bounded unfinished PCM can be retried for 30 seconds after Cancel or five minutes after failure, in memory only. Recovery is explicit and disables remote cleanup.
 - **A small workspace:** results, dictionary, settings, and a floating recording strip. Light/dark themes, high contrast, reduced motion, and keyboard focus are implemented.
-- **Optional light cleanup:** punctuation, paragraphing, and disfluency removal through a text Chat Completions service. Failure or a 12-second deadline leaves the local corrected draft usable.
+- **Optional text cleanup:** through a text Chat Completions service. **Fluent** (default) removes fillers and repeats, keeps only the final wording after a self-correction and lays out spoken lists; **Light** adds only punctuation and sentence breaks. A local guard allows deletion but not invention; failure, a 4-second no-response limit or the 12-second deadline leaves the local corrected draft usable.
 
 The practical advantages are control over wording, offline dictionary rules, and recovery without immediately recording again. We make no universal accuracy, latency, memory, or competitive-performance claim. Translation, question answering, expansion, and a large history dashboard are outside the scope.
 
@@ -91,7 +91,7 @@ npm run dev
 
 Root scripts use Node built-ins; there is no root dependency installation step. `doctor` checks the existing layout, not a fresh installation or recognition quality. `dev` deliberately opens a development profile without starting recording. Do not launch through historical bootstrap or resume scripts.
 
-For **local use without an API**, keep **轻整理** (light cleanup) off. Open **设置** (Settings), select the microphone actually used by Windows Recorder, click **保存更改** (Save changes), then explicitly start dictation. Unsaved device selections are not active. Stop, inspect, and copy. Configure a shortcut only if wanted.
+For **local use without an API**, keep **文字整理** (text cleanup) off. Open **设置** (Settings), select the microphone actually used by Windows Recorder, click **保存更改** (Save changes), then explicitly start dictation. Unsaved device selections are not active. Stop, inspect, and copy. Configure a shortcut only if wanted.
 
 `npm run check` checks application syntax, local dependencies, packaging inputs and documentation. Test suites, benchmarks, old interfaces and internal publication tools are kept out of this application-source repository. See [validation and build status](docs/INSTALL.md#validation-and-build-status). No installer build command is represented as working.
 
@@ -103,7 +103,7 @@ In **设置 → 模型连接** (Settings → Model connection), choose **Qwen, D
 
 Keys are scoped to each profile and endpoint. Blank retains that profile's key; **Remove key** is reversible before Save. New keys are session-only unless system encryption is selected. Changing an endpoint requires explicit replacement/removal; encryption or disk failure rolls back the save. Missing/unavailable cleanup credentials allow the passage to continue locally without changing the saved preference or choosing another provider.
 
-Only non-streaming text **Chat Completions** is supported. There is no API environment-variable or `.env` configuration. Presets were checked against documentation on 2026-10-28, not real accounts. Local text servers are not bundled. See [API configuration](docs/API_CONFIGURATION.md) for fields, key links, regional/model-list limits and troubleshooting. **Sample tests and deliberate cleanup retries can cost money; cancellation does not guarantee remote billing stops.**
+Only text **Chat Completions** is supported; cleanup requests stream, and a service that returns one JSON document still works. There is no API environment-variable or `.env` configuration. Presets were checked against documentation on 2026-10-28, not real accounts. Local text servers are not bundled. See [API configuration](docs/API_CONFIGURATION.md) for fields, key links, regional/model-list limits and troubleshooting. **Sample tests and deliberate cleanup retries can cost money; cancellation does not guarantee remote billing stops.**
 
 ## Privacy and local storage
 
@@ -117,9 +117,9 @@ Read [Privacy](docs/PRIVACY.md) before using private material. Local recognition
 
 ## Languages, limits, and verification
 
-The UI defaults to **Simplified Chinese**, with an optional **English presentation mode** used in these examples. Six documentation languages do not imply six UI or recognition languages. Upstream SenseVoice lists Mandarin, Cantonese, English, Japanese, and Korean. Earlier fixed-file evaluation covered Mandarin and English; French and Malay recognition are not claimed.
+The UI is available in **Simplified Chinese** and **English** (used in these examples). Six documentation languages do not imply six UI or recognition languages. Upstream SenseVoice lists Mandarin, Cantonese, English, Japanese, and Korean. Earlier fixed-file evaluation covered Mandarin and English; French and Malay recognition are not claimed.
 
-To open the optional English UI, run `npm run dev -- --ui-language=en`; omit the flag for the default Chinese UI. This changes presentation only, not transcript or dictionary data.
+The interface follows the Windows display language: Chinese systems show Chinese and all others show English. Change it under Settings → Interface language (restart to apply), or force it for a development instance with `npm run dev -- --ui-language=en` or `--ui-language=zh-CN`. This changes presentation only, not transcript or dictionary data.
 
 This repository contains application source and usage documentation. Internal test fixtures and performance reports are not included. Global shortcuts, the system clipboard, microphone changes, focus, multiple displays, Windows DPI, real service quality and clean-machine installation still need separate acceptance.
 

@@ -1,6 +1,6 @@
 # Privacy and data handling
 
-This describes the current Windows development candidate, not a privacy certification or a promise about an external service. The default development profile starts without a key, with light cleanup off and no global shortcuts. Existing development profiles retain their own saved settings.
+This describes the current Windows development candidate, not a privacy certification or a promise about an external service. The default development profile starts without a key, with text cleanup off and no global shortcuts. Existing development profiles retain their own saved settings.
 
 ## What stays local
 
@@ -39,7 +39,7 @@ Sending keys does not prove that another application consumed them. Failed, part
 
 ## Optional network processing
 
-With light cleanup enabled, a text Chat Completions request sends:
+With text cleanup enabled (Fluent or Light), a streaming text Chat Completions request sends:
 
 - The dictionary-corrected transcript and narrow cleanup instructions.
 - A bounded, filtered list of saved **correct dictionary terms**, which may themselves contain private names.

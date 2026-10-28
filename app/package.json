@@ -1,6 +1,6 @@
 {
   "name": "local-dictation",
-  "version": "0.2.2-dev.31",
+  "version": "0.2.2-dev.33",
   "description": "Compact Windows local dictation, optional light text editing and personal dictionary",
   "productName": "Local Dictation",
   "author": "chenjinxian1",
@@ -15,6 +15,7 @@
     "appId": "org.independent.localdictation",
     "asar": true,
     "files": [
+      "renderer/dictation-i18n-messages.js",
       "renderer/dictation-i18n.js",
       "renderer/dictation-app.js",
       "renderer/dictation-capture.js",
