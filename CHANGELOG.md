@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-### Fluent cleanup, auto-paste offer and system interface language — local development candidate
+No changes recorded yet.
+
+## [0.2.2-dev.32] - 2026-10-28
+
+### Fluent cleanup, auto-paste offer and system interface language
 
 - Added a **Fluent** cleanup level, now the default, with **Light** kept as an option under Settings → Cleanup level. Fluent removes fillers and repeats, keeps only the final wording after a self-correction and lays out spoken lists. A new `checkFluentEdit` guard allows deletion but not invention: numbers must stay in order and come from the original, English terms must come from the original (case may change), new characters are capped at about 8%, negations must survive outside obvious corrections, and length stays bounded. Any failure keeps the local text.
 - Cleanup requests now stream. A service that does not start responding within 4 seconds is abandoned without retry; the 12-second overall limit is unchanged. A service that ignores streaming and returns one JSON document still works.
@@ -10,6 +14,7 @@
 - The interface now follows the Windows display language (Chinese display languages show Chinese; all others show English) instead of always starting in Chinese, with **Settings → Interface language** to override it after a restart. `--ui-language=en|zh-CN` still forces a development instance.
 - English mode no longer leaves Chinese behind: main-process notices, errors, recognizer and shortcut messages now have English (`app/renderer/dictation-i18n-messages.js`, with rules for composed messages such as HTTP status errors). Translation now covers every non-protected element instead of a fixed whitelist, translates select options other than microphone names, and splits sentences joined without a space. The updated privacy note and the new cleanup/auto-paste controls are included.
 - Added `native/CleanupPolicy.cs`, a C# 5 port of the fluent guard for the planned lightweight .NET host. It builds with the system `csc.exe`.
+- Updated workspace/application versions and all six centered README titles to `0.2.2-dev.32`. This remains a source-code development update; no installer release, tag or running-version replacement is included.
 
 Validation: **40 local Node checks** passed: 27 shared fluent fixtures, light-level strictness, scripted-fetch streaming (split SSE chunks, JSON fallback, first-event stall, provider error events and HTTP errors), English coverage of every Chinese source literal against a reviewed non-UI allowlist, composed-message translation, protected user text, and flag → setting → Windows language resolution. The same 27 fixtures passed against the native port built with the system `csc.exe`. `npm run check` passed. Checks use fictional text and a scripted fetch; no model request, microphone, clipboard or paste target was used, and the application was not launched. Fluent output quality with real providers, Electron flows, the auto-paste offer, English presentation on an English Windows install and visual review remain manual acceptance.
 
