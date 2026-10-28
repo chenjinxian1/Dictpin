@@ -78,4 +78,4 @@ function createProviderChecks({getSettings,getKey,localAsr=null,getUsageObserver
   }
   return {run,cancel,cancelAll};
 }
-module.exports={createProviderChecks};
+module.exports={createProviderChecks,createTextServiceDiagnostics:require('./text-service-diagnostics').createTextServiceDiagnostics};

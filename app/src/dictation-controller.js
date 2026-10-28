@@ -1,6 +1,6 @@
 'use strict';
 const {Controller:Engine}=require('./controller');
-const {validateSettings}=require('./settings');
+const {validateSettings,DEFAULTS,resolveProviderEndpoint}=require('./settings');
 const {correctText}=require('./local-dictionary');
 const {validatedText}=require('./api');
 const DURATION_KEYS=['deviceReadyMs','recordingStopMs','decodeMs','beginToDeviceReadyMs','stopToSubmitMs','asrWaitMs','recognitionMs','modelLoadMs','vadMs','asrElapsedMs','asrWallMs','dictionaryMs','cleanupMs','textReadyMs','totalMs'];
@@ -57,7 +57,14 @@ class Controller extends Engine{
   return super.toggle(source,{});
  }
  prepare(options={}){
-  const op=operation(options),config=validateSettings(this.store.settings);
+  const op=operation(options),raw=this.store.settings,service=this.store.activeService?.();
+  const metadata={};for(const field of ['id','presetId','region','workspaceId','baseUrl','endpointMode','model','customized'])if(service&&Object.hasOwn(service,field))metadata[field]=service[field];
+  const selected={...raw.refiner,...metadata};let valid=false,credentials=false;
+  try{const resolved=resolveProviderEndpoint(selected.baseUrl,'refiner',undefined,selected.endpointMode);valid=typeof selected.model==='string'&&!!selected.model.trim()&&selected.model.length<=160&&!/[\x00-\x1f]/.test(selected.model);credentials=resolved.local||!!this.store.keys?.refiner;}catch{}
+  const enabled=raw.refiner.enabled===true&&valid&&credentials&&!this.recoveryAttempt;
+  const config=validateSettings({...raw,refiner:valid?{...selected,enabled}:{...DEFAULTS.refiner,enabled:false}});
+  if(valid)Object.assign(config.refiner,metadata);config.refiner.enabled=enabled;
+  if(raw.refiner.enabled&&!enabled&&!this.recoveryAttempt)config.cleanupNotice='本次使用本地文字，模型连接待配置。';
   config.mode='dictate';config.asr={...config.asr,backend:'local'};config.saveAudio=false;config.saveHistory=false;config.writingPreferences='';config.dictionaryPromptEnabled=true;config.refiner={...config.refiner,citationFormat:'none',...(this.recoveryAttempt?{enabled:false}:{})};
   config.dictionary=Array.isArray(this.store.dictionary)?this.store.dictionary.slice(0,500).map(e=>({id:e.id,source:'manual',word:e.word,replacement:'',aliases:[...(e.aliases||[])]})):[];
   return {config,keys:{...this.store.keys},...op};
@@ -65,6 +72,7 @@ class Controller extends Engine{
  begin(prepared,...args){
   if(prepared?.mode!=='dictate'||prepared?.config?.asr?.backend!=='local'||prepared.context||prepared.task)throw Error('不允许执行旧任务。');
   this.pendingCancelled=null;const s=super.begin(prepared,...args);this.performanceStart(s);freeze(s.config);freeze(s.keys);
+  if(s.config.cleanupNotice)s.storageWarnings.push(s.config.cleanupNotice);
   if(args[0]==='recording')try{Promise.resolve(this.localAsr?.ensureReady?.()).catch(()=>{});}catch{}
   return s;
  }
@@ -125,7 +133,7 @@ class Controller extends Engine{
  }
  updateResult(input){request(input,['id','expectedRevision','text','editing']);if(!Number.isSafeInteger(input.expectedRevision)||input.expectedRevision<1)throw Error('缺少有效文字版本。');if(typeof input.editing!=='undefined'&&input.editing!==true)throw Error('编辑操作无效。');body(input.text);const result=this.freezeResult(input.id,input.expectedRevision);return this.commitText(result,input.text,'manual');}
  restoreResult(input){request(input,['id','expectedRevision','source']);if(!Number.isSafeInteger(input.expectedRevision)||input.expectedRevision<1)throw Error('缺少有效文字版本。');if(!['original','corrected','previous'].includes(input.source))throw Error('还原来源无效。');const result=this.freezeResult(input.id,input.expectedRevision),text=input.source==='previous'?result.previousText:result[input.source];if(typeof text!=='string')throw Error('没有可还原的文字。');return this.commitText(result,text,'restored');}
- canRetryCleanup(result=this.state.result||this.store.getRecentResult?.()){return !this.active()&&!!result?.original?.trim()&&this.store.settings.refiner.enabled===true;}
+ canRetryCleanup(result=this.state.result||this.store.getRecentResult?.()){if(this.active()||!result?.original?.trim())return false;try{return this.prepare().config.refiner.enabled===true;}catch{return false;}}
  async retryCleanup(input){
   request(input,['id','expectedRevision']);if(!Number.isSafeInteger(input.expectedRevision)||input.expectedRevision<1)throw Error('缺少有效文字版本。');if(this.active())throw Error('请先结束当前任务。');const old=this.resultFor(input.id,input.expectedRevision);if(!this.canRetryCleanup(old))throw Error('请先配置并启用轻整理。');
   const prepared=this.prepare({});this.requireKeys(prepared,{asr:false});const s=this.begin(prepared,'cleanup');Object.assign(s,{original:old.original,corrected:old.corrected,corrections:old.corrections,text:old.text,source:old.source,revision:old.revision,previousText:old.text,createdAt:old.createdAt,durationMs:old.durationMs});
