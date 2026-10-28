@@ -2,7 +2,16 @@
 
 ## Unreleased
 
-No changes recorded yet.
+### UI clarity — local development candidate
+
+- Gave results a flexible editor and a compact bottom status bar, with one collapsed **Versions & details** entry. Original transcript, correction records and actual request usage remain accessible. Removed the duplicate original/undo-corrections action; restore and append undo stay reachable outside the original panel.
+- Made real recording/local-recognition/cleanup stages and task details visible. Added elapsed recording time, the final two-minute limit countdown and the remaining recovery lifetime. Preview updates follow new text only when the user is already reading at the bottom; focus, selection and older paragraphs are preserved.
+- Restored visible voice-strip feedback within the existing window and pill sizes. **View details** opens the main window; only the separate **Recover** action retries recognition. Cleanup has a separate **Use local text** action, and copying still ends cleanup safely.
+- Added optional structured stage/cleanup outcomes and keyed Chinese/English presentation for critical task states, replacing message-text decisions in the main and floating interfaces. The legacy presentation translation bridge remains for older controls; this is not a complete i18n migration.
+- Separated dismissible information/warning/error notices, restored keyboard focus on dismissal, unified Dictpin branding, improved small-window labels and contrast, consolidated the layout styles and matched native window background to the system theme. Preset reset is shown only for custom addresses; usage is shown for real recorded attempts even if cleanup is later turned off.
+- Exposed live checkpoint save failures, kept failed-save drafts copyable, and made unchanged save retries retain their version and previous draft. Successful copy retry clears obsolete failure feedback; ordinary copy success uses the button acknowledgement.
+
+Validation: **155 local tests** and **35 Electron flow checks in each of Chinese and English** passed with natural exit 0. Checks use fictional profiles, generated PCM, scripted states and simulated services/system adapters; they include composition, copy/save failures, restore/undo, late cleanup replies, reading-position protection, recovery expiry, legacy-result eligibility, the fixed strip, all pages at360×300, light/dark themes and simulated high-contrast/reduced-motion focus. No physical microphone, live model request, real key or system clipboard was used. Test fixtures and raw evidence stay local. Native focus, device behavior, Windows DPI, real clipboard/paste targets and service quality remain manual acceptance. Current running versions are not replaced or restarted; this work has not been pushed or published.
 
 ## [0.2.2-dev.30] - 2026-10-28
 

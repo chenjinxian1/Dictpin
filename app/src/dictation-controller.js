@@ -21,7 +21,8 @@ function freeze(value){if(value&&typeof value==='object'&&!Object.isFrozen(value
 function request(input,keys){if(!input||typeof input!=='object'||Array.isArray(input)||![Object.prototype,null].includes(Object.getPrototypeOf(input)))throw Error('结果操作无效。');for(const key of Reflect.ownKeys(input)){const d=Object.getOwnPropertyDescriptor(input,key);if(typeof key!=='string'||!keys.includes(key)||!Object.hasOwn(d,'value'))throw Error('结果操作字段无效。');}return input;}
 function body(text){if(typeof text!=='string'||text.length>100000||/\0/.test(text))throw Error('文字内容无效或过长。');return text;}
 class Controller extends Engine{
- constructor(options){super({...options,apiImpl:options.apiImpl||{...require('./api'),refine:require('./dictation-edit').refine}});this.cleanupTimeoutMs=Math.min(12000,Math.max(1,options.cleanupTimeoutMs||12000));this.pendingCancelled=null;this.recoveryAttempt=false;this.performanceRecords=[];this.performanceSlots=new WeakMap();}
+ constructor(options){super({...options,apiImpl:options.apiImpl||{...require('./api'),refine:require('./dictation-edit').refine}});this.cleanupTimeoutMs=Math.min(12000,Math.max(1,options.cleanupTimeoutMs||12000));this.pendingCancelled=null;this.recoveryAttempt=false;this.performanceRecords=[];this.performanceSlots=new WeakMap();this.state={...this.state,stage:'idle',cleanupStatus:'off'};}
+ publish(update){const phase=update.phase||this.state.phase,cleanupStatus=this.session?.cleanupStatus||update.result?.cleanupStatus||(update.phase==='starting'?'pending':this.state.cleanupStatus)||'off';const stage=phase==='processing'?(cleanupStatus==='running'?'cleanup':'recognition'):({starting:'preparing',recording:'recording',stopping:'stopping',transcribing:'recognition',refining:'cleanup'})[phase]||phase;return super.publish({...update,stage,cleanupStatus});}
  getPerformanceRecords(){return structuredClone(this.performanceRecords);}
  performanceSlot(session=this.session){return session?this.performanceSlots.get(session):null;}
  performanceStart(s){const threads=this.localAsr?.numThreads,record={id:s.id,status:'starting',audioBytes:null,threads:Number.isSafeInteger(threads)&&threads>=1&&threads<=64?threads:null,durations:Object.fromEntries(DURATION_KEYS.map(key=>[key,null]))};this.performanceRecords.push(record);if(this.performanceRecords.length>100)this.performanceRecords.shift();this.performanceSlots.set(s,{record,startedAt:this.monotonicNow(),stoppedAt:null});}
@@ -71,20 +72,20 @@ class Controller extends Engine{
  }
  begin(prepared,...args){
   if(prepared?.mode!=='dictate'||prepared?.config?.asr?.backend!=='local'||prepared.context||prepared.task)throw Error('不允许执行旧任务。');
-  this.pendingCancelled=null;const s=super.begin(prepared,...args);this.performanceStart(s);freeze(s.config);freeze(s.keys);
+  this.pendingCancelled=null;const s=super.begin(prepared,...args);s.cleanupStatus=s.config.cleanupNotice?'unavailable':s.config.refiner.enabled?'pending':'off';this.performanceStart(s);freeze(s.config);freeze(s.keys);
   if(s.config.cleanupNotice)s.storageWarnings.push(s.config.cleanupNotice);
   if(args[0]==='recording')try{Promise.resolve(this.localAsr?.ensureReady?.()).catch(()=>{});}catch{}
   return s;
  }
  currentSession(s){return this.session===s&&this.current(s?.id);}
- result(s,status,extra={}){return {...super.result(s,status,extra),corrected:s.corrected??s.original,revision:s.revision||1,source:s.source||(s.refined?'refined':'original'),corrections:structuredClone(s.corrections||[]),previousText:s.previousText??null};}
+ result(s,status,extra={}){return {...super.result(s,status,extra),corrected:s.corrected??s.original,revision:s.revision||1,source:s.source||(s.refined?'refined':'original'),corrections:structuredClone(s.corrections||[]),previousText:s.previousText??null,cleanupStatus:s.cleanupStatus||'off',persistenceFailed:s.persistenceFailed===true};}
  saveResult(session,result){
   result.persistenceFailed=false;
   result.message=[result.message,...(session.storageWarnings||[])].filter(Boolean).join(' ');
   if(String(result.text||result.original||'').trim()&&['completed','failed','cancelled'].includes(result.status)&&typeof this.store.saveRecentResult==='function'){
    let saved=false;try{this.store.saveRecentResult(result);saved=true;}catch{result.persistenceFailed=true;result.message=[result.message,'识别原文暂未保存到磁盘；最近结果保存失败，请复制当前文字后再退出。'].filter(Boolean).join(' ');}if(saved)this.emit('result-saved',{id:result.id,revision:result.revision||1});
   }
-  return result;
+  session.persistenceFailed=result.persistenceFailed;return result;
  }
  async finishText(s){
   if(s?.mode!=='dictate'||s?.config?.asr?.backend!=='local'||s.context||s.task)return this.rejected(Error('旧任务已停用。'));
@@ -92,11 +93,12 @@ class Controller extends Engine{
   const slot=this.performanceSlot(s);
   if(s.corrected===undefined){const started=this.monotonicNow(),correction=correctText(s.original,s.config.dictionary);if(slot)slot.record.durations.dictionaryMs=this.elapsed(started);s.corrected=correction.text;s.corrections=correction.changes;s.text=s.corrected;s.source=s.corrections.length?'dictionary':'original';s.revision=1;}
   this.clearRecovery();
+  s.cleanupStatus=s.config.refiner.enabled?'running':s.config.cleanupNotice?'unavailable':'off';
   const checkpoint=this.saveResult(s,this.result(s,'cancelled',{text:s.text,delivery:'none',message:'整理未完成，完整识别原文与当前文字已保留。'}));
   if(slot)slot.record.durations.textReadyMs=this.elapsed(slot.startedAt);
   this.publish({phase:'processing',result:this.result(s,'processing'),message:s.config.refiner.enabled?'原始文本已保留，正在整理文字…':'识别已完成。',operationFeedback:''});
   if(!this.currentSession(s))return {accepted:true};
-  let warning=checkpoint.message.includes('保存失败')?checkpoint.message:'',timer,abortHandler,cleanupFailed=false;
+  let warning=checkpoint.persistenceFailed?checkpoint.message:'',timer,abortHandler,cleanupFailed=false;
   if(s.config.refiner.enabled){
    const cleanupStarted=this.monotonicNow();if(slot)slot.record.status='refining';
    const cleanup=new AbortController(),signal=AbortSignal.any([s.abort.signal,cleanup.signal]);
@@ -104,8 +106,8 @@ class Controller extends Engine{
    try{
     const text=await Promise.race([Promise.resolve().then(()=>this.api.refine(s.corrected,s.config,s.keys.refiner,{signal,onUsage:this.usageObserver(s,'refiner')})),deadline]);
     if(!this.currentSession(s))return {accepted:true};body(text);if(!text.trim())throw Error('轻整理没有返回文字。');
-    if(text!==s.text||s.source!=='refined'){s.previousText=s.text;s.revision++;}s.text=text;s.refined=true;s.source='refined';
-   }catch(error){if(!this.currentSession(s))return {accepted:true};cleanupFailed=true;warning=[warning,'整理未完成，已保留原始转录与当前文字。',error?.message||''].filter(Boolean).join(' ');}
+    if(text!==s.text||s.source!=='refined'){s.previousText=s.text;s.revision++;}s.text=text;s.refined=true;s.source='refined';s.cleanupStatus='completed';
+   }catch(error){if(!this.currentSession(s))return {accepted:true};cleanupFailed=true;s.cleanupStatus=cleanup.signal.aborted&&!s.abort.signal.aborted||error?.code==='timeout'?'timeout':'failed';warning=[warning,'整理未完成，已保留原始转录与当前文字。',error?.message||''].filter(Boolean).join(' ');}
    finally{if(slot)slot.record.durations.cleanupMs=this.elapsed(cleanupStarted);clearTimeout(timer);signal.removeEventListener('abort',abortHandler);}
   }
   if(!this.currentSession(s))return {accepted:true};
@@ -121,11 +123,12 @@ class Controller extends Engine{
  }
  freezeResult(id,revision){
   const result=this.resultFor(id,revision);
-  if(this.active()&&this.session?.id===id){const s=this.session;s.abort.abort();this.clearTimers();this.clearRecovery();this.performanceFinish(s,'completed');this.session=null;result.status='completed';result.message='整理已结束，当前文字已保留。';this.saveResult(s,result);this.publish({phase:'done',sessionId:null,result,message:result.message,level:0});}
+  if(this.active()&&this.session?.id===id){const s=this.session;s.abort.abort();this.clearTimers();this.clearRecovery();this.performanceFinish(s,'completed');this.session=null;result.status='completed';result.cleanupStatus='stopped';result.message='整理已结束，当前文字已保留。';this.saveResult(s,result);this.publish({phase:'done',sessionId:null,result,message:result.message,level:0});}
   return result;
  }
  commitText(result,text,source){
-  const changed={...result,status:'completed',text:body(text),previousText:result.text,revision:result.revision+1,source,refined:source==='refined',message:''};
+  const unchanged=result.text===text&&result.source===source;
+  const changed={...result,status:'completed',text:body(text),previousText:unchanged?result.previousText:result.text,revision:result.revision+(unchanged?0:1),source,refined:source==='refined',message:''};
   this.saveResult({storageWarnings:[]},changed);
   if(!this.active()||this.session?.id===result.id)this.publish({result:changed,message:changed.message});else this.publish({});
   if(changed.persistenceFailed)throw Error('修改尚未保存到磁盘，当前文字仍在，请重试或先复制。');

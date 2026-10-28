@@ -1,39 +1,44 @@
 'use strict';
 (()=>{
  const bridge=window.dictation,model=window.DictationUiState,$=id=>document.getElementById(id),ACTIVE=new Set(['starting','recording','stopping','processing','transcribing','refining']);
- if(!bridge)return;const motion=window.DictationMotion?.createFeedbackMotion();let snapshot=null,phase='starting',pending=false,copying=false,error='',identity=null,copied=null,version=0,visualPhase=null;
- function level(value){
-  if(phase!=='recording')return;const amount=Math.max(0,Math.min(1,Number(value)||0)),shape=[.25,.55,.8,.5,1,.65,.9,.5,.25];
-  [...$('voice-wave').children].forEach((node,index)=>node.style.height=Math.round(4+amount*22*shape[index])+'px');
+ if(!bridge)return;const language=bridge.uiLanguage,t=(key,values)=>window.DictpinI18n.t(key,language,values),motion=window.DictationMotion?.createFeedbackMotion();
+ let snapshot=null,phase='starting',pending=false,copying=false,error='',identity=null,copied=null,version=0,visualPhase=null,timer=null,recoveryAnchor=null,recordAnchor=null;
+ function level(value){if(phase!=='recording')return;const amount=Math.max(0,Math.min(1,Number(value)||0)),shape=[.25,.55,.8,.5,1,.65,.9,.5,.25];[...$('voice-wave').children].forEach((node,index)=>node.style.height=Math.round(4+amount*22*shape[index])+'px');}
+ function clocks(){
+  if(!snapshot)return;const now=performance.now(),state=snapshot.state,recording=phase==='recording',recovery=snapshot.recovery;
+  if(recording&&(!recordAnchor||recordAnchor.id!==state.sessionId))recordAnchor={id:state.sessionId,at:now,elapsed:Math.max(0,Date.now()-state.startedAt)};if(!recording)recordAnchor=null;
+  const record=model.recordingClock(snapshot,recordAnchor?state.startedAt+recordAnchor.elapsed+now-recordAnchor.at:Date.now());let remaining=null;
+  if(recovery){const ms=Math.max(0,Math.min(recovery.expiresAt-Date.now(),Number.isFinite(recovery.remainingMs)?recovery.remainingMs:Infinity));if(!recoveryAnchor||recoveryAnchor.token!==recovery.token)recoveryAnchor={token:recovery.token,deadline:now+ms};remaining=model.recoveryClock({expiresAt:recoveryAnchor.deadline},now);}else recoveryAnchor=null;
+  $('bar-time').hidden=!record.visible&&!remaining;$('bar-time').textContent=record.visible?record.text:remaining?remaining.seconds+'s':'';$('bar-time').dataset.remaining=String(record.remaining||!!remaining);$('bar-time').setAttribute('aria-label',record.visible?t(record.remaining?'clock.remaining':'clock.recording',{time:record.text}):remaining?t(remaining.expired?'recovery.expired':'recovery.remaining',{seconds:remaining.seconds}):'');
+  $('bar-recover').disabled=pending||!remaining||remaining.expired||recovery?.tailPending===true;
+  const tick=record.visible||remaining&&!remaining.expired;if(tick&&timer===null)timer=setInterval(clocks,1000);else if(!tick&&timer!==null){clearInterval(timer);timer=null;}
  }
  function render(data){
-  if(!data?.state)return;snapshot=data;version++;const state=data.state,id=state.sessionId||data.result?.id;
+  if(!data?.state)return;snapshot=data;version++;const state=data.state,id=state.sessionId||data.result?.id||data.recovery?.sessionId||state.errorId||'idle';
   if(id!==identity){identity=id;error='';copied=null;pending=false;copying=false;}
   phase=ACTIVE.has(state.phase)?state.phase:(data.copiedResultId===data.result?.id&&data.copiedResultRevision===(data.result?.revision||1)||copied?.id===data.result?.id&&copied?.revision===(data.result?.revision||1))&&data.result?'copied':data.result?.hasText?'ready':state.phase==='error'?'error':'idle';
-  $('voice-pill').hidden=phase==='idle'&&!data.recovery;$('voice-pill').dataset.phase=phase==='refining'?'refining':ACTIVE.has(phase)&&!['starting','recording','stopping'].includes(phase)?'processing':phase;
-  const recording=phase==='recording',active=ACTIVE.has(phase),ready=phase==='ready',available=ready||data.canUseOriginal,session=model.sessionView(data),recovery=data.recovery;
+  const active=ACTIVE.has(phase),recording=phase==='recording',ready=phase==='ready'||phase==='copied',available=!!data.result?.hasText&&(ready||data.canUseOriginal),warning=state.phase==='error'||model.cleanupWarning(data.result),session=model.sessionView(data,language),recovery=data.recovery;
+  $('voice-pill').hidden=phase==='idle'&&!recovery;$('voice-pill').dataset.phase=phase==='refining'?'refining':active&&!['starting','recording','stopping'].includes(phase)?'processing':phase;$('voice-pill').dataset.warning=String(warning);$('voice-pill').dataset.recovery=String(!!recovery);
   $('voice-wave').hidden=!recording;$('bar-status').hidden=recording;
-  $('bar-status').textContent=phase==='copied'?'已复制，请自行粘贴':ready?((data.result.status!=='completed'||/整理未完成|超出轻整理/.test(state.message||''))?'原文已保留':data.result.refined?'已整理':'已就绪'):data.recovery?'本段可恢复':data.canUseOriginal?'文字已就绪':phase==='starting'?'准备中':phase==='stopping'?'结束中':active?(phase==='refining'||/整理/.test(state.message||'')?'整理中':'识别中'):'听写未完成';
-  if(error){$('voice-wave').hidden=true;$('bar-status').hidden=false;$('bar-status').textContent=error;}
-  if(!active&&state.delivery?.status==='sent')$('bar-status').textContent='已尝试粘贴';
-  if(!active&&state.delivery?.unknownOutcome)$('bar-status').textContent='请核对原输入框';
-  $('voice-pill').title=error||state.delivery?.message||state.message||'';$('voice-pill').setAttribute('aria-label',recording&&!error?'正在录音':$('bar-status').textContent);
-  $('bar-cancel').hidden=!active;$('bar-cancel').disabled=pending;$('bar-cancel').textContent=session.cancelLabel;$('bar-cancel').setAttribute('aria-label',session.cancelLabel);$('bar-cancel').title=data.canUseOriginal?'结束整理并保留完整识别原文；已发出的请求仍可能计费。':data.escapeRegistered?'取消 (Esc)':'取消本次听写';$('bar-stop').hidden=!recording;$('bar-stop').disabled=pending;
-  $('bar-ready-actions').hidden=!available&&phase!=='error'&&!recovery;$('bar-copy').hidden=!available;$('bar-copy').disabled=copying||state.delivery?.status==='pending';$('bar-copy').textContent=copying?'复制中':'复制';$('bar-view').disabled=copying||!recovery&&typeof(data.result?.id||state.sessionId)!=='string';$('bar-view').textContent=recovery?'恢复':'查看';
-  $('bar-dismiss').hidden=active||phase==='copied';$('bar-feedback').hidden=true;$('bar-feedback').textContent=error||(phase==='error'?state.message||'听写失败，请从托盘查看最近结果。':'');$('bar-feedback').title=$('bar-feedback').textContent;level(state.level);
+  const readyKey=data.result?.persistenceFailed?'bar.unsaved':state.phase==='error'||data.result?.status==='failed'?'bar.failed':['failed','timeout'].includes(data.result?.cleanupStatus)?'bar.fallback':recovery?'bar.recoverable':data.result?.refined?'bar.refined':'bar.ready';
+  $('bar-status').textContent=phase==='copied'?t('bar.copied'):ready?t(readyKey):recovery?t('bar.recoverable'):data.canUseOriginal?t('bar.ready'):phase==='starting'?t('capture.prepare'):phase==='stopping'?t('capture.finish'):active?t(state.stage==='cleanup'||phase==='refining'?'capture.cleanup':'capture.recognize'):t('bar.failed');
+  if(error){$('voice-wave').hidden=true;$('bar-status').hidden=false;}
+  if(!active&&state.delivery?.status==='sent')$('bar-status').textContent=language==='en'?'Paste attempted':'已尝试粘贴';
+  if(!active&&state.delivery?.unknownOutcome)$('bar-status').textContent=language==='en'?'Check original field':'核对原输入框';
+  $('voice-pill').title=error||state.delivery?.message||state.message||'';$('voice-pill').setAttribute('aria-label',recording&&!error?t('task.record'):$('bar-status').textContent);
+  $('bar-cancel').hidden=!active||session.useLocal===true;$('bar-cancel').disabled=pending;$('bar-cancel').textContent=t('action.cancel');$('bar-cancel').setAttribute('aria-label',t('action.cancel'));$('bar-stop').hidden=!recording;$('bar-stop').disabled=pending;
+  $('bar-ready-actions').hidden=!available&&phase!=='error'&&!recovery;$('bar-copy').hidden=!available||!!recovery;$('bar-copy').disabled=copying||state.delivery?.status==='pending';$('bar-copy').textContent=copying?(language==='en'?'Copying':'复制中'):(language==='en'?'Copy':'复制');$('bar-view').disabled=copying;$('bar-view').textContent=t(warning||error?'action.details':'action.view');$('bar-recover').hidden=!recovery;$('bar-recover').textContent=t('action.recover');$('bar-dismiss').hidden=active||phase==='copied';
+  const feedback=error||state.delivery?.unknownOutcome&&t('bar.deliveryHint')||recovery&&t('bar.retryHint')||data.result?.persistenceFailed&&t('result.saveFailed')||warning&&(state.phase==='error'?(state.message||t('bar.failureHint')):t('bar.cleanupHint'))||session.useLocal&&t('task.billing')||'';
+  $('bar-feedback').hidden=!feedback;$('bar-feedback').textContent=feedback;$('bar-feedback').dataset.severity=error||state.phase==='error'?'error':'warning';$('bar-feedback').setAttribute('role',error||state.phase==='error'?'alert':'status');
+  if(recoveryAnchor&&recovery?.token===recoveryAnchor.token&&Number.isFinite(recovery.remainingMs))recoveryAnchor.deadline=Math.min(recoveryAnchor.deadline,performance.now()+recovery.remainingMs);clocks();level(state.level);
   if(phase!==visualPhase){motion?.respond($('voice-center'));visualPhase=phase;}
  }
- async function action(method){
-  if(pending||!snapshot||!ACTIVE.has(phase))return;const sessionId=snapshot.state.sessionId,revision=identity;pending=true;error='';render(snapshot);
-  try{await bridge[method]({sessionId});}catch{if(identity===revision)error=method==='stop'?'结束未确认，请重试。':'取消未确认，请重试。';}finally{if(identity===revision)pending=false;if(snapshot)render(snapshot);}
- }
+ async function action(method){if(pending||!snapshot||!ACTIVE.has(phase))return;const sessionId=snapshot.state.sessionId,owner=identity;pending=true;error='';render(snapshot);try{await bridge[method]({sessionId});}catch{if(identity===owner)error=t(method==='stop'?'bar.stopFailure':'bar.cancelFailure');}finally{if(identity===owner)pending=false;if(snapshot)render(snapshot);}}
  $('bar-stop').addEventListener('click',()=>void action('stop'));$('bar-cancel').addEventListener('click',()=>void action('cancel'));
- $('bar-copy').addEventListener('click',async()=>{
-  if(copying||!snapshot.result?.id||(!snapshot.canUseOriginal&&phase!=='ready'))return;const id=snapshot.result.id,revision=identity,textRevision=snapshot.result.revision||1;copying=true;error='';render(snapshot);
-  try{const result=await bridge.copyResult({id,expectedRevision:textRevision});if(result?.ok===true&&snapshot.result?.id===id&&(snapshot.result.revision||1)===result.revision)copied={id,revision:result.revision};}catch{if(snapshot.result?.id===id)error='复制失败，请重试。';}finally{if(identity===revision){copying=false;render(snapshot);}}
- });
- $('bar-view').addEventListener('click',async()=>{const id=identity;try{if(snapshot.recovery){await bridge.retryRecovery({token:snapshot.recovery.token});return;}await bridge.showRecent(snapshot.result?.id||snapshot.state.sessionId);}catch{if(identity!==id)return;error=snapshot.recovery?'恢复未完成，请重试。':'无法打开，请从托盘重试。';render(snapshot);}});
- $('bar-dismiss').addEventListener('click',async()=>{const id=identity;try{await bridge.dismissBar();}catch{if(identity!==id)return;error='未能收起，请重试。';render(snapshot);}});
- document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!event.repeat){event.preventDefault();if(ACTIVE.has(phase))void action('cancel');else $('bar-dismiss').click();}});
- bridge.onState(render);bridge.onLevel(level);const initialVersion=version;Promise.resolve(bridge.getSnapshot()).then(data=>{if(version===initialVersion)render(data);}).catch(()=>render({state:{phase:'error',message:'未连接桌面程序，请从托盘重新打开。'}}));window.addEventListener('beforeunload',()=>motion?.dispose());
+ $('bar-copy').addEventListener('click',async()=>{if(copying||!snapshot?.result?.id||(!snapshot.canUseOriginal&&!['ready','copied'].includes(phase)))return;const id=snapshot.result.id,owner=identity,revision=snapshot.result.revision||1;copying=true;error='';render(snapshot);try{const result=await bridge.copyResult({id,expectedRevision:revision});if(result?.ok===true&&snapshot.result?.id===id&&(snapshot.result.revision||1)===result.revision)copied={id,revision:result.revision};}catch{if(snapshot.result?.id===id)error=t('bar.copyFailure');}finally{if(identity===owner){copying=false;render(snapshot);}}});
+ $('bar-view').addEventListener('click',async()=>{const owner=identity;try{await bridge.showRecent(snapshot.result?.id||snapshot.recovery?.sessionId||snapshot.state.sessionId||'');}catch{if(identity===owner){error=t('bar.openFailure');render(snapshot);}}});
+ $('bar-recover').addEventListener('click',async()=>{if(pending||$('bar-recover').disabled||!snapshot.recovery)return;const owner=identity,token=snapshot.recovery.token;pending=true;error='';render(snapshot);try{const next=await bridge.retryRecovery({token});if(next?.state)render(next);}catch{if(identity===owner)error=t('bar.recoveryFailure');}finally{if(identity===owner){pending=false;render(snapshot);}}});
+ $('bar-dismiss').addEventListener('click',async()=>{const owner=identity;try{await bridge.dismissBar();}catch{if(identity===owner){error=t('bar.dismissFailure');render(snapshot);}}});
+ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!event.repeat){event.preventDefault();if(ACTIVE.has(phase)&&!snapshot.canUseOriginal)void action('cancel');else if(!ACTIVE.has(phase))$('bar-dismiss').click();}});
+ bridge.onState(render);bridge.onLevel(level);const initialVersion=version;Promise.resolve(bridge.getSnapshot()).then(data=>{if(version===initialVersion)render(data);}).catch(()=>render({state:{phase:'error',message:language==='en'?'Desktop connection unavailable.':'未连接桌面程序，请从托盘重新打开。'}}));window.addEventListener('beforeunload',()=>{if(timer!==null)clearInterval(timer);motion?.dispose();});
 })();

@@ -109,7 +109,7 @@ class Controller extends ProductController{
   const slot=this.streamRecovery;if(slot&&(this.now()>=slot.expiresAt||this.monotonicNow()>=slot.expiresMono))this.clearRecovery();
   const current=this.streamRecovery;if(!current)return super.recoverySummary();
   const summary=current.queue.summary();if(!summary.pending)return null;
-  return{token:current.token,sessionId:current.session.id,mode:'dictate',durationMs:current.queue.pending.reduce((n,p)=>n+p.frames/16,0),audioBytes:current.queue.pending.reduce((n,p)=>n+p.pcm.byteLength,0),expiresAt:current.expiresAt,reason:current.reason,segments:summary.pending,tailPending:!!this.tailPending};
+  return{token:current.token,sessionId:current.session.id,mode:'dictate',durationMs:current.queue.pending.reduce((n,p)=>n+p.frames/16,0),audioBytes:current.queue.pending.reduce((n,p)=>n+p.pcm.byteLength,0),expiresAt:current.expiresAt,remainingMs:Math.max(0,Math.min(current.expiresAt-this.now(),current.expiresMono-this.monotonicNow())),reason:current.reason,segments:summary.pending,tailPending:!!this.tailPending};
  }
  clearRecovery(){
   super.clearRecovery();clearTimeout(this.streamRecoveryTimer);if(this.streamRecovery){const q=this.streamRecovery.queue;this.streamRecovery=null;q.dispose();if(this.tailPending?.queue===q){this.tailPending=null;clearTimeout(this.tailTimer);}}

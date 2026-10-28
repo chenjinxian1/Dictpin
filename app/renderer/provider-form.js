@@ -25,7 +25,7 @@
    $('provider-active').textContent=t('当前生效：','Active: ')+label(active)+' · '+(active.model||t('未选模型','No model'));
    $('provider-pending').textContent=D.conflicted?t('服务配置已变化，请还原草稿后重新编辑。','Service settings changed elsewhere. Restore the draft and edit again.'):D.isDirty()?t('保存后启用：','After Save: ')+label(p):t('正在编辑当前配置','Editing the active configuration');
    $('provider-customized').hidden=!p.customized;
-   $('restore-provider-preset').disabled=locked||p.presetId==='legacy';
+   $('restore-provider-preset').disabled=locked||p.presetId==='legacy';$('restore-provider-preset').hidden=!p.customized||p.presetId==='legacy';
    $('provider-region-field').hidden=p.presetId!=='qwen';$('provider-workspace-field').hidden=p.presetId!=='qwen';
    const state=d.keyAction==='remove'?'remove':d.keyAction==='replace'?(d.persistKey?'will-save':'new'):d.keyStatus.state||(d.keyStatus.hasKey?'session':'missing');
    const states={remove:t('保存后移除密钥；此前仍使用已保存配置。','Key removal takes effect after Save.'),'will-save':t('新密钥将在保存时加密。','New key will be encrypted on Save.'),new:t('新密钥仅用于本次会话，保存前不生效。','New key is session-only and takes effect after Save.'),session:t('密钥仅用于本次会话。','Key is available for this session only.'),saved:t('密钥已用系统安全存储保存。','Key is saved with system secure storage.'),unavailable:t('已保留加密密钥，当前无法解密；可重新输入。','Encrypted key is preserved but unavailable; enter a replacement.'),missing:t('未配置密钥；本地匿名服务可不填。','No key configured; an anonymous local service may not need one.')};

@@ -15,7 +15,7 @@ function configurePaths(app,root){
 }
 async function start(electron,{StoreClass=Store,LocalAsrClass=LocalAsr,SafePasteClass=SafePaste,root=path.resolve(__dirname,'../..'),uiLanguage='zh-CN'}={}){
  const english=uiLanguage==='en',languageArguments=english?['--dictpin-ui-language=en']:[],label=(zh,en)=>english?en:zh;
- const {app,BrowserWindow,ipcMain,globalShortcut,clipboard,safeStorage,session,screen,Menu,Tray,nativeImage,powerMonitor}=electron;
+ const {app,BrowserWindow,ipcMain,globalShortcut,clipboard,safeStorage,session,screen,Menu,Tray,nativeImage,powerMonitor,nativeTheme}=electron;
  const renderer=path.join(root,'app/renderer'),mainURL=pathToFileURL(path.join(renderer,'dictation.html')).href,barURL=pathToFileURL(path.join(renderer,'voice-bar.html')).href;
  app.setName('Local Dictation');
  const store=new StoreClass(app.getPath('userData'),safeStorage),localAsr=new LocalAsrClass(),controller=new Controller({store,bridge:Object.freeze({}),localAsr});
@@ -30,7 +30,7 @@ async function start(electron,{StoreClass=Store,LocalAsrClass=LocalAsr,SafePaste
   state.delivery=paste.snapshot();
   if(state.result)delete state.result;
   const recovery=controller.recoverySummary(),canRetryCleanup=controller.canRetryCleanup(result);
-  if(bar){const current=readable(controller.state.result)?controller.state.result:null;return {state,canUseOriginal,canRetryCleanup,recovery,result:current?{id:current.id,revision:current.revision||1,source:current.source,status:current.status,refined:current.refined,hasText:!!current.text?.trim()}:null,copiedResultId,copiedResultRevision,escapeRegistered:false};}
+  if(bar){const current=readable(controller.state.result)?controller.state.result:null;return {state,canUseOriginal,canRetryCleanup,recovery,result:current?{id:current.id,revision:current.revision||1,source:current.source,status:current.status,refined:current.refined,cleanupStatus:current.cleanupStatus,persistenceFailed:current.persistenceFailed===true,hasText:!!current.text?.trim()}:null,copiedResultId,copiedResultRevision,escapeRegistered:false};}
   return {state,canUseOriginal,canRetryCleanup,recovery,recentResult:result,dataWritable:{settings:store.settingsReadable!==false&&store.readOnly!==true,dictionary:store.dictionaryReadable!==false&&store.readOnly!==true},settings:settingsView(),textServices:store.serviceView(),dictionary:store.dictionary.map(e=>({...e})),keyStatus:store.keyStatus().refiner,secureStorage:store.secureAvailable(),shortcutStatus:shortcutManager?.snapshot(),usage:store.usageSnapshot(),notices:[...store.notices,...(flushNotice?[flushNotice]:[]),...(controller.session?.storageWarnings||[]),...(store.settingsReadable===false?['旧配置不可读，当前只可查看；原文件与密钥保持不变。']:[]),...(store.dictionaryReadable===false?['词典当前只读；原文件保持不变。']:[])],localEngine:{workerFound:typeof localAsr.exe==='string'&&fs.existsSync(localAsr.exe),ready:localAsr.ready===true},copiedResultId,copiedResultRevision,requestedView};
  }
  function flushEditor(reason){
@@ -41,10 +41,12 @@ async function start(electron,{StoreClass=Store,LocalAsrClass=LocalAsr,SafePaste
  function editorFlushed(input){const pending=pendingFlushes.get(input.token);if(!pending)return {accepted:false};pendingFlushes.delete(input.token);clearTimeout(pending.timer);if(input.ok===true)clearFlushNotice();pending.resolve(input.ok===true);return {accepted:true};}
  function setShortcutRecording(input){if(input.active&&!mainWindow.isVisible())throw Error('请在当前设置窗口录入快捷键。');shortcutRecordingIntent=input.active;try{shortcutManager.setRecording(input.active);}finally{publish();}return snapshot(false);}
  function resumeShortcuts(){if(!shortcutManager?.snapshot().suspended)return;try{shortcutManager.setRecording(false);}catch{store.notices.push('快捷键未能恢复，请在设置中重新启用或更换组合。');}publish();}
- function publish(){if(mainWindow&&!mainWindow.isDestroyed())mainWindow.webContents.send('state',snapshot(false));barManager?.update(snapshot(true));tray?.setToolTip(controller.state.phase==='recording'?label('本地听写 · 录音中','Dictpin · Recording'):label('本地听写','Dictpin'));}
+ function publish(){if(mainWindow&&!mainWindow.isDestroyed())mainWindow.webContents.send('state',snapshot(false));barManager?.update(snapshot(true));tray?.setToolTip(controller.state.phase==='recording'?label('Dictpin · 录音中','Dictpin · Recording'):'Dictpin');}
  function secure(win){win.webContents.setWindowOpenHandler(()=>({action:'deny'}));win.webContents.on('will-navigate',event=>event.preventDefault());win.webContents.on('will-attach-webview',event=>event.preventDefault());}
  function showMain(view='recent'){requestedView=view;if(mainWindow&&!mainWindow.isDestroyed()){mainWindow.show();mainWindow.focus();publish();}}
- mainWindow=new BrowserWindow({width:640,height:480,minWidth:360,minHeight:300,show:false,title:label('本地听写','Dictpin'),icon:path.join(renderer,'../assets/icon.png'),autoHideMenuBar:true,backgroundColor:'#fafaf9',webPreferences:{preload:path.join(__dirname,'dictation-preload.js'),additionalArguments:languageArguments,contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,backgroundThrottling:false}});
+ const windowBackground=()=>nativeTheme?.shouldUseDarkColors?'#191919':'#f4f4f2';
+ mainWindow=new BrowserWindow({width:640,height:480,minWidth:360,minHeight:300,show:false,title:'Dictpin',icon:path.join(renderer,'../assets/icon.png'),autoHideMenuBar:true,backgroundColor:windowBackground(),webPreferences:{preload:path.join(__dirname,'dictation-preload.js'),additionalArguments:languageArguments,contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,backgroundThrottling:false}});
+ const themeChanged=()=>{if(!mainWindow.isDestroyed())mainWindow.setBackgroundColor(windowBackground());};nativeTheme?.on('updated',themeChanged);
  secure(mainWindow);
  mainWindow.on('blur',resumeShortcuts);
  mainWindow.on('focus',()=>{if(!shortcutRecordingIntent||disposed||!shortcutManager)return;try{shortcutManager.setRecording(true);}catch{store.notices.push('快捷键未能完全暂停，录入期间已禁止触发，请重试。');}publish();});
@@ -87,7 +89,7 @@ async function start(electron,{StoreClass=Store,LocalAsrClass=LocalAsr,SafePaste
  tray.setContextMenu(Menu.buildFromTemplate([{label:label('最近结果','Recent result'),click:()=>showMain('recent')},{label:label('开始 / 结束听写','Start / stop dictation'),click:()=>void host.toggleFromTray()},{label:label('个人词典','Personal dictionary'),click:()=>showMain('dictionary')},{label:label('设置','Settings'),click:()=>showMain('settings')},{type:'separator'},{label:label('退出','Quit'),click:()=>{quitting=true;app.quit();}}]));
  tray.on('double-click',()=>showMain('recent'));
  mainWindow.show();publish();
- async function dispose(){if(disposed)return;disposed=true;quitting=true;for(const p of pendingFlushes.values()){clearTimeout(p.timer);p.resolve(false);}pendingFlushes.clear();providerChecks.cancelAll();controller.dispose();barManager.dispose();shortcutManager.dispose();const ownedTray=tray;tray=null;ownedTray?.destroy?.();await Promise.allSettled([localAsr.dispose(),paste.dispose()]);}
+ async function dispose(){if(disposed)return;disposed=true;quitting=true;nativeTheme?.removeListener('updated',themeChanged);for(const p of pendingFlushes.values()){clearTimeout(p.timer);p.resolve(false);}pendingFlushes.clear();providerChecks.cancelAll();controller.dispose();barManager.dispose();shortcutManager.dispose();const ownedTray=tray;tray=null;ownedTray?.destroy?.();await Promise.allSettled([localAsr.dispose(),paste.dispose()]);}
  app.on('before-quit',event=>{if(!disposed){event.preventDefault();void flushEditor('quit').then(ok=>{if(ok)return dispose().finally(()=>app.quit());quitting=false;flushNotice='文字尚未确认保存，暂未退出，请先复制当前文字。';showMain('recent');});}});
  return {controller,store,mainWindow,snapshot,dispose,host};
 }

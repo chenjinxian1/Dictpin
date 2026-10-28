@@ -2,6 +2,8 @@
 (()=>{
  const bridge=window.dictation,model=window.DictationUiState,$=id=>document.getElementById(id),ACTIVE=new Set(['starting','recording','stopping','processing','transcribing','refining']);
  if(!bridge||!model){$('notice').hidden=false;$('notice').textContent='未连接桌面程序，无法开始听写。';return;}
+ const language=bridge.uiLanguage,t=(key,values)=>window.DictpinI18n.t(key,language,values);
+ const dismissedNotices=new Set();let noticeSignature='',noticeTask=null,clockTimer=null,recordAnchor=null,recoveryAnchor=null;
  const motion=window.DictationMotion?.createFeedbackMotion();
  let snapshot=null,version=0,page='recent',lastRequested=null,initial=null,dirty=false,saving=false,testing=false,wordBusy=false,copying=false,wordId=null,wordOpener=null,undoToken=null,undoEntryId=null,wordSignature='',deviceRevision=0,discardFocus=null,discardDestination='recent',capturePending=false,copyRevision=0,copyAck=null,copyTimer=null,toastTimer=null,toastOwner=null,resultSignature='';
  const busy=()=>ACTIVE.has(snapshot?.state?.phase);
@@ -52,8 +54,9 @@
   provider.sync({locked:formLocked,busy:busy()||saving,secure:snapshot?.secureStorage===true});
   $('new-word').disabled=wordsLocked;for(const button of $('word-list').querySelectorAll('button'))button.disabled=wordsLocked;
   $('save-word').disabled=wordBusy||wordsLocked;$('cancel-word').disabled=wordBusy;$('word-input').disabled=wordBusy||wordsLocked;$('word-aliases').disabled=wordBusy||wordsLocked;$('undo-word').disabled=wordBusy||wordsLocked;
-   const capture=model.captureView(snapshot),session=model.sessionView(snapshot),modal=!!document.querySelector('dialog[open]');$('capture-label').textContent=capture.label;$('capture-toggle').disabled=capture.disabled||capturePending||saving||wordBusy||copying||modal;$('capture-toggle').dataset.active=String(capture.action==='stop');$('capture-cancel').hidden=!capture.cancel;$('capture-cancel').disabled=capturePending||saving||modal;$('capture-cancel').textContent=session.cancelLabel;$('capture-cancel').title=snapshot?.canUseOriginal?'结束整理并保留完整识别原文；已发出的请求仍可能计费。':'取消本次听写';
-  const previousBusy=busy()&&snapshot?.recentResult?.id!==snapshot?.state?.sessionId;for(const id of ['copy-original','restore-original','undo-text','undo-corrections'])$(id).disabled=locked||previousBusy;
+   const capture=model.captureView(snapshot,language),session=model.sessionView(snapshot,language),modal=!!document.querySelector('dialog[open]');$('capture-label').textContent=capture.label;$('capture-toggle').hidden=session.useLocal===true;$('capture-toggle').disabled=capture.disabled||capturePending||saving||wordBusy||copying||modal;$('capture-toggle').dataset.active=String(capture.action==='stop');$('capture-cancel').hidden=!capture.cancel||session.useLocal===true;$('capture-cancel').disabled=capturePending||saving||modal;$('capture-cancel').textContent=session.cancelLabel;$('capture-cancel').title='取消本次听写';$('use-local-text').hidden=session.useLocal!==true;$('use-local-text').disabled=capturePending||saving||modal||copying;
+  const previousBusy=busy()&&snapshot?.recentResult?.id!==snapshot?.state?.sessionId;for(const id of ['copy-original','restore-original','undo-text'])$(id).disabled=locked||previousBusy;
+  if(snapshot?.recentResult?.text===snapshot?.recentResult?.original)$('restore-original').disabled=true;
   $('copy-result').disabled=locked||previousBusy||copying||!snapshot?.recentResult||!$('result-content').value?.trim();$('copy-result').textContent=copying?'复制中…':copyAck?.id===snapshot?.recentResult?.id&&copyAck?.revision===(snapshot?.recentResult?.revision||1)?'已复制':'复制文字';$('copy-result').setAttribute('aria-busy',String(copying));
   $('append-result').disabled=locked||busy()||capturePending||!snapshot?.recentResult?.text?.trim()||snapshot?.recovery?.tailPending===true;
   if(saving||!$('save-message').classList.contains('error'))$('save-message').textContent=saving?'正在保存…':dirty&&busy()?'任务结束后可保存':dirty?'有未保存的更改':$('save-message').dataset.saved==='true'?'已保存':'';
@@ -79,18 +82,30 @@
   editorFlight=(async()=>{
    try{const next=await bridge.updateResult({id,expectedRevision,text,...claim?{editing:true}:{}});const r=next?.recentResult;
     if(editorId===id){if(r?.id===id)editorRevision=r.revision||1;if(version===editorVersion)editorDirty=false;editorError='';accept(next);}
-   }catch(error){if(snapshot?.recentResult?.id===id)editorRevision=snapshot.recentResult.revision||editorRevision;editorDirty=true;editorError=failure(error,'修改暂未保存，请先复制。');showEditState();throw error;}
+   }catch(error){if(snapshot?.recentResult?.id===id)editorRevision=snapshot.recentResult.revision||editorRevision;editorDirty=true;editorError=snapshot?.recentResult?.persistenceFailed?t('result.saveFailed'):failure(error,'修改暂未保存，请先复制。');showEditState();throw error;}
   })();
-  try{await editorFlight;}finally{editorFlight=null;}
+  try{await editorFlight;}finally{editorFlight=null;showEditState();}
   if(editorDirty&&!composition){editorTimer=setTimeout(()=>void flushEditor().catch(()=>{}),400);}
  }
- function showEditState(){const node=$('edit-state');node.hidden=!editorError;node.textContent=editorError;}
+ function showEditState(){const node=$('edit-state');node.hidden=!snapshot?.recentResult;node.dataset.error=String(!!editorError||snapshot?.recentResult?.persistenceFailed===true);node.textContent=editorError||(snapshot?.recentResult?.persistenceFailed?t('result.saveFailed'):editorDirty||editorFlight?(language==='en'?'Saving edits…':'正在保存修改…'):(language==='en'?'Saved locally':'已保存到本机'));}
+ function clocks(){
+  if(!snapshot)return;const now=performance.now(),state=snapshot.state,recording=state.phase==='recording';
+  if(recording&&(!recordAnchor||recordAnchor.id!==state.sessionId||recordAnchor.startedAt!==state.startedAt))recordAnchor={id:state.sessionId,startedAt:state.startedAt,at:now,elapsed:Math.max(0,Date.now()-state.startedAt)};
+  if(!recording)recordAnchor=null;
+  const clock=model.recordingClock(snapshot,recordAnchor?state.startedAt+recordAnchor.elapsed+now-recordAnchor.at:Date.now());$('recording-time').hidden=!clock.visible;$('recording-time').textContent=clock.visible?clock.text:'';$('recording-time').dataset.remaining=String(clock.remaining);$('recording-time').setAttribute('aria-label',t(clock.remaining?'clock.remaining':'clock.recording',{time:clock.text}));
+  const r=snapshot.recovery;if(r){const remaining=Math.max(0,Math.min(r.expiresAt-Date.now(),Number.isFinite(r.remainingMs)?r.remainingMs:Infinity));if(!recoveryAnchor||recoveryAnchor.token!==r.token)recoveryAnchor={token:r.token,deadline:now+remaining};const value=model.recoveryClock({expiresAt:recoveryAnchor.deadline},now);$('recovery-countdown').textContent=t(value.expired?'recovery.expired':'recovery.remaining',{seconds:value.seconds});$('retry-segment').disabled=value.expired||busy()||capturePending||r.tailPending===true;}else{recoveryAnchor=null;$('recovery-countdown').textContent='';}
+  const clockNeeded=recording||!!r&&recoveryAnchor?.deadline>now;if(clockNeeded&&clockTimer===null)clockTimer=setInterval(clocks,1000);else if(!clockNeeded&&clockTimer!==null){clearInterval(clockTimer);clockTimer=null;}
+ }
+ function renderNotices(items){
+  const unique=[...new Map(items.filter(x=>x.text).map(x=>[(x.id||'')+':'+x.severity+':'+x.text,x])).entries()],signature=JSON.stringify(unique);if(signature===noticeSignature)return;noticeSignature=signature;
+  const nodes=unique.filter(([key])=>!dismissedNotices.has(key)).map(([key,item])=>{const row=document.createElement('div');row.className='notice-item';row.dataset.severity=item.severity;row.setAttribute('role',item.severity==='error'?'alert':'status');const text=document.createElement('span');text.textContent=item.text;const close=document.createElement('button');close.type='button';close.textContent='×';close.setAttribute('aria-label',t('action.dismiss'));close.addEventListener('click',()=>{const focused=document.activeElement===close,next=row.nextElementSibling?.querySelector('button')||row.previousElementSibling?.querySelector('button');dismissedNotices.add(key);row.remove();$('notice').hidden=!$('notice').children.length;if(focused)(next||$('content')).focus({preventScroll:true});});row.append(text,close);return row;});$('notice').replaceChildren(...nodes);$('notice').hidden=!nodes.length;
+ }
  function claimComposingEditor(){
   if(editorFlight||!snapshot?.canUseOriginal||snapshot.recentResult?.id!==editorId)return;
   const id=editorId,expectedRevision=editorRevision,text=snapshot.recentResult.text;
   editorFlight=Promise.resolve(bridge.updateResult({id,expectedRevision,text,editing:true})).then(next=>{
    if(editorId===id){editorRevision=Math.max(editorRevision,next?.recentResult?.revision||1);accept(next);}
-  }).catch(error=>{editorError=failure(error,'修改暂未保存，请先完成输入。');showEditState();}).finally(()=>{editorFlight=null;});
+  }).catch(error=>{editorError=failure(error,'修改暂未保存，请先完成输入。');showEditState();}).finally(()=>{editorFlight=null;showEditState();});
  }
  function confirmAction(title,description,apply){
   const dialog=$('confirm-dialog');if(dialog.open)return;$('confirm-title').textContent=title;$('confirm-description').textContent=description;dialog.showModal();
@@ -99,16 +114,20 @@
   $('confirm-keep').addEventListener('click',cancel);$('confirm-apply').addEventListener('click',run);dialog.addEventListener('cancel',cancel,{once:true});$('confirm-keep').focus();
  }
  function renderResult(){
+  $('empty-result').querySelector('h2').textContent=t('empty.title');$('empty-result').querySelector('p').textContent=t('empty.detail');document.querySelector('.result-actions').hidden=!snapshot.recentResult;
   $('task-status').dataset.segmented=String(!!snapshot.state.pipeline);
   $('undo-text').textContent=snapshot.recentResult?.source==='appended'?'撤销追加':'撤销还原';
   const delivery=snapshot.state.delivery;$('delivery-message').hidden=!delivery||delivery.status==='manual';$('delivery-message').textContent=delivery?.message||'';
-  const task=model.sessionView(snapshot);$('task-status').hidden=!task.active;$('task-status-title').textContent=task.title;$('task-status-detail').textContent=task.detail;
-  const steps=['recording','recognition','cleanup'],current=steps.indexOf(task.step);for(const step of $('task-status').querySelectorAll('[data-step]')){const index=steps.indexOf(step.dataset.step);step.hidden=true;step.dataset.complete=String(index<current);if(index===current)step.setAttribute('aria-current','step');else step.removeAttribute('aria-current');}
-  const r=snapshot.recentResult;$('result-content').dataset.resultId=r?.id||'';$('result-content').dataset.revision=String(r?.revision||1);const view=model.resultView(r,busy(),snapshot.state.sessionId);$('shortcut-guide').hidden=!view.showShortcut||busy();$('effective-shortcut').textContent=model.effectiveShortcut(snapshot);const hasShortcut=snapshot?.shortcutStatus?.statuses?.current?.registered===true;$('effective-shortcut').hidden=!hasShortcut;$('shortcut-prefix').textContent=hasShortcut?'按':'';$('shortcut-suffix').textContent=hasShortcut?'开始说话，再按一次结束':'';$('empty-result').hidden=!!r||busy();$('result-content').hidden=!r;$('result-details').hidden=!r;$('usage-details').hidden=!r;$('setup-shortcut').hidden=hasShortcut;$('empty-start').disabled=model.captureView(snapshot).disabled;$('undo-text').hidden=typeof r?.previousText!=='string';$('retry-cleanup').hidden=!snapshot.canRetryCleanup||!/整理未完成|整理失败|超时/.test(r?.message||'');const changes=r?.corrections||[];$('correction-details').hidden=!changes.length;$('correction-summary').textContent=(['restored','manual'].includes(r?.source)?'词典纠正记录：':'词典已纠正 ')+changes.length+' 处';$('correction-list').replaceChildren(...changes.map(change=>{const li=document.createElement('li');li.textContent=change.from+' → '+change.to;return li;}));
-  const recovery=snapshot.recovery;$('recovery-strip').hidden=!recovery;$('recovery-message').textContent=recovery?(recovery.reason==='cancelled'?'已取消，本段仅在内存保留30秒。':'本段识别失败，录音仅在内存保留5分钟。'):'';$('retry-segment').textContent=recovery?.reason==='cancelled'?'恢复本段识别':'重试本段';
+  const task=model.sessionView(snapshot,language);$('task-status').hidden=!task.active;$('task-status-title').textContent=task.title;$('task-status-detail').textContent=task.detail;
+  const steps=['recording','recognition','cleanup'],current=steps.indexOf(task.step),cleanupExpected=['pending','running','completed','failed','timeout'].includes(snapshot.state.cleanupStatus);$('task-status').querySelector('.task-steps').hidden=!task.active;for(const step of $('task-status').querySelectorAll('[data-step]')){const index=steps.indexOf(step.dataset.step);step.textContent=t('step.'+step.dataset.step);step.hidden=step.dataset.step==='cleanup'&&!cleanupExpected;step.dataset.complete=String(index<current);if(index===current)step.setAttribute('aria-current','step');else step.removeAttribute('aria-current');}
+  const r=snapshot.recentResult;$('result-content').dataset.resultId=r?.id||'';$('result-content').dataset.revision=String(r?.revision||1);const view=model.resultView(r,busy(),snapshot.state.sessionId,language);$('shortcut-guide').hidden=!view.showShortcut||busy();$('effective-shortcut').textContent=model.effectiveShortcut(snapshot);const hasShortcut=snapshot?.shortcutStatus?.statuses?.current?.registered===true;$('effective-shortcut').hidden=!hasShortcut;$('shortcut-prefix').textContent=hasShortcut?'按':'';$('shortcut-suffix').textContent=hasShortcut?'开始说话，再按一次结束':'';$('empty-result').hidden=!!r||busy();$('result-editor').hidden=!r;$('result-content').hidden=!r;$('versions-details').hidden=!r;$('result-details').hidden=!r;$('usage-details').hidden=!r||!r.refined&&!snapshot.usage?.recent?.some(item=>item.operationId===r.id&&item.kind==='refiner');$('setup-shortcut').hidden=hasShortcut;$('undo-text').hidden=typeof r?.previousText!=='string';$('retry-cleanup').hidden=!model.canRetryView(snapshot);const changes=r?.corrections||[];$('correction-details').hidden=!changes.length;$('correction-summary').textContent=(['restored','manual'].includes(r?.source)?'词典纠正记录：':'词典已纠正 ')+changes.length+' 处';$('correction-list').replaceChildren(...changes.map(change=>{const li=document.createElement('li');li.textContent=change.from+' → '+change.to;return li;}));
+  $('retry-cleanup').textContent=r?.cleanupStatus===undefined?t('action.cleanupLegacy'):(language==='en'?'Retry cleanup':'重试轻整理');
+  const recovery=snapshot.recovery;$('recovery-strip').hidden=!recovery;$('recovery-message').textContent=recovery?t(recovery.reason==='cancelled'?'recovery.cancelled':'recovery.failed'):'';$('retry-segment').textContent=recovery?.reason==='cancelled'?'恢复本段识别':'重试本段';clocks();
   if(!r){$('result-content').value='';$('result-content').textContent='';$('result-message').textContent='';$('recent-time').textContent='';return;}
-  const signature=JSON.stringify([r.id,view.text]);if(editorId!==r.id){editorId=r.id;editorRevision=r.revision||1;editorDirty=false;editorError='';$('result-content').value=view.text;$('result-content').textContent=view.text;}else if(!editorDirty&&!editorFlight&&!composition){editorRevision=r.revision||1;if($('result-content').value!==view.text)$('result-content').value=view.text;$('result-content').textContent=view.text;}showEditState();$('original-text').textContent=r.original||'';if(signature!==resultSignature){resultSignature=signature;motion?.respond($('result-content'));}
-  $('result-message').classList.toggle('warning',view.warning);$('result-message').textContent=snapshot.state.phase==='error'&&snapshot.state.message?snapshot.state.message:view.message;$('result-content').readOnly=deliveryPending()||busy()&&(r.id!==snapshot.state.sessionId||!!snapshot.state.pipeline&&(!snapshot.state.pipeline.sealed||snapshot.state.pipeline.pending>0));
+  const editor=$('result-content'),newResult=editorId!==r.id,selected=editor.selectionStart!==editor.selectionEnd,focused=document.activeElement===editor,follow=busy()&&r.id===snapshot.state.sessionId&&!focused&&!selected&&(newResult||editor.scrollHeight-editor.clientHeight-editor.scrollTop<32),selection=[editor.selectionStart,editor.selectionEnd],scroll=editor.scrollTop;
+  if(newResult){editorId=r.id;editorRevision=r.revision||1;editorDirty=false;editorError='';editor.value=view.text;editor.textContent=view.text;}else if(!editorDirty&&!editorFlight&&!composition){editorRevision=r.revision||1;if(editor.value!==view.text){editor.value=view.text;if(focused||selected)editor.setSelectionRange(Math.min(selection[0],view.text.length),Math.min(selection[1],view.text.length));editor.scrollTop=scroll;}editor.textContent=view.text;}
+  if(follow)editor.scrollTop=editor.scrollHeight;showEditState();$('original-text').textContent=r.original||'';
+  $('result-message').classList.toggle('warning',view.warning);$('result-message').textContent=view.message;$('result-problem').hidden=!r.message||!view.warning&&r.cleanupStatus!==undefined;$('result-reason').textContent=r.message||'';editor.readOnly=deliveryPending()||busy()&&(r.id!==snapshot.state.sessionId||!!snapshot.state.pipeline&&(!snapshot.state.pipeline.sealed||snapshot.state.pipeline.pending>0));
   $('recent-time').textContent=view.metadata;usage(r);
  }
  function renderWords(){
@@ -121,7 +140,7 @@
   for(const word of filtered){
    let item=existing.get(word.id),created=!item;
    if(created){item=document.createElement('div');item.className='word-row';item.dataset.wordId=word.id;item.setAttribute('role','listitem');const title=document.createElement('span');title.className='word-title';const aliases=document.createElement('small');aliases.className='word-aliases';const actions=document.createElement('div');actions.className='word-actions';const edit=document.createElement('button');edit.type='button';edit.textContent='编辑';edit.dataset.wordAction='edit';edit.addEventListener('click',()=>openWord(item.wordData,edit));const remove=document.createElement('button');remove.type='button';remove.textContent='删除';remove.className='delete';remove.dataset.wordAction='delete';remove.addEventListener('click',()=>void removeWord(item.wordData.id));actions.append(edit,remove);const wording=document.createElement('div');wording.className='word-wording';wording.append(title,aliases);item.append(wording,actions);}
-   item.wordData=word;const title=item.querySelector('.word-title');if(title.textContent!==word.word)title.textContent=word.word;item.querySelector('.word-aliases').textContent=word.aliases?.length?word.aliases.join('、')+' → '+word.word:'英文大小写参考';item.querySelector('[data-word-action=edit]').setAttribute('aria-label','编辑 '+word.word);item.querySelector('[data-word-action=delete]').setAttribute('aria-label','删除 '+word.word);
+   item.wordData=word;const title=item.querySelector('.word-title');if(title.textContent!==word.word)title.textContent=word.word;item.querySelector('.word-aliases').textContent=word.aliases?.length?word.aliases.join('、')+' → '+word.word:t('dictionary.savedHint');item.querySelector('[data-word-action=edit]').setAttribute('aria-label','编辑 '+word.word);item.querySelector('[data-word-action=delete]').setAttribute('aria-label','删除 '+word.word);
    if(list.children[position]!==item)list.insertBefore(item,list.children[position]||null);if(position<40){if(created)motion?.enter(item);else motion?.reflow(item,before.get(word.id));}position++;
   }
   if(focus&&!wordBusy&&document.activeElement!==previous&&!document.querySelector('dialog[open]')){
@@ -130,13 +149,14 @@
   }
  }
  function accept(data){
-  if(!data?.state||!data.settings)return;const previousId=snapshot?.recentResult?.id,previousRevision=snapshot?.recentResult?.revision||1,wasBusy=busy();snapshot=data;version++;if(previousId!==data.recentResult?.id||previousRevision!==(data.recentResult?.revision||1)||(!wasBusy&&busy()))resetCopy();if(editorId===data.recentResult?.id)editorRevision=Math.max(editorRevision,data.recentResult.revision||1);if(!wasBusy&&busy())clearToast(toastOwner);
+  if(!data?.state||!data.settings)return;const previousId=snapshot?.recentResult?.id,previousRevision=snapshot?.recentResult?.revision||1,wasBusy=busy();snapshot=data;if(data.state.sessionId)noticeTask=data.state.sessionId;version++;if(previousId!==data.recentResult?.id||previousRevision!==(data.recentResult?.revision||1)||(!wasBusy&&busy()))resetCopy();if(editorId===data.recentResult?.id)editorRevision=Math.max(editorRevision,data.recentResult.revision||1);if(!wasBusy&&busy())clearToast(toastOwner);
    provider.accept(data.textServices);if(busy())provider.cancel();
    if(!initial||(!dirty&&!saving)){initial=savedForm(data);setForm(initial);}
   const phase=data.state.phase;$('session-status').textContent=phase==='recording'?'正在录音':ACTIVE.has(phase)?'正在处理':model.engineStatus(data);
   $('copy-shortcut-message').textContent=data.shortcutStatus?.suspended?'录入中，复制快捷键已暂停':data.shortcutStatus?.statuses?.copy?.registered?'已启用':data.settings.copyShortcut?'未生效':'未设置，不占用系统组合';
    $('provider-summary').title=$('provider-summary').textContent;
-  const notices=[...(data.notices||[]),...(data.usage?.available===false?['用量账本当前不可读，原文件保持不变；用量与费用未知。']:[]),...(phase==='error'||phase==='cancelled'&&!data.recovery?[data.state.message]:[]),...(data.state.operationFeedback?[data.state.operationFeedback]:[]),...(dirty&&busy()?['本次听写使用已保存的设置，草稿仍保留。']:[])].filter(Boolean);$('notice').hidden=!notices.length;$('notice').textContent=notices.join(' ');
+  if(recoveryAnchor&&data.recovery?.token===recoveryAnchor.token&&Number.isFinite(data.recovery.remainingMs))recoveryAnchor.deadline=Math.min(recoveryAnchor.deadline,performance.now()+data.recovery.remainingMs);
+  const notices=[...(data.notices||[]).map(text=>({text,severity:'warning'})),...(data.usage?.available===false?[{text:'用量账本当前不可读，原文件保持不变；用量与费用未知。',severity:'warning'}]:[]),...(phase==='error'||phase==='cancelled'&&!data.recovery?[{id:[noticeTask||'',data.state.errorId||phase].join(':'),text:data.state.message,severity:phase==='error'?'error':'info'}]:[]),...(data.state.operationFeedback?[{text:data.state.operationFeedback,severity:'info'}]:[]),...(dirty&&busy()?[{text:language==='en'?'This task uses saved settings; your draft is kept.':'本次听写使用已保存的设置，草稿仍保留。',severity:'info'}]:[])];renderNotices(notices);
   $('shortcut-message').textContent=data.shortcutStatus?.suspended?'录入中，听写快捷键已暂停':data.shortcutStatus?.statuses?.current?.registered===true?'已启用':data.settings.shortcut?'未生效':'未设置';renderResult();renderWords();sync();
   if(data.requestedView!==lastRequested){lastRequested=data.requestedView;if(lastRequested)setPage(lastRequested);}
  }
@@ -196,14 +216,14 @@
  $('retry-shortcut').addEventListener('click',async()=>{if(dirty||saving||testing||busy()||snapshot?.dataWritable?.settings===false||!snapshot?.settings.shortcut)return;await applySettings({shortcut:snapshot.settings.shortcut},true);});
  $('reset-settings').addEventListener('click',()=>confirmDiscard('settings'));
  async function captureAction(cancel=false){
-  if(capturePending||!snapshot)return;const view=model.captureView(snapshot),method=cancel?'cancel':view.action,sessionId=snapshot.state.sessionId;
+  if(capturePending||!snapshot)return;const view=model.captureView(snapshot,language),method=cancel?'cancel':view.action,sessionId=snapshot.state.sessionId;
   if(cancel?!view.cancel:view.disabled||!method)return;
   capturePending=true;sync();
   try{if(method==='start'){await flushEditor();if(microphoneChanged()){setPage('settings');sync();toast('麦克风尚未生效，请先保存更改。',{kind:'microphone-draft'});if(!$('save-settings').disabled)$('save-settings').focus({preventScroll:true});return;}if(snapshot.recovery){const token=snapshot.recovery.token;confirmAction('开始新的听写？','上一段临时录音将被清除，已有文字仍保留。',async()=>{await bridge.start({discardRecoveryToken:token});});return;}}const response=await(method==='start'?bridge.start():bridge[method]({sessionId}));if(response?.accepted===false&&!busy())toast('状态已变化，请重新开始听写。');}
   catch(error){if(method==='start'?!busy():snapshot.state.sessionId===sessionId)toast(failure(error,'操作未确认，请重试。'));}
   finally{capturePending=false;sync();}
  }
- $('capture-toggle').addEventListener('click',()=>void captureAction());$('capture-cancel').addEventListener('click',()=>void captureAction(true));
+ $('capture-toggle').addEventListener('click',()=>void captureAction());$('capture-cancel').addEventListener('click',()=>void captureAction(true));$('use-local-text').addEventListener('click',()=>void captureAction(true));
  $('append-result').addEventListener('click',async()=>{
   if(busy()||deliveryPending()||capturePending||!snapshot?.recentResult)return;
   try{await flushEditor();if(microphoneChanged()){setPage('settings');toast('麦克风尚未生效，请先保存更改。');return;}
@@ -212,19 +232,19 @@
   }catch(error){toast(failure(error,'追加未开始，已有文字仍保留。'));}
  });
  async function copyCurrent(source){
-  const id=snapshot?.recentResult?.id;if(!id||copying||busy()&&id!==snapshot.state.sessionId)return;const localVersion=editorVersion;copying=true;sync();
-  try{try{await flushEditor();}catch(error){if(snapshot?.recentResult?.id!==id||snapshot.recentResult.text!==$('result-content').value)throw error;}const r=snapshot.recentResult;const ack=await bridge.copyResult({id,expectedRevision:r.revision||1,...source?{source}:{}});if(ack?.ok&&snapshot.recentResult?.id===id&&(snapshot.recentResult.revision||1)===ack.revision&&editorVersion===localVersion){copyAck=source?null:{id,revision:ack.revision};toast(source?'已复制识别原文。':'已复制，请自行粘贴。',{kind:'copy',id},2200);}}
-  catch(error){toast(failure(error,'复制未完成，文字仍保留，请重试。'));}finally{copying=false;sync();}
+  const id=snapshot?.recentResult?.id;if(!id||copying||busy()&&id!==snapshot.state.sessionId)return;const localVersion=editorVersion;clearToast(toastOwner);copying=true;sync();
+  try{try{await flushEditor();}catch(error){if(snapshot?.recentResult?.id!==id||snapshot.recentResult.text!==$('result-content').value)throw error;}const r=snapshot.recentResult;const ack=await bridge.copyResult({id,expectedRevision:r.revision||1,...source?{source}:{}});if(ack?.ok&&snapshot.recentResult?.id===id&&(snapshot.recentResult.revision||1)===ack.revision&&editorVersion===localVersion){copyAck=source?null:{id,revision:ack.revision};if(source)toast('已复制识别原文。',{kind:'copy',id},2200);}}
+  catch(error){toast(failure(error,t('bar.copyFailure')));}finally{copying=false;sync();}
  }
- $('copy-result').addEventListener('click',()=>void copyCurrent());$('retry-cleanup').addEventListener('click',()=>confirmAction('重新轻整理？','会发送当前识别文字，可能计费；本次只请求一次。',async()=>{await flushEditor();const r=snapshot.recentResult;accept(await bridge.retryCleanup({id:r.id,expectedRevision:r.revision||1}));}));$('undo-corrections').addEventListener('click',()=>confirmAction('撤销词典纠正？','恢复未经词典纠正的识别原文，当前稿可撤销恢复。',()=>restoreText('original')));$('copy-original').addEventListener('click',()=>void copyCurrent('original'));
+ $('copy-result').addEventListener('click',()=>void copyCurrent());$('retry-cleanup').addEventListener('click',()=>confirmAction(snapshot.recentResult?.cleanupStatus===undefined?t('action.cleanupLegacy')+(language==='en'?'?':'？'):'重新轻整理？','会发送当前识别文字，可能计费；本次只请求一次。',async()=>{await flushEditor();const r=snapshot.recentResult;accept(await bridge.retryCleanup({id:r.id,expectedRevision:r.revision||1}));}));$('copy-original').addEventListener('click',()=>void copyCurrent('original'));
  async function restoreText(source){await flushEditor();const r=snapshot.recentResult;if(!r)return;const next=await bridge.restoreResult({id:r.id,expectedRevision:r.revision||1,source});accept(next);}
- $('restore-original').addEventListener('click',()=>confirmAction('还原识别原文？','当前稿会保留为可撤销的上一稿。',()=>restoreText('original')));
+ $('restore-original').addEventListener('click',()=>confirmAction('改用识别原文？','当前稿会保留为可撤销的上一稿。',()=>restoreText('original')));
  $('undo-text').addEventListener('click',()=>void restoreText('previous').catch(error=>toast(failure(error,'未能撤销，文字仍保留。'))));
  $('retry-segment').addEventListener('click',async()=>{const token=snapshot.recovery?.token;if(!token)return;try{accept(await bridge.retryRecovery({token}));}catch(error){toast(failure(error,'本段未能恢复，请重试。'));}});
  $('clear-segment').addEventListener('click',async()=>{const token=snapshot.recovery?.token;if(!token)return;try{accept(await bridge.discardRecovery({token}));}catch(error){toast(failure(error,'清除未确认，请重试。'));}});
- $('empty-start').addEventListener('click',()=>void captureAction());$('setup-shortcut').addEventListener('click',()=>{setPage('settings');$('shortcut').focus();});
+ $('setup-shortcut').addEventListener('click',()=>{setPage('settings');$('shortcut').focus();});
  $('result-content').addEventListener('compositionstart',()=>{composition=true;});$('result-content').addEventListener('compositionend',()=>{composition=false;editorTimer=setTimeout(()=>void flushEditor().catch(()=>{}),400);});
- $('result-content').addEventListener('input',()=>{if(!editorId||$('result-content').readOnly)return;const first=!editorDirty;editorDirty=true;editorVersion++;copyAck=null;if(editorTimer!==null)clearTimeout(editorTimer);sync();if(first&&snapshot.canUseOriginal){if(composition)claimComposingEditor();else void flushEditor(true).catch(()=>{});}else if(!composition)editorTimer=setTimeout(()=>void flushEditor().catch(()=>{}),400);});
+ $('result-content').addEventListener('input',()=>{if(!editorId||$('result-content').readOnly)return;const first=!editorDirty;editorDirty=true;editorVersion++;copyAck=null;if(editorTimer!==null)clearTimeout(editorTimer);sync();showEditState();if(first&&snapshot.canUseOriginal){if(composition)claimComposingEditor();else void flushEditor(true).catch(()=>{});}else if(!composition)editorTimer=setTimeout(()=>void flushEditor().catch(()=>{}),400);});
  for(const id of ['shortcut','copy-shortcut'])$(id).addEventListener('keydown',event=>{if(event.key==='Tab')return;event.preventDefault();if(event.key==='Escape'){event.currentTarget.blur();return;}const key=model.acceleratorForKey(event);if(key){event.currentTarget.value=key;event.currentTarget.dispatchEvent(new Event('input',{bubbles:true}));}});
  for(const id of ['shortcut','copy-shortcut']){
   $(id).addEventListener('focus',()=>void bridge.setShortcutRecording?.({active:true}).then(accept).catch(error=>toast(failure(error,'快捷键录入未就绪，请先离开此输入框。'))));
@@ -244,5 +264,5 @@
  sync();bridge.onState(accept);bridge.onCommand(async command=>{if(command.type==='flush-editor'){let ok=true;try{await flushEditor();}catch{ok=false;}await bridge.editorFlushed?.({token:command.token,ok});return;}if(command.type==='start')try{await flushEditor();}catch{await bridge.cancel({sessionId:command.sessionId});toast('上一段修改尚未保存，请先复制或重试保存。');return;}if(capture)void capture.command(command);});const initialVersion=version;
  Promise.resolve(bridge.getSnapshot()).then(data=>{if(version===initialVersion)accept(data);}).catch(()=>{$('notice').hidden=false;$('notice').textContent='无法连接桌面程序，请从托盘重新打开。';});
  for(const details of document.querySelectorAll('details'))details.addEventListener('toggle',()=>{if(details.open)motion?.enter(details.querySelector('.details-body'));});
- const resize=new ResizeObserver(alignScroll);resize.observe($('content'));alignScroll();window.addEventListener('beforeunload',()=>{void flushEditor().catch(()=>{});if(editorTimer!==null)clearTimeout(editorTimer);if(copyTimer!==null)clearTimeout(copyTimer);if(toastTimer!==null)clearTimeout(toastTimer);resize.disconnect();motion?.dispose();capture?.dispose();});
+ const resize=new ResizeObserver(alignScroll);resize.observe($('content'));alignScroll();window.addEventListener('beforeunload',()=>{void flushEditor().catch(()=>{});if(editorTimer!==null)clearTimeout(editorTimer);if(copyTimer!==null)clearTimeout(copyTimer);if(toastTimer!==null)clearTimeout(toastTimer);if(clockTimer!==null)clearInterval(clockTimer);resize.disconnect();motion?.dispose();capture?.dispose();});
 })();
