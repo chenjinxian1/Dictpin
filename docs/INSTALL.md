@@ -87,15 +87,18 @@ Use **继续追加** (Append more) for another recording without overwriting the
 
 An uncertain paste result means check the original input first; never assume nothing was inserted. There is no automatic retry. Resource/backpressure stops and recovered audio do not auto-paste. These are development capabilities, not completed physical-input acceptance. See [Privacy](PRIVACY.md) and [Changelog](../CHANGELOG.md).
 
-## Optional English presentation
+## Interface language
 
-Choose English interface labels when starting a new development instance:
+The interface follows the Windows display language: Chinese display languages show Chinese and every other language shows English. Change it under **Settings → Interface language** (System, Simplified Chinese or English); the choice applies after restarting Dictpin.
+
+To force a language for a development instance:
 
 ```powershell
 npm run dev -- --ui-language=en
+npm run dev -- --ui-language=zh-CN
 ```
 
-The flag is process-only. It does not migrate a profile, translate dictated text or dictionary terms, change recognition language, or start recording. An already running instance keeps its current presentation. Omit the flag for the default Chinese interface. Some unmapped system/provider messages retain their original language.
+The flag is process-only and takes priority over the saved setting. Neither changes dictated text, dictionary terms or the recognition language, and neither starts recording. An already running instance keeps its current presentation.
 
 ## Validation and build status
 

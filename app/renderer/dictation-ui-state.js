@@ -2,7 +2,7 @@
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./dictation-i18n'));else root.DictationUiState=factory(root.DictpinI18n);})(typeof globalThis!=='undefined'?globalThis:this,function(i18n){
  function draftPatch(before,after){
   const patch={},refiner={};
-  for(const key of ['deviceId','shortcut','copyShortcut','autoPaste','appendMode'])if(after[key]!==before[key])patch[key]=after[key];
+  for(const key of ['deviceId','shortcut','copyShortcut','autoPaste','appendMode','cleanupLevel','uiLanguage'])if(after[key]!==undefined&&after[key]!==before[key])patch[key]=after[key];
   for(const key of ['enabled','baseUrl','model'])if(after[key]!==before[key])refiner[key]=after[key];
   if(after.key){refiner.key=after.key;refiner.persistKey=after.remember===true;}
   else if(after.remember!==before.remember)refiner.persistKey=after.remember===true;

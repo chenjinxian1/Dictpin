@@ -23,7 +23,7 @@
   const readyKey=data.result?.persistenceFailed?'bar.unsaved':state.phase==='error'||data.result?.status==='failed'?'bar.failed':['failed','timeout'].includes(data.result?.cleanupStatus)?'bar.fallback':recovery?'bar.recoverable':data.result?.refined?'bar.refined':'bar.ready';
   $('bar-status').textContent=phase==='copied'?t('bar.copied'):ready?t(readyKey):recovery?t('bar.recoverable'):data.canUseOriginal?t('bar.ready'):phase==='starting'?t('capture.prepare'):phase==='stopping'?t('capture.finish'):active?t(state.stage==='cleanup'||phase==='refining'?'capture.cleanup':'capture.recognize'):t('bar.failed');
   if(error){$('voice-wave').hidden=true;$('bar-status').hidden=false;}
-  if(!active&&state.delivery?.status==='sent')$('bar-status').textContent=language==='en'?'Paste attempted':'已尝试粘贴';
+  if(!active&&state.delivery?.status==='sent')$('bar-status').textContent=language==='en'?'Pasted':'已粘贴';
   if(!active&&state.delivery?.unknownOutcome)$('bar-status').textContent=language==='en'?'Check original field':'核对原输入框';
   $('voice-pill').title=error||state.delivery?.message||state.message||'';$('voice-pill').setAttribute('aria-label',recording&&!error?t('task.record'):$('bar-status').textContent);
   $('bar-cancel').hidden=!active||session.useLocal===true;$('bar-cancel').disabled=pending;$('bar-cancel').textContent=t('action.cancel');$('bar-cancel').setAttribute('aria-label',t('action.cancel'));$('bar-stop').hidden=!recording;$('bar-stop').disabled=pending;

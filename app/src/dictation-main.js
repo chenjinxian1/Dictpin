@@ -13,17 +13,25 @@ function configurePaths(app,root){
  app.setPath('userData',profile);app.setPath('sessionData',path.join(work,'session'));app.setPath('temp',path.join(work,'tmp'));app.setPath('crashDumps',path.join(work,'crashes'));app.setAppLogsPath?.(path.join(work,'logs'));
  return profile;
 }
-async function start(electron,{StoreClass=Store,LocalAsrClass=LocalAsr,SafePasteClass=SafePaste,root=path.resolve(__dirname,'../..'),uiLanguage='zh-CN'}={}){
- const english=uiLanguage==='en',languageArguments=english?['--dictpin-ui-language=en']:[],label=(zh,en)=>english?en:zh;
+const UI_LANGUAGE_FLAG='--dictpin-ui-language=';
+function requestedUiLanguage(argv=process.argv){const value=argv.find(arg=>arg.startsWith(UI_LANGUAGE_FLAG))?.slice(UI_LANGUAGE_FLAG.length);return value==='en'||value==='zh-CN'?value:null;}
+// Chinese display languages keep the Chinese UI; every other language gets English.
+function systemUiLanguage(app){
+ let preferred='';try{preferred=app.getPreferredSystemLanguages?.()[0]||app.getSystemLocale?.()||app.getLocale?.()||'';}catch{}
+ return !preferred||/^zh\b/i.test(preferred)?'zh-CN':'en';
+}
+function resolveUiLanguage(app,requested,saved){return requested||(saved==='en'||saved==='zh-CN'?saved:systemUiLanguage(app));}
+async function start(electron,{StoreClass=Store,LocalAsrClass=LocalAsr,SafePasteClass=SafePaste,root=path.resolve(__dirname,'../..'),uiLanguage=null}={}){
  const {app,BrowserWindow,ipcMain,globalShortcut,clipboard,safeStorage,session,screen,Menu,Tray,nativeImage,powerMonitor,nativeTheme}=electron;
  const renderer=path.join(root,'app/renderer'),mainURL=pathToFileURL(path.join(renderer,'dictation.html')).href,barURL=pathToFileURL(path.join(renderer,'voice-bar.html')).href;
  app.setName('Local Dictation');
  const store=new StoreClass(app.getPath('userData'),safeStorage),localAsr=new LocalAsrClass(),controller=new Controller({store,bridge:Object.freeze({}),localAsr});
+ const effectiveLanguage=resolveUiLanguage(app,uiLanguage,store.settings?.uiLanguage),english=effectiveLanguage==='en',languageArguments=[UI_LANGUAGE_FLAG+effectiveLanguage],label=(zh,en)=>english?en:zh;
  let mainWindow,barManager,tray,host,shortcutManager,providerChecks,quitting=false,disposed=false,copiedResultId=null,copiedResultRevision=null,requestedView='recent',flushSequence=0;
  const pendingFlushes=new Map();let shortcutRecordingIntent=false,flushNotice='';
- const paste=new SafePasteClass({onStatus:()=>publish()}),deliveryBusy=()=>paste.snapshot().status==='pending';
+ const paste=new SafePasteClass({onStatus:status=>{publish();if(status?.status==='sent'&&!status.unknownOutcome)barManager?.markDelivered();}}),deliveryBusy=()=>paste.snapshot().status==='pending';
  function manualDelivery(){paste.cancel();if(!paste.snapshot().unknownOutcome)void paste.begin('manual',{enabled:false,source:'ui'});}
- const settingsView=()=>({deviceId:store.settings.deviceId,shortcut:store.settings.shortcut,copyShortcut:store.settings.copyShortcut||'',autoPaste:store.settings.autoPaste===true,appendMode:store.settings.appendMode===true,refiner:{baseUrl:store.settings.refiner.baseUrl,endpointMode:store.settings.refiner.endpointMode,model:store.settings.refiner.model,enabled:store.settings.refiner.enabled}});
+ const settingsView=()=>({deviceId:store.settings.deviceId,shortcut:store.settings.shortcut,copyShortcut:store.settings.copyShortcut||'',autoPaste:store.settings.autoPaste===true,appendMode:store.settings.appendMode===true,cleanupLevel:store.settings.cleanupLevel==='light'?'light':'fluent',uiLanguage:['zh-CN','en'].includes(store.settings.uiLanguage)?store.settings.uiLanguage:'system',refiner:{baseUrl:store.settings.refiner.baseUrl,endpointMode:store.settings.refiner.endpointMode,model:store.settings.refiner.model,enabled:store.settings.refiner.enabled}});
  function currentResult(){const result=controller.state.result;return readable(result)||(controller.active()&&result?.id===controller.state.sessionId&&result.original?.trim())?result:store.getRecentResult();}
  function snapshot(bar=false){
   const result=currentResult(),state={...controller.state},pipeline=controller.session?.pipeline,canUseOriginal=!!(controller.active()&&controller.session?.id===state.sessionId&&controller.session.original?.trim()&&(!pipeline||pipeline.sealed&&!pipeline.summary().pending));
@@ -97,8 +105,8 @@ function boot(electron){
  const root=path.resolve(__dirname,'../..');configurePaths(electron.app,root);
  if(!electron.app.requestSingleInstanceLock()){electron.app.quit();return;}
  let running;electron.app.on('second-instance',()=>{running?.mainWindow.show();running?.mainWindow.focus();});
- const uiLanguage=process.argv.includes('--dictpin-ui-language=en')?'en':'zh-CN';
- electron.app.whenReady().then(()=>start(electron,{root,uiLanguage})).then(result=>{running=result;}).catch(()=>{electron.dialog?.showErrorBox(uiLanguage==='en'?'Startup failed':'启动失败',uiLanguage==='en'?'Dictpin could not start. Existing data was not changed and recognition did not switch to the cloud.':'本地听写未能启动；未更改旧数据或切换到云端识别。');electron.app.quit();});
+ const uiLanguage=requestedUiLanguage();
+ electron.app.whenReady().then(()=>start(electron,{root,uiLanguage})).then(result=>{running=result;}).catch(()=>{const english=(uiLanguage||systemUiLanguage(electron.app))==='en';electron.dialog?.showErrorBox(english?'Startup failed':'启动失败',english?'Dictpin could not start. Existing data was not changed and recognition did not switch to the cloud.':'本地听写未能启动；未更改旧数据或切换到云端识别。');electron.app.quit();});
 }
-module.exports={start,boot,configurePaths};
+module.exports={start,boot,configurePaths,requestedUiLanguage,systemUiLanguage,resolveUiLanguage};
 if(require.main===module)boot(require('electron'));

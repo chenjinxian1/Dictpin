@@ -7,7 +7,7 @@ const MODES=Object.freeze(['dictate','translate','ask']);
 const TASKS=Object.freeze(['ask','shorten','expand','rewrite','explain','translate','write']);
 const DEFAULTS = Object.freeze({
   copyShortcut:'',
-  deliveryConsentVersion:0,appendMode:false,
+  deliveryConsentVersion:0,appendMode:false,cleanupLevel:'fluent',uiLanguage:'system',
   asr: {backend:'cloud',baseUrl:'https://api.openai.com/v1', model:'whisper-1',protocol:'openai-transcriptions',endpointMode:'base'},
   refiner: {baseUrl:'https://api.openai.com/v1', model:'gpt-4.1-mini',endpointMode:'base', enabled:false,citationFormat:'none'},
   usagePrices:{asr:defaultPrice(),refiner:defaultPrice()},
@@ -86,6 +86,8 @@ function validateSettings(input,{repairPreferredTarget=false}={}) {
   s.deliveryConsentVersion=input.deliveryConsentVersion===1?1:0;
   s.autoPaste=input.autoPaste===true&&s.deliveryConsentVersion===1;
   s.appendMode=input.appendMode===true;
+  s.cleanupLevel=choice(input.cleanupLevel??DEFAULTS.cleanupLevel,['fluent','light'],'整理程度');
+  s.uiLanguage=choice(input.uiLanguage??DEFAULTS.uiLanguage,['system','zh-CN','en'],'界面语言');
   s.saveHistory=input.saveHistory!==false;
   s.mode=choice(input.mode??DEFAULTS.mode,MODES,'处理模式');
   s.appearance=choice(input.appearance??DEFAULTS.appearance,['light','dark','system'],'外观');

@@ -15,6 +15,7 @@
     "appId": "org.independent.localdictation",
     "asar": true,
     "files": [
+      "renderer/dictation-i18n-messages.js",
       "renderer/dictation-i18n.js",
       "renderer/dictation-app.js",
       "renderer/dictation-capture.js",

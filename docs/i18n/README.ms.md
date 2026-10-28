@@ -119,7 +119,7 @@ Baca [Privasi](../PRIVACY.md) sebelum menggunakan bahan peribadi. Pengecaman set
 
 UI menggunakan **bahasa Cina Ringkas** secara lalai, dengan **mod paparan bahasa Inggeris** pilihan yang digunakan dalam contoh ini. Dokumentasi enam bahasa tidak bermaksud UI atau pengecaman menyokong keenam-enam bahasa tersebut. SenseVoice asal menyenaraikan Mandarin, Kantonis, bahasa Inggeris, bahasa Jepun dan bahasa Korea. Penilaian fail tetap terdahulu meliputi Mandarin dan bahasa Inggeris; tiada dakwaan sokongan pengecaman bahasa Perancis atau bahasa Melayu.
 
-Untuk membuka UI bahasa Inggeris, jalankan `npm run dev -- --ui-language=en`; tanpa pilihan ini, UI lalai bahasa Cina dikekalkan. Pilihan ini hanya menukar paparan, bukan teks transkripsi atau kandungan kamus.
+Bahasa antara muka mengikut bahasa paparan Windows: sistem Cina memaparkan bahasa Cina dan sistem lain memaparkan bahasa Inggeris. Tukar di Tetapan → Bahasa antara muka (berkuat kuasa selepas mula semula), atau tetapkan untuk instans pembangunan dengan `npm run dev -- --ui-language=en` atau `--ui-language=zh-CN`. Pilihan ini hanya menukar paparan, bukan teks transkripsi atau kandungan kamus.
 
 Repositori ini mengandungi kod aplikasi dan panduan penggunaan. Data ujian dalaman dan laporan prestasi tidak disertakan. Pintasan global, papan klip sistem, pertukaran mikrofon, fokus, berbilang paparan, DPI Windows, mutu perkhidmatan sebenar dan pemasangan pada mesin bersih masih memerlukan pengesahan berasingan.
 

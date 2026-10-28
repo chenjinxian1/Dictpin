@@ -9,10 +9,12 @@ function object(value,allowed){
 }
 function singleShortcutMap(settings){return {current:settings.shortcut||'',copy:settings.copyShortcut||''};}
 function settingsPatch(settings,input){
- object(input,['deviceId','shortcut','copyShortcut','autoPaste','appendMode','refiner','expectedRefiner','textServices']);if(!Object.keys(input).length)throw Error('没有可保存的更改。');
+ object(input,['deviceId','shortcut','copyShortcut','autoPaste','appendMode','cleanupLevel','uiLanguage','refiner','expectedRefiner','textServices']);if(!Object.keys(input).length)throw Error('没有可保存的更改。');
  const next={...settings,refiner:{...settings.refiner}};
  if(Object.hasOwn(input,'textServices')){object(input.textServices,['expectedRevision','activeProfileId','changes']);next.textServices=input.textServices;}
  for(const key of ['autoPaste','appendMode'])if(Object.hasOwn(input,key)){if(typeof input[key]!=='boolean')throw Error('听写开关无效。');next[key]=input[key];if(key==='autoPaste')next.deliveryConsentVersion=input[key]?1:0;}
+ if(Object.hasOwn(input,'cleanupLevel')){if(!['fluent','light'].includes(input.cleanupLevel))throw Error('整理程度无效。');next.cleanupLevel=input.cleanupLevel;}
+ if(Object.hasOwn(input,'uiLanguage')){if(!['system','zh-CN','en'].includes(input.uiLanguage))throw Error('界面语言无效。');next.uiLanguage=input.uiLanguage;}
  if(Object.hasOwn(input,'deviceId')){if(typeof input.deviceId!=='string'||input.deviceId.length>512)throw Error('麦克风设置无效。');next.deviceId=input.deviceId;}
  if(Object.hasOwn(input,'shortcut')){normalizeAccelerator(input.shortcut);if(!input.shortcut)throw Error('请保留一个可用的听写快捷键。');next.shortcut=input.shortcut;}
  if(Object.hasOwn(input,'copyShortcut')){normalizeAccelerator(input.copyShortcut);next.copyShortcut=input.copyShortcut;}

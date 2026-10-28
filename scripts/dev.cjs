@@ -17,16 +17,16 @@ function seedProfile(profile){
  settings.mode='dictate';settings.asr.backend='local';settings.shortcut='';settings.modeShortcuts={dictate:'',translate:'',ask:''};settings.modeShortcutAlternates={dictate:[],translate:[],ask:[]};settings.refiner.enabled=false;settings.saveAudio=false;settings.saveHistory=false;
  fs.writeFileSync(file,JSON.stringify({version:2,settings,secrets:{}},null,2)+'\n',{flag:'wx'});return true;
 }
-function prepare({uiLanguage='zh-CN'}={}){
+function prepare({uiLanguage=null}={}){
  const report=doctor();if(!report.ready)throw Error('Development prerequisites are missing. Run npm run doctor and read docs/INSTALL.md.');
  seedProfile(report.profile);const env=isolatedEnvironment(path.join(root,'work/dev'));
  env.LOCAL_DICTATION_PROFILE=report.profile;
- return {executable:report.electron,args:[path.join(root,'app'),...(uiLanguage==='en'?['--dictpin-ui-language=en']:[])],cwd:root,env};
+ return {executable:report.electron,args:[path.join(root,'app'),...(uiLanguage?['--dictpin-ui-language='+uiLanguage]:[])],cwd:root,env};
 }
 function main(){
  if(process.argv.includes('--check')){const report=doctor();console.log(JSON.stringify(report,null,2));process.exitCode=report.ready?0:1;return;}
- const languageOption=process.argv.find(arg=>arg.startsWith('--ui-language='));if(languageOption&&languageOption!=='--ui-language=en')throw Error('Only --ui-language=en is supported; omit it for the default Chinese UI.');
- const plan=prepare({uiLanguage:languageOption?'en':'zh-CN'});console.log('Starting the independent development profile: '+plan.env.LOCAL_DICTATION_PROFILE);
+ const languageOption=process.argv.find(arg=>arg.startsWith('--ui-language='));const uiLanguage=languageOption?languageOption.slice('--ui-language='.length):null;if(uiLanguage&&!['en','zh-CN'].includes(uiLanguage))throw Error('Use --ui-language=en or --ui-language=zh-CN; omit it to follow the saved setting or Windows display language.');
+ const plan=prepare({uiLanguage});console.log('Starting the independent development profile: '+plan.env.LOCAL_DICTATION_PROFILE);
  const child=spawn(plan.executable,plan.args,{cwd:plan.cwd,env:plan.env,stdio:'inherit',windowsHide:false,shell:false});
  child.once('error',error=>{console.error(error.message);process.exitCode=1;});child.once('exit',code=>{process.exitCode=code??1;});
 }

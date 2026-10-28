@@ -119,7 +119,7 @@ Read [Privacy](docs/PRIVACY.md) before using private material. Local recognition
 
 The UI defaults to **Simplified Chinese**, with an optional **English presentation mode** used in these examples. Six documentation languages do not imply six UI or recognition languages. Upstream SenseVoice lists Mandarin, Cantonese, English, Japanese, and Korean. Earlier fixed-file evaluation covered Mandarin and English; French and Malay recognition are not claimed.
 
-To open the optional English UI, run `npm run dev -- --ui-language=en`; omit the flag for the default Chinese UI. This changes presentation only, not transcript or dictionary data.
+The interface follows the Windows display language: Chinese systems show Chinese and all others show English. Change it under Settings → Interface language (restart to apply), or force it for a development instance with `npm run dev -- --ui-language=en` or `--ui-language=zh-CN`. This changes presentation only, not transcript or dictionary data.
 
 This repository contains application source and usage documentation. Internal test fixtures and performance reports are not included. Global shortcuts, the system clipboard, microphone changes, focus, multiple displays, Windows DPI, real service quality and clean-machine installation still need separate acceptance.
 

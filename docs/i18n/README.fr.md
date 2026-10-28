@@ -119,7 +119,7 @@ Lisez [Confidentialité](../PRIVACY.md) avant d’utiliser du contenu privé. La
 
 L’interface utilise par défaut le **chinois simplifié** et propose un **affichage anglais facultatif**, utilisé dans ces exemples. La documentation en six langues ne signifie pas que l’interface ou la reconnaissance prend en charge ces six langues. Le projet SenseVoice d’origine indique le mandarin, le cantonais, l’anglais, le japonais et le coréen. Une évaluation antérieure sur fichiers fixes couvrait le mandarin et l’anglais ; nous ne revendiquons pas la reconnaissance du français ou du malais.
 
-Pour ouvrir l’interface anglaise, lancez `npm run dev -- --ui-language=en` ; sans ce paramètre, l’interface reste en chinois par défaut. Ce choix ne modifie que l’affichage, pas les transcriptions ni le dictionnaire.
+L’interface suit la langue d’affichage de Windows : chinois sur un système chinois, anglais sinon. Modifiez-la dans Paramètres → Langue de l’interface (après redémarrage), ou forcez-la en développement avec `npm run dev -- --ui-language=en` ou `--ui-language=zh-CN`. Ce choix ne modifie que l’affichage, pas les transcriptions ni le dictionnaire.
 
 Ce dépôt contient le code de l’application et sa documentation. Les jeux de test internes et rapports de performance ne sont pas inclus. Les raccourcis globaux, le presse-papiers système, les changements de microphone, le focus, les écrans multiples, le DPI Windows, les services réels et l’installation sur une machine vierge nécessitent encore des validations distinctes.
 
