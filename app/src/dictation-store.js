@@ -4,6 +4,7 @@ const {Store:LegacyStore,atomicWrite,DATA_VERSION}=require('./store');
 const {DEFAULTS,validateSettings,resolveProviderEndpoint}=require('./settings');
 const {defaultPrice}=require('../renderer/token-usage');
 const dictionary=require('./dictionary');
+const services=require('./service-profiles');
 const clone=value=>structuredClone(value);
 function object(value){return value&&typeof value==='object'&&!Array.isArray(value);}
 function withoutTransient(provider){const result={...provider};for(const key of ['key','persistKey','clearKey'])delete result[key];return result;}
@@ -24,6 +25,7 @@ class Store extends LegacyStore{
    catch{this.notices.push('已保留加密配置；系统安全存储当前不可用，请重新输入本次会话密钥。');}
   }
   const schema=this.read(this.schemaFile);this.readOnly=Number(schema?.version)>DATA_VERSION;if(this.readOnly)this.notices.push('数据版本较新，已只读打开；原文件保持不变。');
+  services.load(this);
   const history=this.read(this.historyFile);this.history=Array.isArray(history)?history:[];this.historyReadable=Array.isArray(history)||!fs.existsSync(this.historyFile);
   const words=this.read(this.dictionaryFile);this.dictionaryReadable=Array.isArray(words)||!fs.existsSync(this.dictionaryFile);
   this.dictionary=[];
@@ -44,7 +46,9 @@ class Store extends LegacyStore{
  save(input){
   this._assertWritable();if(!this.settingsReadable)throw Error('旧配置无法读取，未覆盖原文件。');
   const settings=validateSettings({...input,mode:'dictate',modeShortcuts:{dictate:'',translate:'',ask:''},modeShortcutAlternates:{dictate:[],translate:[],ask:[]}}),keys={...this.keys},secrets=clone(this.secrets),notices=[];
-  for(const kind of ['asr','refiner']){
+  const nextServices=services.stage(this,input.textServices,input.refiner),active=nextServices.state.profiles.find(p=>p.id===nextServices.state.activeProfileId);
+  settings.refiner={...settings.refiner,baseUrl:active.baseUrl,endpointMode:active.endpointMode,model:active.model};
+  for(const kind of ['asr']){
    const before=this.settings[kind],after=settings[kind],p=input[kind];
    const oldEndpoint=resolveProviderEndpoint(before.baseUrl,kind,before.protocol,before.endpointMode),newEndpoint=resolveProviderEndpoint(after.baseUrl,kind,after.protocol,after.endpointMode);
    if(oldEndpoint.endpointUrl!==newEndpoint.endpointUrl||oldEndpoint.protocol!==newEndpoint.protocol||before.model!==after.model)settings.usagePrices[kind]=defaultPrice();
@@ -56,16 +60,25 @@ class Store extends LegacyStore{
    if(p.persistKey===false)delete secrets[kind];
    if(p.persistKey===true&&keys[kind]){
     if(this.secureAvailable())secrets[kind]=this.safe.encryptString(keys[kind]).toString('base64');
-    else{delete secrets[kind];notices.push('安全存储不可用；密钥仅用于当前会话，不保存明文。');}
+    else throw Error('系统安全存储不可用，未保存任何更改。');
    }
   }
+  const oldEndpoint=resolveProviderEndpoint(this.settings.refiner.baseUrl,'refiner',undefined,this.settings.refiner.endpointMode),newEndpoint=resolveProviderEndpoint(active.baseUrl,'refiner',undefined,active.endpointMode);
+  if(oldEndpoint.endpointUrl!==newEndpoint.endpointUrl||this.settings.refiner.model!==active.model)settings.usagePrices.refiner=defaultPrice();
+  secrets.textServices=clone(nextServices.secrets);
+  if(typeof nextServices.secrets.legacy==='string')secrets.refiner=nextServices.secrets.legacy;else delete secrets.refiner;
   const persisted={...clone(this.rawSettings),...settings};
+  persisted.textServices=clone(nextServices.state);
   for(const kind of ['asr','refiner'])persisted[kind]={...withoutTransient(this.rawSettings[kind]||{}),...withoutTransient(settings[kind])};
   const compatibility={...this.envelope.compatibility,legacyMode:this.envelope.compatibility?.legacyMode||this.rawSettings.mode||'dictate',disabledModeShortcuts:clone(this.disabledModeShortcuts),disabledModeShortcutAlternates:clone(this.disabledModeShortcutAlternates)};
   const envelope={...clone(this.envelope),version:2,settings:persisted,secrets,compatibility};
-  atomicWrite(this.file,envelope);this.envelope=clone(envelope);this.rawSettings=clone(persisted);this.settings=settings;this.keys=keys;this.secrets=secrets;this.notices=notices;
+  atomicWrite(this.file,envelope);this.envelope=clone(envelope);this.rawSettings=clone(persisted);this.settings=settings;this.keys=keys;this.secrets=secrets;this.notices=notices;services.apply(this,nextServices);
   return settings;
  }
+ serviceView(){return services.view(this);}
+ activeService(){return services.active(this);}
+ resolveServiceDraft(input,options){if(!this.settingsReadable)throw Error('模型服务配置只读，不能发送诊断请求。');return services.resolve(this,input,options);}
+ keyStatus(){return {...super.keyStatus(),refiner:services.status(this,this.textServices.activeProfileId)};}
  validateRecent(input){
   if(!object(input)||!dictionary.validId(input.id)||input.mode!=='dictate'||!['completed','failed','cancelled'].includes(input.status))throw Error('最近结果格式不正确。');
   if(typeof input.original!=='string'||typeof input.text!=='string'||input.original.length>100000||input.text.length>100000||!String(input.text||input.original).trim()||/\0/.test(input.text+input.original))throw Error('最近结果正文无效。');
