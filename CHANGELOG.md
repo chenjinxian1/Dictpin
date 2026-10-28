@@ -15,6 +15,8 @@ This is an application-source development candidate. No installer release, tag o
 - Optional cleanup with unavailable configuration/credentials no longer prevents local dictation. No automatic paid retry, provider switch, physical microphone test or deployed running-version replacement is introduced.
 - Updated API, privacy, installation and all six README explanations. Preset documentation was checked on 2026-10-28; real account access, paid-service quality and billing remain manual acceptance. This candidate is not an installer release or GitHub publication.
 
+Verification for this candidate: **133 local tests** passed, including the existing 74 regression tests. **14 Electron flow checks in each of Chinese and English** passed with natural exit 0, using fictional profiles, in-memory service responses, simulated system adapters and intercepted capture commands. No physical microphone, live API, real key, system clipboard or paid request was used. Invalid-workspace recovery, conflicting settings restoration and switching away from a pending diagnostic were reproduced before their fixes and then passed. Test fixtures and raw evidence remain outside the public source tree.
+
 ### 2026-10-24
 
 #### Guarded delivery and long dictation — development candidate

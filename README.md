@@ -37,7 +37,7 @@ Actual production Electron renderer in optional English presentation mode, with 
 
 ![Dictpin API configuration in English with an empty key](docs/images/settings.png)
 
-Example Qwen address and model, with the API key empty. No connection test, paid request, connected badge or latency claim. See [capture details](docs/SCREENSHOTS.md).
+Example provider selection, address and model, with the API key empty. Only simulated service responses were used; no live connection, paid request or latency claim. See [capture details](docs/SCREENSHOTS.md).
 
 ## What works today
 

@@ -37,7 +37,7 @@ Rendu réel de l’interface Electron de production, en mode d’affichage angla
 
 ![Configuration API de Dictpin en anglais avec une clé vide](../images/settings.png)
 
-Adresse et modèle Qwen donnés en exemple ; le champ de clé API est vide. Aucun test de connexion, appel facturé, état connecté fictif ou mesure de latence. Voir les [conditions de capture](../SCREENSHOTS.md).
+Exemple de sélection du fournisseur, d’adresse et de modèle ; le champ de clé API est vide. Seules des réponses simulées ont été utilisées, sans connexion réelle, appel facturé ni mesure de latence. Voir les [conditions de capture](../SCREENSHOTS.md).
 
 ## Fonctions déjà disponibles
 

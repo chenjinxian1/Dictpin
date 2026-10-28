@@ -1,6 +1,6 @@
 # Application examples and concept artwork
 
-The README uses two **actual production Electron renderer captures**, taken on 2026-10-24 in the optional English presentation mode at 640 × 480. They use fictional text and isolated simulated system adapters. They are not AI-generated or retouched interfaces. The UI defaults to Simplified Chinese; see [Installation](INSTALL.md) for the English launch option.
+The README uses two **actual production Electron renderer captures**, taken on 2026-10-28 in the optional English presentation mode at 640 × 480. They use fictional text and isolated simulated system/service adapters. They are not AI-generated or retouched interfaces. The UI defaults to Simplified Chinese; see [Installation](INSTALL.md) for the English launch option.
 
 ## Main window
 
@@ -12,7 +12,7 @@ The real local dictionary changes the seeded misspellings `dict pin` and `sense 
 
 ![English API configuration with an empty key](images/settings.png)
 
-The address and `qwen-plus` are configuration examples. The key field is empty; no connection test or paid request was made. No connected state or latency result is implied. Read [API configuration](API_CONFIGURATION.md) for the correct address/model for your account.
+The provider selector, OpenAI address and `gpt-6-luna` are configuration examples. The key field is empty. The capture fixture exercises sample tests with in-memory responses only; no live connection test or paid request was made. No connected state or service latency result is implied. Read [API configuration](API_CONFIGURATION.md) for the correct address/model for your account.
 
 ## Separate concept artwork
 

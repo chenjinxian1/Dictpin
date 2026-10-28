@@ -37,7 +37,7 @@ Rendiran sebenar UI Electron produksi dalam mod paparan bahasa Inggeris pilihan,
 
 ![Konfigurasi API Dictpin dalam bahasa Inggeris dengan kunci kosong](../images/settings.png)
 
-Alamat dan model Qwen ialah contoh konfigurasi, manakala kunci API kosong. Tiada ujian sambungan, permintaan berbayar, status tersambung rekaan atau dakwaan kependaman. Lihat [butiran tangkapan](../SCREENSHOTS.md).
+Pilihan penyedia, alamat dan model ialah contoh konfigurasi, manakala kunci API kosong. Hanya respons simulasi digunakan, tanpa sambungan sebenar, permintaan berbayar atau dakwaan kependaman. Lihat [butiran tangkapan](../SCREENSHOTS.md).
 
 ## Fungsi yang sudah dilaksanakan
 
