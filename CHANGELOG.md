@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-No changes recorded yet.
+- Refreshed the application and tray icons with a graphite, warm-white and yellow microphone/pin mark, using an original AI-assisted design. Windows ICO assets include 16/20/24/32/40/48/64/128/256 px frames for common scaling sizes.
+- Explicitly set the main window icon so development windows use Dictpin's mark as well as the existing installer icon references. Application identifiers and profile paths remain unchanged. This local candidate has not replaced any running application; actual Windows icon-cache and packaged-installer behavior remain unverified.
 
 ## [0.2.2-dev.29] - 2026-10-28
 
