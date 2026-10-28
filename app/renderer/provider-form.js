@@ -2,9 +2,9 @@
  'use strict';
  function create({bridge,onChange,onBusy}){
   const $=id=>document.getElementById(id),P=root.ProviderPresets,D=new root.ProviderDrafts.Drafts(P),en=bridge.uiLanguage==='en',t=(zh,english)=>en?english:zh;
-  let ready=false,operation=null,sequence=0,locked=false,secure=false;
+  let ready=false,operation=null,operationProfile=null,operationRevision=null,sequence=0,locked=false,secure=false;
   const label=p=>P.providerLabel(p,en?'en':'zh-CN');
-  function cancel(){if(operation){const id=operation;operation=null;void bridge.cancelProviderDiagnostic({requestId:id}).catch(()=>{});onBusy(false);}}
+  function cancel(){if(operation){const id=operation,d=D.items.get(operationProfile);if(d?.draftRevision===operationRevision&&['running','loading'].includes(d.status.category))d.status={category:'changed'};operation=null;void bridge.cancelProviderDiagnostic({requestId:id}).catch(()=>{});onBusy(false);}}
   function changed(){cancel();renderStatus();renderInfo();onChange();}
   function options(select,entries){select.replaceChildren(...entries.map(([value,text])=>{const o=document.createElement('option');o.value=value;o.textContent=text;return o;}));}
   options($('model-provider'),P.PROVIDERS.map(p=>[p.id,en?p.en:p.label]));
@@ -39,7 +39,7 @@
   function render(){
    if(!ready)return;const d=D.current(),p=d.profile;
    if(p.presetId==='legacy'&&!$('model-provider').querySelector('option[value=legacy]')){const o=document.createElement('option');o.value='legacy';o.textContent=t('原有配置','Previous configuration');$('model-provider').append(o);}
-   $('model-provider').value=p.presetId;$('model-region').value=p.region||'';$('model-workspace').value=p.workspaceId||'';$('model-url').value=p.baseUrl||'';$('model-name').value=p.model||'';$('model-key').value=d.key;$('model-key').type='password';$('remember-key').checked=d.persistKey;
+   $('model-provider').value=p.presetId;$('model-region').value=p.region||'';$('model-workspace').value=p.workspaceId||'';$('model-url').value=p.baseUrl||'';$('model-name').value=p.model||'';$('model-key').value=d.key;$('model-key').type='password';$('reveal-model-key').textContent=t('查看','Show');$('remember-key').checked=d.persistKey;
    const list=$('model-suggestions');list.replaceChildren(...P.suggestions(p).map(id=>{const o=document.createElement('option');o.value=id;return o;}));renderInfo();renderStatus();
   }
   function accept(view){if(!view)return;const before=D.selected;D.accept(view);ready=true;if(!before||!D.isDirty())render();else renderInfo();}
@@ -64,7 +64,7 @@
    return messages[result.category]||t('检查未通过，请展开详情；配置草稿仍保留。','The check did not pass. Expand details; your draft is preserved.');
   }
   async function run(kind){
-   if(!ready||operation)return;const d=D.current(),id=d.profileId,revision=d.draftRevision,requestId='api-'+Date.now()+'-'+(++sequence);operation=requestId;onBusy(true);D.result(revision,{category:kind==='models'?'loading':'running'},id);renderStatus();
+   if(!ready||operation)return;const d=D.current(),id=d.profileId,revision=d.draftRevision,requestId='api-'+Date.now()+'-'+(++sequence);operation=requestId;operationProfile=id;operationRevision=revision;onBusy(true);D.result(revision,{category:kind==='models'?'loading':'running'},id);renderStatus();
    try{const input={...D.input(),requestId};const result=await(kind==='models'?bridge.listProviderModels(input):bridge.checkTextService(input));if(operation!==requestId)return;if(D.result(revision,{...result,displayMessage:resultMessage(result,kind)},id)&&kind==='models'&&Array.isArray(result.models)){const ids=result.models.map(m=>typeof m==='string'?m:m.id).filter(Boolean);$('model-suggestions').replaceChildren(...[...new Set([...P.suggestions(d.profile),...ids])].map(value=>{const o=document.createElement('option');o.value=value;return o;}));}}
    catch{if(operation===requestId)D.result(revision,{category:'error',displayMessage:t('检查未完成；请核对地址、模型和密钥，草稿仍保留。','Check incomplete. Verify the address, model and key; the draft is preserved.')},id);}
    finally{if(operation===requestId){operation=null;onBusy(false);renderStatus();renderInfo();}}
