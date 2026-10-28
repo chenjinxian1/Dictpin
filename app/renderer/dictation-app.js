@@ -6,6 +6,8 @@
  let snapshot=null,version=0,page='recent',lastRequested=null,initial=null,dirty=false,saving=false,testing=false,wordBusy=false,copying=false,wordId=null,wordOpener=null,undoToken=null,undoEntryId=null,wordSignature='',deviceRevision=0,discardFocus=null,discardDestination='recent',capturePending=false,copyRevision=0,copyAck=null,copyTimer=null,toastTimer=null,toastOwner=null,resultSignature='';
  const busy=()=>ACTIVE.has(snapshot?.state?.phase);
  const deliveryPending=()=>snapshot?.state?.delivery?.status==='pending';
+ const provider=window.ProviderForm.create({bridge,onChange:()=>{if(initial){dirty=Object.keys(settingsPatch()).length>0;$('save-message').dataset.saved='false';sync();}},onBusy:value=>{testing=value;sync();}});
+ function settingsPatch(){const after=form();for(const key of ['baseUrl','model','key','remember'])after[key]=initial[key];const patch=model.draftPatch(initial,after),services=provider.patch();if(services)patch.textServices=services;return patch;}
  function restoreFocus(target,ownerPage,from=null){const current=document.activeElement,ownedUnavailable=current===from&&(from?.disabled||!from?.getClientRects().length);if(page===ownerPage&&(current===document.body||ownedUnavailable)&&!document.querySelector('dialog[open]')&&target?.isConnected&&!target.disabled)target.focus({preventScroll:true});}
  function confirmDiscard(destination){if(!dirty||saving||document.querySelector('dialog[open]'))return;discardDestination=destination;discardFocus=document.activeElement;$('draft-dialog').showModal();sync();$('keep-editing').focus();}
  function toast(text,owner=null,duration=0){if(toastTimer!==null)clearTimeout(toastTimer);toastTimer=null;toastOwner=owner;$('toast-text').textContent=text;$('toast').hidden=false;motion?.respond($('toast'));if(duration)toastTimer=setTimeout(()=>clearToast(owner),duration);}
@@ -28,7 +30,7 @@
  function setForm(value){
   $('auto-paste').checked=value.autoPaste===true;$('append-mode').checked=value.appendMode===true;
   if(![...$('microphone').options].some(option=>option.value===value.deviceId)){const option=document.createElement('option');option.value=value.deviceId;option.textContent='已保存的麦克风（当前未找到）';$('microphone').append(option);}
-  $('microphone').value=value.deviceId;$('shortcut').value=value.shortcut;$('copy-shortcut').value=value.copyShortcut||'';$('light-edit').checked=value.enabled;$('model-url').value=value.baseUrl;$('model-name').value=value.model;$('model-key').value='';$('remember-key').checked=value.remember;
+  $('microphone').value=value.deviceId;$('shortcut').value=value.shortcut;$('copy-shortcut').value=value.copyShortcut||'';$('light-edit').checked=value.enabled;
   for(const field of $('settings-form').querySelectorAll('[aria-invalid]'))field.removeAttribute('aria-invalid');
  }
  function setPage(next,focus=false){
@@ -40,17 +42,17 @@
  }
  function sync(){
   if(!microphoneChanged()&&toastOwner?.kind==='microphone-draft')clearToast(toastOwner);
-  const locked=!snapshot||saving||wordBusy||deliveryPending()||!!snapshot?.state?.pipeline&&(!snapshot.state.pipeline.sealed||snapshot.state.pipeline.pending>0),formLocked=!snapshot||saving||wordBusy||testing||deliveryPending()||snapshot?.dataWritable?.settings===false,wordsLocked=!snapshot||saving||wordBusy||snapshot?.dataWritable?.dictionary===false;
+  const locked=!snapshot||saving||wordBusy||deliveryPending()||!!snapshot?.state?.pipeline&&(!snapshot.state.pipeline.sealed||snapshot.state.pipeline.pending>0),formLocked=!snapshot||saving||wordBusy||deliveryPending()||snapshot?.dataWritable?.settings===false,wordsLocked=!snapshot||saving||wordBusy||snapshot?.dataWritable?.dictionary===false;
   for(const input of $('settings-form').querySelectorAll('input,select'))input.disabled=formLocked;
   $('remember-key').disabled=formLocked||snapshot?.secureStorage!==true;
    const settingsTab=document.querySelector('[data-page=settings]');settingsTab.dataset.dirty=String(dirty);settingsTab.setAttribute('aria-label',dirty?'设置，有未保存的更改':'设置');
    $('reset-settings').hidden=!dirty;$('reset-settings').disabled=formLocked;
    $('retry-shortcut').hidden=!snapshot?.settings?.shortcut||snapshot?.shortcutStatus?.statuses?.current?.registered===true;$('retry-shortcut').disabled=formLocked||dirty;
-  $('save-settings').disabled=formLocked||busy()||!dirty;$('test-model').disabled=formLocked||busy()||dirty;$('refresh-devices').disabled=formLocked;
-  $('cancel-test').hidden=!testing;
+  $('save-settings').disabled=formLocked||busy()||testing||!dirty;$('refresh-devices').disabled=formLocked;
+  provider.sync({locked:formLocked,busy:busy()||saving,secure:snapshot?.secureStorage===true});
   $('new-word').disabled=wordsLocked;for(const button of $('word-list').querySelectorAll('button'))button.disabled=wordsLocked;
   $('save-word').disabled=wordBusy||wordsLocked;$('cancel-word').disabled=wordBusy;$('word-input').disabled=wordBusy||wordsLocked;$('word-aliases').disabled=wordBusy||wordsLocked;$('undo-word').disabled=wordBusy||wordsLocked;
-   const capture=model.captureView(snapshot),session=model.sessionView(snapshot),modal=!!document.querySelector('dialog[open]');$('capture-label').textContent=capture.label;$('capture-toggle').disabled=capture.disabled||capturePending||saving||testing||wordBusy||copying||modal;$('capture-toggle').dataset.active=String(capture.action==='stop');$('capture-cancel').hidden=!capture.cancel;$('capture-cancel').disabled=capturePending||saving||modal;$('capture-cancel').textContent=session.cancelLabel;$('capture-cancel').title=snapshot?.canUseOriginal?'结束整理并保留完整识别原文；已发出的请求仍可能计费。':'取消本次听写';
+   const capture=model.captureView(snapshot),session=model.sessionView(snapshot),modal=!!document.querySelector('dialog[open]');$('capture-label').textContent=capture.label;$('capture-toggle').disabled=capture.disabled||capturePending||saving||wordBusy||copying||modal;$('capture-toggle').dataset.active=String(capture.action==='stop');$('capture-cancel').hidden=!capture.cancel;$('capture-cancel').disabled=capturePending||saving||modal;$('capture-cancel').textContent=session.cancelLabel;$('capture-cancel').title=snapshot?.canUseOriginal?'结束整理并保留完整识别原文；已发出的请求仍可能计费。':'取消本次听写';
   const previousBusy=busy()&&snapshot?.recentResult?.id!==snapshot?.state?.sessionId;for(const id of ['copy-original','restore-original','undo-text','undo-corrections'])$(id).disabled=locked||previousBusy;
   $('copy-result').disabled=locked||previousBusy||copying||!snapshot?.recentResult||!$('result-content').value?.trim();$('copy-result').textContent=copying?'复制中…':copyAck?.id===snapshot?.recentResult?.id&&copyAck?.revision===(snapshot?.recentResult?.revision||1)?'已复制':'复制文字';$('copy-result').setAttribute('aria-busy',String(copying));
   $('append-result').disabled=locked||busy()||capturePending||!snapshot?.recentResult?.text?.trim()||snapshot?.recovery?.tailPending===true;
@@ -129,12 +131,12 @@
  }
  function accept(data){
   if(!data?.state||!data.settings)return;const previousId=snapshot?.recentResult?.id,previousRevision=snapshot?.recentResult?.revision||1,wasBusy=busy();snapshot=data;version++;if(previousId!==data.recentResult?.id||previousRevision!==(data.recentResult?.revision||1)||(!wasBusy&&busy()))resetCopy();if(editorId===data.recentResult?.id)editorRevision=Math.max(editorRevision,data.recentResult.revision||1);if(!wasBusy&&busy())clearToast(toastOwner);
-  if(!initial||(!dirty&&!saving)){initial=savedForm(data);setForm(initial);}
+   provider.accept(data.textServices);if(busy())provider.cancel();
+   if(!initial||(!dirty&&!saving)){initial=savedForm(data);setForm(initial);}
   const phase=data.state.phase;$('session-status').textContent=phase==='recording'?'正在录音':ACTIVE.has(phase)?'正在处理':model.engineStatus(data);
   $('copy-shortcut-message').textContent=data.shortcutStatus?.suspended?'录入中，复制快捷键已暂停':data.shortcutStatus?.statuses?.copy?.registered?'已启用':data.settings.copyShortcut?'未生效':'未设置，不占用系统组合';
-  const provider=data.settings.refiner;$('provider-summary').textContent=provider.model||'未配置';$('provider-summary').title=$('provider-summary').textContent;
+   $('provider-summary').title=$('provider-summary').textContent;
   const notices=[...(data.notices||[]),...(data.usage?.available===false?['用量账本当前不可读，原文件保持不变；用量与费用未知。']:[]),...(phase==='error'||phase==='cancelled'&&!data.recovery?[data.state.message]:[]),...(data.state.operationFeedback?[data.state.operationFeedback]:[]),...(dirty&&busy()?['本次听写使用已保存的设置，草稿仍保留。']:[])].filter(Boolean);$('notice').hidden=!notices.length;$('notice').textContent=notices.join(' ');
-  $('key-message').textContent=data.secureStorage!==true?'系统安全存储当前不可用；原配置保留，新密钥只能用于本次会话。':data.keyStatus?.hasKey?'已有可用密钥，留空保持。':'未设置密钥；本地匿名模型服务可不填。';
   $('shortcut-message').textContent=data.shortcutStatus?.suspended?'录入中，听写快捷键已暂停':data.shortcutStatus?.statuses?.current?.registered===true?'已启用':data.settings.shortcut?'未生效':'未设置';renderResult();renderWords();sync();
   if(data.requestedView!==lastRequested){lastRequested=data.requestedView;if(lastRequested)setPage(lastRequested);}
  }
@@ -179,25 +181,20 @@
  $('dismiss-undo').addEventListener('click',()=>{$('word-undo').hidden=true;});
  $('dismiss-toast').addEventListener('click',()=>clearToast(toastOwner));
  $('settings-form').addEventListener('invalid',event=>{event.preventDefault();const field=event.target;if(field.closest('#provider-fields'))$('provider-details').open=true;const label=field.id==='model-url'?'API 地址':'设置字段',message='请检查'+label+'，草稿仍保留。';saveError(message,message);if(field.id==='model-url'){$('model-url-error').hidden=false;$('model-url-error').textContent='请输入完整地址，例如 https://example.com/v1。';}field.setAttribute('aria-invalid','true');queueMicrotask(()=>field.focus());},true);
- $('settings-form').addEventListener('input',event=>{if(!initial||saving)return;clearSaveError();event.target.removeAttribute('aria-invalid');dirty=Object.keys(model.draftPatch(initial,form())).length>0;$('save-message').dataset.saved='false';sync();});
+ $('settings-form').addEventListener('input',event=>{if(!initial||saving)return;clearSaveError();event.target.removeAttribute('aria-invalid');dirty=Object.keys(settingsPatch()).length>0;$('save-message').dataset.saved='false';sync();});
  $('save-error-link').addEventListener('click',()=>{$('save-error-report').open=true;$('save-error-report').scrollIntoView({block:'start'});$('save-error-report').querySelector('summary').focus({preventScroll:true});});
  $('refresh-devices').addEventListener('click',()=>void devices());
  $('settings-form').addEventListener('submit',async event=>{
-  event.preventDefault();if(!dirty||saving||busy()||testing)return;await applySettings(model.draftPatch(initial,form()));
+  event.preventDefault();if(!dirty||saving||busy()||testing)return;try{await applySettings(settingsPatch());}catch(error){saveError(failure(error,'请检查服务草稿。'));}
  });
  async function applySettings(patch,retry=false){
   const focused=document.activeElement;saving=true;sync();
-  try{const next=await bridge.saveSettings(patch);saving=false;dirty=false;initial=null;clearSaveError();accept(next);$('save-message').dataset.saved='true';sync();}
+   try{const next=await bridge.saveSettings(patch);saving=false;provider.saved(next.textServices);dirty=false;initial=null;clearSaveError();accept(next);$('save-message').dataset.saved='true';sync();}
   catch(error){saving=false;sync();saveError(failure(error,'保存失败，草稿仍保留，请重试。'),retry?'快捷键未启用，可重试或换组合。':undefined);if(patch.refiner&&Object.keys(patch.refiner).some(key=>['baseUrl','model','key','persistKey','clearKey'].includes(key))){$('provider-details').open=true;const target=Object.hasOwn(patch.refiner,'key')?$('model-key'):Object.hasOwn(patch.refiner,'model')?$('model-name'):$('model-url');target.focus();target.scrollIntoView({block:'nearest'});}else $('save-error-report').scrollIntoView({block:'start'});sync();}
   restoreFocus(retry?$('shortcut'):focused,'settings',focused);
  }
  $('retry-shortcut').addEventListener('click',async()=>{if(dirty||saving||testing||busy()||snapshot?.dataWritable?.settings===false||!snapshot?.settings.shortcut)return;await applySettings({shortcut:snapshot.settings.shortcut},true);});
  $('reset-settings').addEventListener('click',()=>confirmDiscard('settings'));
- $('test-model').addEventListener('click',async()=>{
-  if(testing||dirty||saving||busy())return;testing=true;sync();$('test-message').textContent='正在测试已保存模型…';
-  try{const result=await bridge.checkTextService();$('test-message').textContent=result.message||'测试已结束，请核对服务状态。';}catch(error){$('test-message').textContent=failure(error,'测试未完成，请检查模型设置后重试。');}finally{testing=false;sync();}
- });
- $('cancel-test').addEventListener('click',async()=>{try{await bridge.cancelTextCheck();$('test-message').textContent='已请求取消；服务端仍可能计费。';}catch{ $('test-message').textContent='取消未确认，请等待测试结束。';}});
  async function captureAction(cancel=false){
   if(capturePending||!snapshot)return;const view=model.captureView(snapshot),method=cancel?'cancel':view.action,sessionId=snapshot.state.sessionId;
   if(cancel?!view.cancel:view.disabled||!method)return;
@@ -235,7 +232,7 @@
  }
  $('clear-copy-shortcut').addEventListener('click',()=>{$('copy-shortcut').value='';$('copy-shortcut').dispatchEvent(new Event('input',{bubbles:true}));});
  $('keep-editing').addEventListener('click',()=>{motion?.retireDialog($('draft-dialog'));$('draft-dialog').close();sync();discardFocus?.focus({preventScroll:true});discardFocus=null;});
- $('discard-draft').addEventListener('click',()=>{motion?.retireDialog($('draft-dialog'));$('draft-dialog').close();dirty=false;clearSaveError();initial=savedForm(snapshot);setForm(initial);$('save-message').dataset.saved='false';sync();setPage(discardDestination);discardFocus=null;if(discardDestination==='settings')$('shortcut').focus({preventScroll:true});});
+ $('discard-draft').addEventListener('click',()=>{motion?.retireDialog($('draft-dialog'));$('draft-dialog').close();provider.reset();dirty=false;clearSaveError();initial=savedForm(snapshot);setForm(initial);$('save-message').dataset.saved='false';sync();setPage(discardDestination);discardFocus=null;if(discardDestination==='settings')$('shortcut').focus({preventScroll:true});});
  $('draft-dialog').addEventListener('cancel',event=>{event.preventDefault();$('keep-editing').click();});
  document.addEventListener('keydown',event=>{
   if(event.defaultPrevented||event.isComposing||composition)return;const modal=!!document.querySelector('dialog[open]');if((event.ctrlKey||event.metaKey)&&event.key==='Enter'&&page==='recent'&&!modal&&!event.repeat){event.preventDefault();void copyCurrent();return;}

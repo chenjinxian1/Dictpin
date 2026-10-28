@@ -1,6 +1,7 @@
 (function(root,factory){const api=factory(typeof module==='object'&&module.exports?require('./provider-endpoint'):root.ProviderEndpoint);if(typeof module==='object'&&module.exports)module.exports=api;else root.ProviderPresets=api;})(typeof globalThis==='object'?globalThis:this,function(endpoints){
  'use strict';
  const VERSION=1,CHECKED_AT='2026-10-28';
+ const KEY_URLS=Object.freeze({qwen:'https://help.aliyun.com/zh/model-studio/get-api-key',deepseek:'https://platform.deepseek.com/api_keys',openai:'https://platform.openai.com/api-keys',siliconflow:'https://cloud.siliconflow.cn/account/ak'});
  const PROVIDERS=Object.freeze([
   {id:'qwen',label:'通义千问',en:'Qwen'},{id:'deepseek',label:'DeepSeek',en:'DeepSeek'},
   {id:'openai',label:'OpenAI',en:'OpenAI'},{id:'siliconflow',label:'硅基流动',en:'SiliconFlow'},
@@ -69,5 +70,5 @@
    return {url:origin+url.pathname.replace(/\/chat\/completions$/,'/models'),format:'openai',paged:false};
   }catch{return null;}
  }
- return {VERSION,CHECKED_AT,PROVIDERS,REGIONS,slotId,createProfile,suggestions,providerLabel,normalizeProfile,requestParameters,discovery};
+ return {VERSION,CHECKED_AT,KEY_URLS,PROVIDERS,REGIONS,slotId,createProfile,suggestions,providerLabel,normalizeProfile,requestParameters,discovery};
 });

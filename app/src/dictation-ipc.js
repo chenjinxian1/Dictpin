@@ -9,8 +9,9 @@ function object(value,allowed){
 }
 function singleShortcutMap(settings){return {current:settings.shortcut||'',copy:settings.copyShortcut||''};}
 function settingsPatch(settings,input){
- object(input,['deviceId','shortcut','copyShortcut','autoPaste','appendMode','refiner','expectedRefiner']);if(!Object.keys(input).length)throw Error('没有可保存的更改。');
+ object(input,['deviceId','shortcut','copyShortcut','autoPaste','appendMode','refiner','expectedRefiner','textServices']);if(!Object.keys(input).length)throw Error('没有可保存的更改。');
  const next={...settings,refiner:{...settings.refiner}};
+ if(Object.hasOwn(input,'textServices')){object(input.textServices,['expectedRevision','activeProfileId','changes']);next.textServices=input.textServices;}
  for(const key of ['autoPaste','appendMode'])if(Object.hasOwn(input,key)){if(typeof input[key]!=='boolean')throw Error('听写开关无效。');next[key]=input[key];if(key==='autoPaste')next.deliveryConsentVersion=input[key]?1:0;}
  if(Object.hasOwn(input,'deviceId')){if(typeof input.deviceId!=='string'||input.deviceId.length>512)throw Error('麦克风设置无效。');next.deviceId=input.deviceId;}
  if(Object.hasOwn(input,'shortcut')){normalizeAccelerator(input.shortcut);if(!input.shortcut)throw Error('请保留一个可用的听写快捷键。');next.shortcut=input.shortcut;}
@@ -31,7 +32,7 @@ function settingsPatch(settings,input){
  }
  return next;
 }
-function registerProductIpc({ipcMain,controller,store,getMainWindow,getBarWindow,mainURL,barURL,snapshot,publish,copyResult,applyShortcuts=()=>{},showMain,dismissOverlay,providerChecks,editorFlushed=()=>{},setShortcutRecording=()=>{},deliveryBusy=()=>false,onManualResult=()=>{},onStopFromMain=()=>{}}){
+function registerProductIpc({ipcMain,controller,store,getMainWindow,getBarWindow,mainURL,barURL,snapshot,publish,copyResult,applyShortcuts=()=>{},showMain,dismissOverlay,providerChecks,editorFlushed=()=>{},setShortcutRecording=()=>{},deliveryBusy=()=>false,onManualResult=()=>{},onStopFromMain=()=>{},openProviderHelp=()=>({opened:false})}){
  let saving=false;
  function verify(event,roles){
   const targets={main:[getMainWindow(),mainURL],bar:[getBarWindow(),barURL]};
@@ -39,15 +40,16 @@ function registerProductIpc({ipcMain,controller,store,getMainWindow,getBarWindow
   throw Error('拒绝未授权的窗口请求。');
  }
  function handle(name,roles,fn){ipcMain.handle(name,async(event,...args)=>{verify(event,roles);return fn(event,...args);});}
- function idle(){if(saving||controller.active()||deliveryBusy())throw Error('请先结束当前任务。');}
+ function idle(){if(saving||controller.active()||deliveryBusy())throw Error('请先结束当前任务。');if(providerChecks?.busy?.())throw Error('请先结束当前接口检查。');}
  function captureInput(input){object(input,['sessionId']);if(typeof input.sessionId!=='string'||input.sessionId!==controller.state.sessionId||input.sessionId!==controller.session?.id)throw Error('录音操作已过期。');}
  async function toggle(source,mode='current'){
   if(saving||deliveryBusy()||mode!=='current')return {accepted:false};
+  providerChecks?.cancelAll();
   if(source==='ui'&&controller.state.phase==='recording')onStopFromMain(controller.state.sessionId);
   return controller.toggle(source,{});
  }
  handle('snapshot',['main','bar'],event=>snapshot(event.sender===getBarWindow()?.webContents));
- handle('capture:start',['main'],(_event,input,...extra)=>{if(extra.length)throw Error('开始听写不接受模式或任务。');if(input!==undefined)object(input,['discardRecoveryToken','appendTo','expectedRevision']);if(saving||controller.active()||deliveryBusy())return {accepted:false};return controller.start?controller.start(input):controller.toggle('ui',{});});
+ handle('capture:start',['main'],(_event,input,...extra)=>{if(extra.length)throw Error('开始听写不接受模式或任务。');if(input!==undefined)object(input,['discardRecoveryToken','appendTo','expectedRevision']);if(saving||controller.active()||deliveryBusy())return {accepted:false};providerChecks?.cancelAll();return controller.start?controller.start(input):controller.toggle('ui',{});});
  handle('capture:toggle',['main'],(_event,input,...extra)=>{if(input!==undefined||extra.length)throw Error('听写操作不接受模式或任务。');return toggle('ui');});
  handle('capture:stop',['main','bar'],(event,input)=>{captureInput(input);if(event.sender===getMainWindow()?.webContents)onStopFromMain(input.sessionId);return {accepted:controller.stop()!==false};});
  handle('capture:cancel',['main','bar'],(_event,input)=>{captureInput(input);return {accepted:controller.cancel()};});
@@ -73,11 +75,14 @@ function registerProductIpc({ipcMain,controller,store,getMainWindow,getBarWindow
   catch(error){if(hasShortcut)try{await applyShortcuts(previous);}catch{store.notices?.push('快捷键未完整恢复，请在设置中核对实际生效状态。');}throw error;}
   finally{saving=false;}
  });
- handle('provider:check-text',['main'],()=>{
+ handle('provider:check-text',['main'],(_event,input)=>{
   idle();const win=getMainWindow();if(!win.isVisible()||!win.isFocused())throw Error('请在当前设置窗口明确开始测试。');
-  return providerChecks.run('refiner');
+  return providerChecks.run('test',input);
  });
- handle('provider:cancel-text',['main'],()=>{providerChecks.cancel('refiner');return {cancelled:true};});
+ handle('provider:list-models',['main'],(_event,input)=>{idle();const win=getMainWindow();if(!win.isVisible()||!win.isFocused())throw Error('请在当前设置窗口明确获取模型。');return providerChecks.run('models',input);});
+ handle('provider:cancel',['main'],(_event,input)=>{object(input,['requestId']);if(typeof input.requestId!=='string'||input.requestId.length>128)throw Error('检查标识无效。');providerChecks.cancel(input.requestId);return {cancelled:true};});
+ handle('provider:open-help',['main'],(_event,id)=>{if(!['qwen','deepseek','openai','siliconflow'].includes(id)||!getMainWindow().isFocused())throw Error('帮助链接无效。');return openProviderHelp(id);});
+ handle('provider:cancel-text',['main'],()=>{providerChecks.cancelAll();return {cancelled:true};});
  handle('word:upsert',['main'],(_event,input)=>{if(saving)throw Error('正在保存，请稍候。');object(input,['id','word','aliases']);const words=Array.isArray(store.dictionary)?store.dictionary:[];if(Object.hasOwn(input,'id')&&!words.some(word=>word.id===input.id))throw Error('词条已变化，请重新打开编辑。');if(typeof input.word!=='string')throw Error('词语内容无效。');const duplicate=words.find(word=>word.id!==input.id&&wordKey(word.word)===wordKey(input.word.trim()));if(duplicate)throw Error('已有“'+duplicate.word+'”，请编辑现有词语。');store.upsertDictionary(input);publish();return snapshot(false);});
  handle('word:delete',['main'],(_event,id)=>{if(saving)throw Error('正在保存，请稍候。');const operation=store.removeDictionary(id);publish();return {...snapshot(false),operation};});
  handle('word:undo',['main'],(_event,token)=>{if(saving)throw Error('正在保存，请稍候。');if(typeof token!=='string'||token.length>128)throw Error('撤销标识无效。');store.restoreDictionary(token);publish();return snapshot(false);});

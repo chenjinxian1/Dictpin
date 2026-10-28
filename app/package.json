@@ -1,6 +1,6 @@
 {
   "name": "local-dictation",
-  "version": "0.2.1-dev.24",
+  "version": "0.2.2-dev.28",
   "description": "Compact Windows local dictation, optional light text editing and personal dictionary",
   "productName": "Local Dictation",
   "author": "chenjinxian1",
@@ -59,7 +59,12 @@
       "renderer/pcm-capture.js",
       "src/segment-pipeline.js",
       "src/segmented-controller.js",
-      "src/safe-paste.js"
+      "src/safe-paste.js",
+      "renderer/provider-presets.js",
+      "renderer/provider-drafts.js",
+      "renderer/provider-form.js",
+      "src/service-profiles.js",
+      "src/text-service-diagnostics.js"
     ],
     "extraResources": [],
     "directories": {

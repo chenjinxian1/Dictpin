@@ -8,6 +8,9 @@
  const protectedAttributes='#original-text,#correction-list,#provider-summary,.word-title,.word-aliases,[data-user-text]';
  const chrome='title,button,label,summary,h1,h2,h3,.app-name,.skip,.hint,.empty-copy,.dictionary-intro,.dictionary-help,.privacy-note,.count-unit,#notice,#session-status,#task-status-title,#task-status-detail,#result-message,#recent-time,#shortcut-prefix,#shortcut-suffix,#toast-text,#word-undo-text,#word-error,#confirm-description,#bar-status,#bar-feedback,#voice-pill';
  const english=Object.freeze({
+  '模型厂商':'Provider','服务区域':'Region','业务空间 ID':'Workspace ID','恢复预设':'Restore preset','已自定义':'Customized','获取模型':'Get models','可选择建议或手动填写；列表不代表兼容。':'Choose a suggestion or enter a model; listing does not prove compatibility.','查看':'Show','隐藏':'Hide','移除密钥':'Remove key','撤销移除':'Undo removal','获取 API 密钥':'Get an API key','测试轻整理':'Test cleanup','取消检查':'Cancel check','发送虚构样例，可能计费。':'Sends a fictional sample; charges may apply.','检查详情':'Check details',
+  '本次使用本地文字，模型连接待配置。':'Using local text for this task; configure the model connection when ready.',
+  '已取消；已完成文字保留，未处理片段仅在内存保留30秒。':'Cancelled. Completed text is kept; unfinished audio stays in memory for 30 seconds.',
   '继续追加':'Append more','继续追加？':'Append more?','撤销追加':'Undo append','安全自动粘贴':'Guarded auto-paste','快捷键继续追加到最近结果':'Append to the latest result with the shortcut','保留前一稿；自动投递只发送新增部分。':'Keep the earlier draft; delivery sends only new text.',
   '默认关闭。仅快捷键唤起可投递；焦点变化时保留文字。会替换剪贴板。':'Off by default. Shortcut only; focus changes block delivery. Replaces clipboard.','投递中':'Delivering','正在录音，逐段识别':'Recording with local previews','正在完成剩余片段':'Finishing remaining segments',
   '完成后由你复制。':'Copy manually when ready.','正在确认原输入框。':'Checking the original input field.','结束后将尝试粘贴到原输入框。':'After Stop, attempt one paste to the original input field.','正在安全投递文字…':'Delivering text with safety checks…',
@@ -41,7 +44,7 @@
   '未连接桌面程序，无法开始听写。':'Desktop connection unavailable. Dictation cannot start.','无法连接桌面程序，请从托盘重新打开。':'Cannot connect to the desktop app. Reopen it from the tray.','未连接桌面程序，请从托盘重新打开。':'Desktop connection unavailable. Reopen from the tray.'
  });
  function normalizeLanguage(value){return value==='en'?'en':'zh-CN';}
- function translate(value){return Object.hasOwn(english,value)?english[value]:value;}
+ function translate(value){return Object.hasOwn(english,value)?english[value]:value.split(/(?<=。)\s+/).map(part=>Object.hasOwn(english,part)?english[part]:part).join(' ');}
  function closest(element,selector){return !!element?.closest?.(selector);}
  function transform(value,replace){const content=String(value),trimmed=content.trim();if(!trimmed)return content;const next=replace(trimmed);return next===trimmed?content:content.slice(0,content.indexOf(trimmed))+next+content.slice(content.indexOf(trimmed)+trimmed.length);}
  function translateNodeText(element,value,language='en'){
