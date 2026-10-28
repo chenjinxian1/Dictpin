@@ -97,11 +97,13 @@ Untuk **penggunaan setempat tanpa API**, biarkan **轻整理** (kemasan ringan) 
 
 ## Persediaan API pilihan
 
-Dalam **设置 → 模型连接** (Tetapan → Sambungan model), masukkan alamat API, ID model teks yang tepat dan kunci. Pilih sama ada mahu menyimpan kunci menggunakan storan selamat sistem. Simpan ketika tiada tugas berjalan, kemudian aktifkan kemasan ringan. Aplikasi tidak perlu dimulakan semula. Tetapan API melalui pemboleh ubah persekitaran atau `.env` tidak disokong.
+Dalam **设置 → 模型连接** (Tetapan → Sambungan model), pilih **Qwen, DeepSeek, OpenAI, SiliconFlow, perkhidmatan setempat serasi atau Tersuai**. Pratetap mengisi alamat dan cadangan model; Qwen mencadangkan `qwen-flash` atau `qwen-plus` dan memerlukan rantau serta ruang kerja yang dipilih sendiri; SiliconFlow tidak memilih model secara automatik. Setiap penyedia/rantau mengingati konfigurasi dan kuncinya, tetapi hanya satu aktif. Pilihan dan input mengubah draf sahaja. **Simpan perubahan** ketika tiada tugas untuk menyimpan dan mengaktifkan semuanya; kegagalan mengekalkan konfigurasi lama. Tiada mula semula atau permintaan automatik.
 
-Hanya **Chat Completions untuk teks** disokong di sini, bukan ASR, TTS, Responses atau titik akhir audio natif DashScope. Qwen adalah pilihan: gunakan alamat rantau/ruang kerja, kunci dan model teks yang tersedia seperti `qwen-plus`, dengan padanan yang betul. Salin alamat serasi daripada konsol penyedia anda; satu contoh tidak sesuai untuk semua keadaan. Pelayan teks setempat yang serasi boleh dikonfigurasikan tetapi tidak disertakan.
+**Uji kemasan** menyemak draf API yang belum disimpan menggunakan contoh rekaan bahasa Cina/Inggeris, peraturan kemasan sebenar dan had 12 saat. Perubahan alamat, model atau kunci membatalkan hasil lama. **Dapatkan model** ialah tindakan sendiri, dihadkan kepada 10 saat, 500 model dan 2 MiB. Cadangan dan input manual kekal jika senarai gagal atau tidak disokong. Tersenarai atau lulus satu contoh tidak menjamin mutu keseluruhan.
 
-Lihat [Konfigurasi API](../API_CONFIGURATION.md) untuk medan tepat, pautan rasmi kunci, contoh dan penyelesaian masalah. **Ujian sambungan dan cubaan semula kemasan yang anda mulakan boleh dikenakan bayaran.**
+Kunci diasingkan mengikut konfigurasi dan titik akhir. Medan kosong mengekalkan kunci profil itu; **Buang kunci** boleh dibatalkan sebelum disimpan. Kunci baharu hanya untuk sesi kecuali penyulitan sistem dipilih. Perubahan alamat memerlukan penggantian atau pembuangan kunci secara jelas; kegagalan penyulitan/tulisan membatalkan seluruh simpanan. Jika kunci tidak tersedia, petikan itu terus menggunakan imlak setempat tanpa menukar pilihan tersimpan atau penyedia secara automatik.
+
+Hanya teks **Chat Completions bukan penstriman** disokong; tiada konfigurasi API melalui pemboleh ubah persekitaran atau `.env`. Dokumentasi pratetap disemak pada 2026-10-28, bukan pengesahan akaun sebenar. Pelayan teks setempat tidak disertakan. Lihat [Konfigurasi API](../API_CONFIGURATION.md) untuk medan, pautan kunci, had rantau/senarai dan penyelesaian masalah. **Ujian contoh serta cubaan semula yang disengajakan mungkin dicaj; pembatalan tidak menjamin pengebilan jauh berhenti.**
 
 ## Privasi dan storan setempat
 

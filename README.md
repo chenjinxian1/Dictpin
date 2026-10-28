@@ -97,11 +97,13 @@ For **local use without an API**, keep **轻整理** (light cleanup) off. Open *
 
 ## Optional API setup
 
-In **设置 → 模型连接** (Settings → Model connection), enter the API address, exact text model ID, and key. Choose whether to save the key using system secure storage. Save while idle, then enable light cleanup. No restart is needed. There is no supported API environment-variable or `.env` configuration.
+In **设置 → 模型连接** (Settings → Model connection), choose **Qwen, DeepSeek, OpenAI, SiliconFlow, Local compatible service or Custom**. Presets fill the address and model suggestions; Qwen suggests `qwen-flash` or `qwen-plus` and requires an explicit region/workspace; SiliconFlow leaves the model unselected. Each provider/region remembers its own configuration and key; only one is active. Switching or typing changes drafts only. **Save changes** commits the changed profiles and activation together while idle; a failure preserves the old configuration. No restart or automatic request is involved.
 
-Only **text Chat Completions** is supported here, not ASR, TTS, Responses, or native DashScope audio endpoints. Qwen is optional: use the matching region/workspace address, key, and an available text model such as `qwen-plus`. Copy the compatible address from your provider console; one example is not universal. A compatible local text server can be configured but is not included.
+**Test cleanup** checks the unsaved API draft using a fictional bilingual sample, the actual cleanup rules and a 12-second deadline. Editing the address, model or key invalidates the old result. **Get models** is optional and explicit, bounded to 10 seconds, 500 models and 2 MiB; unsupported discovery retains suggestions/manual entry. Neither a listed model nor one passing sample proves general cleanup quality.
 
-See [API configuration](docs/API_CONFIGURATION.md) for exact fields, official key links, examples, and troubleshooting. **Connection tests and deliberate cleanup retries can cost money.**
+Keys are scoped to each profile and endpoint. Blank retains that profile's key; **Remove key** is reversible before Save. New keys are session-only unless system encryption is selected. Changing an endpoint requires explicit replacement/removal; encryption or disk failure rolls back the save. Missing/unavailable cleanup credentials allow the passage to continue locally without changing the saved preference or choosing another provider.
+
+Only non-streaming text **Chat Completions** is supported. There is no API environment-variable or `.env` configuration. Presets were checked against documentation on 2026-10-28, not real accounts. Local text servers are not bundled. See [API configuration](docs/API_CONFIGURATION.md) for fields, key links, regional/model-list limits and troubleshooting. **Sample tests and deliberate cleanup retries can cost money; cancellation does not guarantee remote billing stops.**
 
 ## Privacy and local storage
 

@@ -18,7 +18,7 @@ The normal development profile is `work/dev/profile/`. It is ignored by Git.
 
 | File/data | Contents and retention |
 | --- | --- |
-| `settings.json` | Device/shortcut/service preferences and optional encrypted key envelope. Settings themselves are not encrypted. |
+| `settings.json` | Device/shortcut preferences, versioned provider/region configurations, active service and optional encrypted per-profile keys. Settings metadata is not encrypted. |
 | `recent-result.json` | Latest recognition original, dictionary-corrected draft, current edited text, and restoration metadata, in **plaintext**. Written even with legacy multi-item history disabled. No automatic expiry or user-facing retention/delete control exists. |
 | `dictionary.json` | Saved terms and explicit wrong-spelling rules, in plaintext. |
 | `dictionary-archive.json` | Non-destructive deleted-entry records for undo. Deleting a visible term is not a promise of erasing every local copy. |
@@ -49,13 +49,15 @@ It does **not** send raw recording audio, explicit misspelling aliases, full res
 
 The provider controls its own retention, processing location, billing and abuse policies. Review them before entering sensitive material. A local compatible text endpoint can be configured on loopback, but none is bundled or certified here.
 
-Testing a saved connection sends synthetic `Reply with OK.` text and can be billable. Actual cleanup has a 12-second deadline; connection tests have a 15-second timeout. There is no automatic paid retry. Cancelling, copying, or editing stops accepting that response locally; it does not guarantee provider-side billing or processing stops. A deliberate retry may cost again.
+Testing the current API draft sends one fixed fictional Chinese/English cleanup sample, with no private transcript or personal dictionary, and can be billable. Tests share actual cleanup request/response handling and the 12-second deadline. Get models is a separate explicit metadata request capped at 10 seconds, 500 models and 2 MiB, using a verified same-origin adapter; it does not establish cleanup compatibility. Provider selection, typing and saving issue no automatic request. There is no automatic paid retry. Cancelling, copying, or editing stops accepting that response locally; it does not guarantee provider-side billing or processing stops. A deliberate retry may cost again.
 
 ## Keys
 
-Keys are held in the main process, not returned as plaintext form values. New keys are session-only unless **用系统安全存储保存** is selected. Persisted keys use Electron `safeStorage` encryption through the operating system. If encryption is unavailable, the application keeps the key in memory rather than writing plaintext.
+Keys are held in the main process, not returned as plaintext form values. New keys are session-only unless **用系统安全存储保存** is selected. Persisted keys use Electron `safeStorage` encryption through the operating system. If requested encryption fails or is unavailable, saving fails atomically; it does not silently change the requested persistence mode or write plaintext. A user can explicitly keep a new key session-only instead.
 
-Leaving the key field blank preserves the current key. Unchecking secure storage and saving removes the encrypted persistent envelope while leaving the current session key usable; normal process exit discards session-only keys. The form has no dedicated clear-session-key control. When an existing key is present, changing the service address through the current form requires a replacement key; it never silently transfers that credential to a new host.
+Each provider/region keeps a separate key bound to its exact profile and endpoint. Leaving the key field blank retains that profile’s key. Remove key marks explicit removal for Save, with undo beforehand. Unchecking secure storage removes only its persistent encrypted copy while keeping the session key until exit. Address or region changes require explicit replacement or removal; another provider’s key is never borrowed. Only newly typed keys can be revealed; saved keys and their hashes are not returned to the page. Unavailable encrypted keys are preserved during unrelated saves.
+
+Service metadata uses `settings.textServices` and an active profile ID; encrypted per-profile envelopes use `secrets.textServices`. Legacy settings appear as Previous configuration in memory without writing a migration on open, changing endpoints or models, or contacting a service. Explicit save writes the new structure atomically while retaining unknown metadata and required legacy ciphertext. Unsupported newer service data opens read-only. Test results are not retained as current verification across restarts.
 
 OS-backed encryption does not protect against malware with the same user's privileges. Never share a profile, settings file, screenshot of entered credentials, or clipboard contents. Do not manually edit a running application's profile or change real credentials while preparing publication material.
 

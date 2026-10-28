@@ -1,75 +1,82 @@
 # Optional text cleanup: configuration and troubleshooting
 
-Local recognition, explicit dictionary rules, editing, copying, and recovery work without a text API. Leave **轻整理** (light cleanup) **off** for this mode. No cloud ASR fallback is enabled.
+Local recognition, dictionary rules, editing, copying and recovery do not require a text API. Missing or unavailable cleanup credentials make that passage continue locally with a notice; they do not prevent dictation or silently change the saved cleanup preference. There is no automatic cloud ASR or provider fallback.
 
-## The actual settings form
+## Choose a provider and edit a draft
 
-Open **设置 → 模型连接** (Settings → Model connection). Default labels are Chinese; the optional English presentation mode shown in the screenshots uses the same settings fields and behavior.
+Open **设置 → 模型连接** (Settings → Model connection). The interface distinguishes the active service from the draft that becomes active after **保存更改** (Save changes). Chinese is the default UI; optional English presentation has the same behavior. Six README languages do not imply six UI languages.
 
-| Setting | Actual field | Supported behavior |
+| Provider | Preset contents | User input |
 | --- | --- | --- |
-| 轻整理 | `refiner.enabled` | Opt-in text cleanup. A remote service without a key blocks starting until configured or disabled. |
-| API 地址 | `refiner.baseUrl` | HTTPS base URL or complete text `/chat/completions` endpoint. HTTP is allowed only for localhost/loopback. |
-| 模型 | `refiner.model` | Exact provider text model ID, up to 160 characters; no discovery or model download. |
-| API 密钥 | Main-process session key; optional `secrets.refiner` envelope | Blank retains an available key. The current form requires a replacement key when changing an address with an existing key; it never silently reuses that credential at another host. |
-| 用系统安全存储保存 | `persistKey` handling | Opt-in OS-backed encryption. A newly entered unchecked key stays in memory. If secure storage is unavailable, there is no plaintext persistence fallback. |
+| Qwen / Alibaba Model Studio | Region-specific workspace address; `qwen-flash`, with `qwen-plus` as another suggestion | Explicit region, workspace ID and matching key |
+| DeepSeek | Complete `https://api.deepseek.com/chat/completions` endpoint; `deepseek-flash` | Key; model remains editable |
+| OpenAI | `https://api.openai.com/v1`; `gpt-6-luna` | Key; model remains editable |
+| SiliconFlow | China address `https://api.siliconflow.cn/v1`; editable suggestions | Select a model and enter a key; no model is automatically selected |
+| Local compatible service | Loopback-address guidance only | Actual server address and installed model ID; key optional for anonymous servers |
+| Custom | Text Chat Completions guidance | Actual HTTPS address, model and key |
 
-Save **保存更改** while idle. Changes apply to the next task without restarting; saving during a task is blocked. Unchecking system secure storage and saving removes the persisted encrypted key; it remains available for the current process session. Leaving the key blank without changing that option preserves it. The current form has no dedicated clear-session-key control. See [privacy](PRIVACY.md) before sharing the profile.
+Presets were checked against documentation on **2026-10-28**, not against real accounts or service quality. Sources: [Qwen Chat](https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions), [DeepSeek first call](https://api-docs.deepseek.com/quick_start/agent_integrations/), [OpenAI model](https://developers.openai.com/api/docs/models/gpt-6-luna), [SiliconFlow Chat](https://docs.siliconflow.cn/docs/api/chat-completions-post). Availability and offerings can change.
 
-The application appends `/chat/completions` to a base URL; a bare host gets `/v1` first. A complete compatible endpoint is retained. URL credentials, whitespace, query strings, and fragments are rejected. Redirects are not followed. An API key belongs in the key field, never in the URL.
+Qwen offers Beijing, Singapore, Hong Kong, Tokyo, Frankfurt and Virginia regions. New workspace URLs require an explicit region and valid workspace ID; the key must match. Existing legacy hosts and models are not silently migrated.
 
-No API environment variables or `.env` loader are supported, so no `.env.example` is supplied. There are no UI fields for temperature, system prompt, stream, thinking mode, custom headers, retry policy, or timeout. Legacy configuration fields are not public product features.
+Each provider/region has a separate remembered configuration; only one is active. Switching providers or pages retains in-memory drafts and sends no request. Edited addresses are marked custom; restoring a preset is explicit. The preview shows the final request URL. **Save changes** commits changed configurations and activation together while idle. Validation, encryption or disk failure leaves the previous service active. Running dictation retains its frozen configuration; no restart is needed.
 
-## Minimal configurations
+HTTPS is required except for localhost/loopback HTTP. URL credentials, whitespace, query strings and fragments are rejected; redirects are not followed. Base URLs receive `/chat/completions`; complete compatible endpoints are retained. DeepSeek's preset uses its exact complete endpoint instead of the generic bare-host `/v1` rule. Keys belong in the key field, never in URLs.
 
-### No service and no API fees from cleanup
+There is no API environment-variable or `.env` loader. Arbitrary headers, prompts, streaming, retry and timeout controls are not exposed. Only text **Chat Completions** is supported, not Responses, Anthropic Messages, native DashScope audio, ASR or TTS.
 
-Keep light cleanup **off**. Save the intended microphone and start deliberately. Dictionary corrections still run locally.
+## Keys: retain, replace or remove
 
-### Optional Qwen example
+The interface distinguishes **not configured**, **this session only**, **securely saved** and **encrypted key currently unavailable**. Stored keys remain in the main process and are never returned as form values or hashes. Reveal applies only to newly typed keys.
 
-Obtain a key through the [official Model Studio API key instructions](https://www.alibabacloud.com/help/en/model-studio/get-api-key) or [Chinese guide](https://help.aliyun.com/zh/model-studio/get-api-key). The console supplies the applicable region, workspace endpoint, and model access.
+- Blank retains the current profile's key; it never borrows another provider's key.
+- **移除密钥** (Remove key) marks removal for the next save; **撤销移除** (Undo removal) is available before saving.
+- Changing an address or region requires replacement or explicit removal when an old key exists. Supplier names alone never authorize reuse at another endpoint.
+- New keys are session-only unless **用系统安全存储保存** (Save with system secure storage) is selected. Requested encryption failure aborts saving; there is no plaintext or silent session-only fallback.
+- Unchecking secure storage and saving removes the encrypted copy while retaining the current session key until exit. This differs from Remove key.
+- Unavailable encrypted keys remain preserved. An unrelated settings save does not erase them.
 
-```text
-API address: copy your workspace's OpenAI-compatible Base URL
-Model: qwen-plus
-API key: YOUR_PROVIDER_API_KEY
-System secure storage: optional
-Light cleanup: enable after saving the intended configuration
-```
+Use the provider's official key guidance or console: [Qwen key guide](https://help.aliyun.com/zh/model-studio/get-api-key), [OpenAI API keys](https://platform.openai.com/api-keys). Never include real keys in issues or screenshots.
 
-This is a form example, not an environment file. `qwen-plus` is an example only where your account offers it. The [Chinese key guide](https://help.aliyun.com/zh/model-studio/get-api-key) lists the legacy Beijing address `https://dashscope.aliyuncs.com/compatible-mode/v1`. The [current English compatibility guide](https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope) also describes workspace-specific hosts, for example `https://{WorkspaceId}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1` in Singapore. Substitute your real workspace ID in the form, use a key/model from the same region, and follow your console over a copied example. No remote Qwen request was made to verify this account.
+## Test the draft or get models deliberately
 
-The source's default address/model are `https://api.openai.com/v1` and `gpt-4.1-mini`; this is not a live-service acceptance claim. If choosing that provider, use its [official API key page](https://platform.openai.com/api-keys) and confirm model access and current charges yourself.
+**测试轻整理** (Test cleanup) checks the current API draft without saving. An unrelated microphone draft does not disable it. It sends one fixed fictional Chinese/English sample, with no private transcript or personal dictionary, through the same request builder and response checks as actual cleanup. Both have a **12-second** deadline. Passing that sample is not a quality guarantee for other text.
 
-A local compatible text server on allowed loopback HTTP can be configured without a key. No such server is installed, started, or validated by this project.
+The interface shows untested, checking, sample passed, failed and changed states. Address, region, model, key or request-parameter edits invalidate the old result; cancelled/superseded replies cannot update the new draft. Expandable safe details identify the tested model, final address, category, HTTP status, elapsed time and test time. Raw error bodies and authorization are not shown. A green verification state is not persisted across restarts.
 
-## Protocol, transmission, and fees
+**获取模型** (Get models) is a separate explicit metadata request: at most **10 seconds**, **500 models** and **2 MiB** of response data in total. It does not download models or prove cleanup compatibility. Suggestions and manual entry remain available on failure or truncation.
 
-The supported request is a non-streaming JSON text **Chat Completions** POST with Bearer authorization when a key is present. The reply must contain string `choices[0].message.content`. Responses, Anthropic Messages, native DashScope APIs, ASR, TTS, and realtime audio endpoints are incompatible with this setting.
+Listing uses provider-specific same-origin routes. Qwen uses `/api/v1/models` with bounded pagination, not `compatible-mode/v1/models`. Addresses without a verified same-origin adapter, including new Singapore/Hong Kong workspace hosts in this version, retain suggestions/manual entry. This is a limitation of Dictpin's adapter, not a claim that the service cannot support listing. Keys are not forwarded to another origin. See [Qwen model-list documentation](https://help.aliyun.com/zh/model-studio/list-models).
 
-Cleanup sends the **dictionary-corrected transcript**, an editing instruction, and a bounded list of saved correct dictionary terms. It does not send raw audio, explicit wrong-spelling aliases, full result history, or the clipboard. A provider receives normal network metadata and applies its own retention and billing policies. Do not use a service for private text without accepting those terms.
+Testing, listing and saving are mutually exclusive. Drafts remain editable during dictation, but diagnostic operations and saving wait until idle. UI, shortcut and tray starts cancel pending diagnostics and ignore late replies. Selecting, typing and saving never auto-test or auto-fetch.
 
-**测试已保存连接** (Test saved connection) sends synthetic `Reply with OK.` text, with an eight-token output limit and 15-second timeout. It is available only for saved configuration in an idle, visible, focused window. It is a real request and can cost money. It checks connectivity/protocol, not quality on your dictation. Execute it only deliberately.
+## Requests, privacy and fees
 
-Cleanup is one request at a time with a 12-second limit. Editing or copying ends the pending cleanup; errors leave the corrected draft intact. The original recognition is separately retained. Number/negation/content guards reduce unwanted rewriting but do not guarantee all meaning is preserved. No automatic paid retry occurs. Explicit retry can cost money again, and cancelling/timing out does not guarantee that provider processing or billing stops. Temporary-audio recovery disables cleanup.
+Actual cleanup sends the **dictionary-corrected transcript**, narrow editing instructions and a bounded list of saved correct dictionary terms. It does not send recording audio, wrong-spelling aliases, full result history or the clipboard. Provider retention and billing apply. See [Privacy](PRIVACY.md).
 
-## Where configuration is saved
+Requests are non-streaming JSON POSTs with Bearer authorization when a key exists. Replies require complete string `choices[0].message.content` and content/number/negation checks. HTTP success alone is insufficient. Known official preset/model combinations use narrowly allowed non-thinking parameters; arbitrary custom endpoints and unknown models do not inherit them. SiliconFlow's first adapter adds no speculative thinking parameter.
 
-Normal development settings are at `work/dev/profile/settings.json`. API keys stay in the main process; opt-in persisted keys use Electron `safeStorage` encryption in `secrets.refiner`. Other settings, dictionary entries, and latest-result text are not encrypted by this key facility. Profiles must never enter Git, screenshots, issue attachments, or shared archives. See [Privacy](PRIVACY.md).
+**Sample tests and deliberate cleanup retries can cost money.** Getting models sends the selected service's authentication and normal network metadata; the provider determines applicable charges. There is no automatic paid retry or provider switch. Cancellation, copying, editing and timeout stop accepting a reply locally but cannot guarantee remote processing or billing stops. Failed cleanup preserves the local corrected draft and independent recognition original. Temporary-audio recovery disables cleanup.
+
+## Storage and compatibility
+
+Development settings remain in ignored `work/dev/profile/settings.json`. Versioned metadata is stored in `settings.textServices` with an `activeProfileId`; optional encrypted per-profile keys are in `secrets.textServices`. Active `settings.refiner` remains a compatibility projection. Legacy encrypted-key fields are preserved where needed; raw keys never enter page-state broadcasts.
+
+An old profile appears as **原有配置** (Previous configuration), unchanged, in memory. Opening it does not write a migration, change its host/model or send a request. Explicit saving writes the new structure. Unknown newer service data opens read-only rather than being overwritten. Key encryption does not encrypt settings metadata, dictionary or plaintext latest-result text, and cannot protect against malware acting as the same OS user.
 
 ## Troubleshooting
 
-| Symptom | Check |
+| Symptom | Action |
 | --- | --- |
-| 401/403 | Key validity, API permission, region/workspace host, and account access. Never expose the key in an issue. |
-| 404 | Exact text model ID and final Chat Completions endpoint. Check that the URL has not accidentally targeted ASR/TTS or another API family. |
-| 400/422 or malformed reply | Whether the model accepts plain text Chat Completions and returns string content. HTTP success alone is insufficient. |
-| 429 | Quota/rate limits and account plan. Retry only deliberately, after checking possible charges. |
-| Provider 5xx | Provider availability. Keep the local corrected text instead of re-recording. |
-| Timeout | Copy the preserved draft; choose deliberately whether to retry cleanup. Provider billing may still apply. |
-| Network/certificate failure | Official HTTPS host, system clock, trusted chain, firewall, and network policy. Do not disable certificate verification. The development launcher does not forward proxy environment variables. |
-| Save failed | Disk space and profile write access. Keep/copy the in-memory draft and retry saving. |
-| New task blocked without key | Disable light cleanup for local-only work, or configure and save the intended service. |
+| 401/403 | Check this profile's key, permissions and matching region/workspace. |
+| 404 | Check the model ID and final text Chat Completions address. |
+| 400/422 or incompatible reply | Check protocol/model support and complete string content. Listing a model is not a compatibility test. |
+| 429 or provider 5xx | Check quota/provider status; use preserved local text. Retry only deliberately. |
+| Timeout/cancel | Keep the local draft; provider processing or billing may still occur. |
+| Address changed with old key | Replace or explicitly remove that profile's key. |
+| Listing unavailable | Choose a suggestion or type the model ID; do not forward keys to another host. |
+| No usable cleanup key | Local dictation continues for that passage; configure cleanup later. |
+| Save failed | Check the field, secure storage, disk space and write access. Drafts remain and the previous service stays active. |
+| Network/certificate failure | Check official address, clock, trusted chain, firewall and network policy. Never disable certificate validation. The development launcher does not forward proxy environment variables. |
 
-No real API calls were made while preparing these materials. Endpoint documentation was checked on 2026-10-24; provider offerings and prices can change.
+No live API, account access, billing or cleanup quality is certified here. Use fictional samples for deliberate manual service acceptance.

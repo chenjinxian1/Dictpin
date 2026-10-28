@@ -4,6 +4,17 @@
 
 This is an application-source development candidate. No installer release, tag or verified download has been created; package versions remain development metadata.
 
+### 2026-10-28
+
+#### Provider configuration and draft diagnostics — local development candidate
+
+- Added provider presets for Qwen, DeepSeek, OpenAI and SiliconFlow, plus Local/Custom, with separate remembered provider/region configurations and one active service. Explicit Save commits changed drafts and activation atomically; switching presets sends no request.
+- Added draft-bound cleanup sample tests using the same request/response rules and 12-second deadline as actual cleanup. Configuration edits invalidate old test results and superseded replies cannot update the new draft.
+- Added deliberate model discovery with provider-specific, same-origin adapters, a 10-second deadline, 500-model/2 MiB caps, and suggestions/manual input retained on failure. A list or one sample does not establish general quality.
+- Added explicit key removal/undo and session/saved/unavailable states. Keys remain in the main process, scoped to their profile/endpoint; requested encryption or save failure preserves previous data. Legacy configurations remain unchanged on open; unsupported newer data opens read-only.
+- Optional cleanup with unavailable configuration/credentials no longer prevents local dictation. No automatic paid retry, provider switch, physical microphone test or deployed running-version replacement is introduced.
+- Updated API, privacy, installation and all six README explanations. Preset documentation was checked on 2026-10-28; real account access, paid-service quality and billing remain manual acceptance. This candidate is not an installer release or GitHub publication.
+
 ### 2026-10-24
 
 #### Guarded delivery and long dictation — development candidate
