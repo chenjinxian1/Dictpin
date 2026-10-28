@@ -2,8 +2,17 @@
 
 ## Unreleased
 
+No changes recorded yet.
+
+## [0.2.2-dev.30] - 2026-10-28
+
+### Application icon
+
 - Refreshed the application and tray icons with a graphite, warm-white and yellow microphone/pin mark, using an original AI-assisted design. Windows ICO assets include 16/20/24/32/40/48/64/128/256 px frames for common scaling sizes.
-- Explicitly set the main window icon so development windows use Dictpin's mark as well as the existing installer icon references. Application identifiers and profile paths remain unchanged. This local candidate has not replaced any running application; actual Windows icon-cache and packaged-installer behavior remain unverified.
+- Explicitly set the main window icon so development windows use Dictpin's mark as well as the existing installer icon references. Application identifiers and profile paths remain unchanged.
+- Updated the workspace and application versions and all six centered README titles to `0.2.2-dev.30`. This is a source-code development update; no installer, release tag or deployed running-version replacement is included.
+
+Verification: **139 local tests** and **19 Electron flow checks in each of Chinese and English** passed with natural exit 0. The checks include decoding the window, tray and Windows icon assets, plus the existing dictation and API configuration flows using fictional data and simulated services/system adapters. Small-size previews were reviewed on light and dark backgrounds. No physical microphone, live model service, real key or system clipboard was used; test fixtures and raw evidence remain local. Actual Windows icon-cache, taskbar/tray appearance and packaged-installer behavior still require manual acceptance.
 
 ## [0.2.2-dev.29] - 2026-10-28
 

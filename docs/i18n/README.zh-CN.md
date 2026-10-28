@@ -1,4 +1,4 @@
-<h1 align="center">Dictpin v0.2.2-dev.29</h1>
+<h1 align="center">Dictpin v0.2.2-dev.30</h1>
 
 <p align="center">
   <strong>精致小巧的桌面听写工具。说出想法，掌握文字，然后继续手头的事。</strong>
