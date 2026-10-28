@@ -46,7 +46,7 @@ Exemple de sélection du fournisseur, d’adresse et de modèle ; le champ de cl
 - **Texte disponible avant la fin du nettoyage :** modifiez ou copiez immédiatement. Ces deux actions arrêtent le nettoyage en attente ; une réponse tardive ne peut plus remplacer cette version. Le texte original de la reconnaissance reste accessible.
 - **Reprise explicite :** le texte terminé est conservé ; le PCM non traité, borné et uniquement en mémoire, peut être repris pendant 30 secondes après annulation ou cinq minutes après échec, sans nettoyage distant.
 - **Un espace de travail compact :** résultat, dictionnaire, paramètres et petite barre flottante d’enregistrement. Les thèmes clair et sombre, le contraste élevé, la réduction des animations et le focus clavier sont déjà implémentés.
-- **Nettoyage léger facultatif :** ponctuation, paragraphes et suppression des hésitations par un service texte Chat Completions. En cas d’échec ou au bout de 12 secondes, le brouillon corrigé localement reste utilisable.
+- **Nettoyage du texte facultatif :** par un service texte Chat Completions. **Fluide** (par défaut) supprime les hésitations et répétitions, ne garde que la formulation finale après une autocorrection et met en liste les énumérations ; **Léger** ajoute seulement la ponctuation et les phrases. Un contrôle local autorise les suppressions mais pas les ajouts ; en cas d’échec, sans réponse sous 4 secondes ou au bout de 12 secondes, le brouillon corrigé localement reste utilisable.
 
 Les avantages concrets sont la maîtrise du texte, des règles de dictionnaire utilisables hors ligne et la possibilité de récupérer un enregistrement sans devoir recommencer immédiatement. Nous ne revendiquons aucune précision, latence, consommation mémoire ou supériorité concurrentielle universelle. La traduction, les questions-réponses, l’enrichissement du texte, un grand tableau de bord d’historique ne font pas partie du projet.
 
@@ -91,7 +91,7 @@ npm run dev
 
 Les scripts à la racine utilisent les modules intégrés de Node ; aucune installation de dépendances n’est nécessaire à la racine. `doctor` contrôle l’arborescence existante, sans valider une nouvelle installation ni la qualité de reconnaissance. `dev` ouvre volontairement un profil de développement sans lancer d’enregistrement. N’utilisez pas les anciens scripts de démarrage ou de reprise de session.
 
-Pour une **utilisation locale sans API**, laissez **轻整理** (nettoyage léger) désactivé. Ouvrez **设置** (Paramètres), choisissez le microphone effectivement utilisé par l’Enregistreur Windows, cliquez sur **保存更改** (Enregistrer les modifications), puis démarrez explicitement la dictée. Un choix de microphone non enregistré n’est pas actif. Arrêtez, vérifiez et copiez le texte. Configurez un raccourci seulement si vous le souhaitez.
+Pour une **utilisation locale sans API**, laissez **文字整理** (nettoyage du texte) désactivé. Ouvrez **设置** (Paramètres), choisissez le microphone effectivement utilisé par l’Enregistreur Windows, cliquez sur **保存更改** (Enregistrer les modifications), puis démarrez explicitement la dictée. Un choix de microphone non enregistré n’est pas actif. Arrêtez, vérifiez et copiez le texte. Configurez un raccourci seulement si vous le souhaitez.
 
 `npm run check` vérifie la syntaxe de l’application, les dépendances locales, les fichiers nécessaires à la distribution et la documentation. Les tests, mesures de performance, anciennes interfaces et outils internes de publication restent hors de ce dépôt. Consultez le [statut de validation et de compilation](../INSTALL.md#validation-and-build-status). Aucune commande de création d’un installateur n’est présentée comme validée.
 
@@ -103,7 +103,7 @@ Dans **设置 → 模型连接** (Paramètres → Connexion du modèle), choisis
 
 Les clés sont liées à leur configuration et à leur point d’accès. Un champ vide conserve la clé de ce profil ; **Supprimer la clé** reste annulable avant l’enregistrement. Les nouvelles clés restent en session sauf choix du chiffrement système. Un changement d’adresse exige un remplacement ou une suppression explicite ; un échec de chiffrement ou d’écriture annule l’enregistrement. Si la clé manque, la dictée continue localement pour ce passage, sans changer la préférence ni le fournisseur.
 
-Seul **Chat Completions texte non diffusé en continu** est pris en charge ; aucune configuration API par variable d’environnement ou `.env`. Les préréglages ont été vérifiés dans la documentation le 2026-10-28, sans validation de compte réel. Aucun serveur texte local n’est fourni. Voir [Configuration de l’API](../API_CONFIGURATION.md) pour les champs, clés, limites régionales et dépannage. **Les tests et nouvelles tentatives délibérées peuvent être facturés ; annuler ne garantit pas l’arrêt de la facturation distante.**
+Seul **Chat Completions texte** est pris en charge ; les requêtes de nettoyage sont diffusées en continu et un service qui renvoie un seul document JSON fonctionne aussi ; aucune configuration API par variable d’environnement ou `.env`. Les préréglages ont été vérifiés dans la documentation le 2026-10-28, sans validation de compte réel. Aucun serveur texte local n’est fourni. Voir [Configuration de l’API](../API_CONFIGURATION.md) pour les champs, clés, limites régionales et dépannage. **Les tests et nouvelles tentatives délibérées peuvent être facturés ; annuler ne garantit pas l’arrêt de la facturation distante.**
 
 ## Confidentialité et stockage local
 
@@ -117,7 +117,7 @@ Lisez [Confidentialité](../PRIVACY.md) avant d’utiliser du contenu privé. La
 
 ## Langues, limites et vérification
 
-L’interface utilise par défaut le **chinois simplifié** et propose un **affichage anglais facultatif**, utilisé dans ces exemples. La documentation en six langues ne signifie pas que l’interface ou la reconnaissance prend en charge ces six langues. Le projet SenseVoice d’origine indique le mandarin, le cantonais, l’anglais, le japonais et le coréen. Une évaluation antérieure sur fichiers fixes couvrait le mandarin et l’anglais ; nous ne revendiquons pas la reconnaissance du français ou du malais.
+L’interface existe en **chinois simplifié** et en **anglais** (utilisé dans ces exemples). La documentation en six langues ne signifie pas que l’interface ou la reconnaissance prend en charge ces six langues. Le projet SenseVoice d’origine indique le mandarin, le cantonais, l’anglais, le japonais et le coréen. Une évaluation antérieure sur fichiers fixes couvrait le mandarin et l’anglais ; nous ne revendiquons pas la reconnaissance du français ou du malais.
 
 L’interface suit la langue d’affichage de Windows : chinois sur un système chinois, anglais sinon. Modifiez-la dans Paramètres → Langue de l’interface (après redémarrage), ou forcez-la en développement avec `npm run dev -- --ui-language=en` ou `--ui-language=zh-CN`. Ce choix ne modifie que l’affichage, pas les transcriptions ni le dictionnaire.
 

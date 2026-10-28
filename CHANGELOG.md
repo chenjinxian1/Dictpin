@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-No changes recorded yet.
+### Documentation
+
+- Brought README (all six languages), API configuration, installation, privacy and contributing docs in line with 0.2.2-dev.32: Fluent/Light text cleanup instead of light-only cleanup, streaming cleanup requests with the 4-second no-response limit (and the possible HTTP 400 from services that reject streaming parameters), the renamed **文字整理** (Text cleanup) switch, and an interface available in Chinese and English that follows the Windows display language. No application code changed.
+
+Validation: `npm run check` and `npm run check:docs` passed.
 
 ## [0.2.2-dev.32] - 2026-10-28
 
