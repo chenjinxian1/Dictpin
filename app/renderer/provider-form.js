@@ -53,7 +53,7 @@
   $('remember-key').addEventListener('change',()=>{D.setPersist($('remember-key').checked);changed();});
   $('remove-model-key').addEventListener('click',()=>{D.removeKey();changed();render();});
   $('reveal-model-key').addEventListener('click',()=>{$('model-key').type=$('model-key').type==='password'?'text':'password';$('reveal-model-key').textContent=$('model-key').type==='password'?t('查看','Show'):t('隐藏','Hide');});
-  $('restore-provider-preset').addEventListener('click',()=>{const p=D.current().profile;if(p.presetId==='legacy')return;const defaults=P.createProfile(p.presetId,p.region,p.workspaceId);D.update({baseUrl:defaults.baseUrl,endpointMode:defaults.endpointMode,model:defaults.model,customized:false});changed();render();});
+  $('restore-provider-preset').addEventListener('click',()=>{const d=D.current(),p=d.profile;if(p.presetId==='legacy')return;let defaults;try{defaults=P.createProfile(p.presetId,p.region,p.workspaceId);}catch{$('model-workspace').setAttribute('aria-invalid','true');$('model-workspace').focus();D.result(d.draftRevision,{category:'error',displayMessage:t('业务空间 ID 格式无效，请修改后重试。','Invalid workspace ID. Correct it and try again.')});renderStatus();return;}D.update({baseUrl:defaults.baseUrl,endpointMode:defaults.endpointMode,model:defaults.model,customized:false});changed();render();});
   function resultMessage(result,kind){
    const success=result.outcome==='success'||['success','test_success','chat_success','cleanup_success','models_success'].includes(result.category);
    if(kind==='models'&&Array.isArray(result.models))return t('已获取 '+result.models.length+' 个模型；列表不代表轻整理兼容。','Received '+result.models.length+' models; listing is not proof of cleanup compatibility.')+(result.partial?t(' 已达到读取上限。',' The read limit was reached.'):'');
@@ -72,7 +72,7 @@
   $('test-model').addEventListener('click',()=>void run('test'));$('fetch-models').addEventListener('click',()=>void run('models'));
   $('provider-key-help').addEventListener('click',event=>{event.preventDefault();void bridge.openProviderHelp(D.current().profile.presetId).catch(()=>{});});
   $('cancel-test').addEventListener('click',()=>{const d=D.current();cancel();D.result(d.draftRevision,{category:'cancelled',displayMessage:t('已取消；服务端仍可能计费。','Cancelled; server billing may still occur.')});renderStatus();});
-  return {accept,saved(view){cancel();D.saved(view);render();},reset(){cancel();D.saved(D.view);render();},isDirty:()=>ready&&D.isDirty(),patch:()=>ready?D.patch():null,cancel,sync(state){locked=state.locked;secure=state.secure;const unavailable=locked||state.busy||!!operation||!ready;$('test-model').disabled=unavailable;$('fetch-models').disabled=unavailable;$('cancel-test').hidden=!operation;renderInfo();},status:()=>D.status()};
+  return {accept,saved(view){cancel();D.saved(view);render();},reset(){cancel();D.reset();render();},isDirty:()=>ready&&D.isDirty(),patch:()=>ready?D.patch():null,cancel,sync(state){locked=state.locked;secure=state.secure;const unavailable=locked||state.busy||!!operation||!ready;$('test-model').disabled=unavailable;$('fetch-models').disabled=unavailable;$('cancel-test').hidden=!operation;renderInfo();},status:()=>D.status()};
  }
  root.ProviderForm={create};
 })(typeof globalThis==='object'?globalThis:this);

@@ -5,10 +5,11 @@
  const metadata=p=>Object.fromEntries(fields.filter(k=>p[k]!==undefined).map(k=>[k,p[k]]));
  class Drafts{
   constructor(presets){this.presets=presets;this.view=null;this.items=new Map();this.selected=null;this.conflicted=false;}
-  accept(view){if(!view)return;if(!this.view){this.saved(view);return;}if(view.revision!==this.view.revision){if(this.isDirty()){this.conflicted=true;return;}this.saved(view);}}
-  saved(view){this.view=clone(view);this.items.clear();for(const p of view.profiles)this.items.set(p.id,{profileId:p.id,expectedRevision:p.revision,draftRevision:1,profile:metadata(p),keyAction:'retain',key:'',persistKey:p.keyStatus?.persistent===true,credentialGeneration:p.credentialGeneration,keyStatus:clone(p.keyStatus||{}),status:{category:'untested'}});this.selected=view.activeProfileId;this.conflicted=false;}
+  accept(view){if(!view)return;this.latest=clone(view);if(!this.view){this.saved(view);return;}if(view.revision!==this.view.revision){if(this.isDirty()){this.conflicted=true;return;}this.saved(view);}}
+  saved(view){this.latest=clone(view);this.view=clone(view);this.items.clear();for(const p of view.profiles)this.items.set(p.id,{profileId:p.id,expectedRevision:p.revision,draftRevision:1,profile:metadata(p),keyAction:'retain',key:'',persistKey:p.keyStatus?.persistent===true,credentialGeneration:p.credentialGeneration,keyStatus:clone(p.keyStatus||{}),status:{category:'untested'}});this.selected=view.activeProfileId;this.conflicted=false;}
   select(presetId,region=''){const p=this.presets.createProfile(presetId,region),id=p.id;if(!this.items.has(id))this.items.set(id,{profileId:id,expectedRevision:0,draftRevision:1,profile:p,keyAction:'retain',key:'',persistKey:false,keyStatus:{hasKey:false,persistent:false},status:{category:'untested'}});this.selected=id;return this.current();}
   current(){return this.items.get(this.selected);}
+  reset(){this.saved(this.latest||this.view);}
   touch(){const d=this.current();d.edited=true;d.draftRevision++;d.status={category:'changed'};}
   update(patch){const d=this.current();if(Object.entries(patch).some(([k,v])=>d.profile[k]!==v)){Object.assign(d.profile,patch);this.touch();}}
   setKey(value){const d=this.current();if(d.key!==value||d.keyAction==='remove'){d.key=value;d.keyAction=value?'replace':'retain';this.touch();}}
