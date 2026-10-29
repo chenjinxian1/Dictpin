@@ -2,46 +2,26 @@
 
 ## Unreleased
 
-### Nonactivating shortcut recording strip — local candidate
+## [0.2.2-dev.34] - 2026-10-29
 
-- Wait for both page loading and the first rendered frame before showing the transparent strip, with a five-second bound and cleanup on load failure or window close.
-- Explicitly reassert the Windows popup topmost layer after nonactivating show, and repair an active strip that becomes hidden or loses its topmost state. Keep the position fixed within the task; dismissal, copy acknowledgement and disposal cannot revive an obsolete strip.
-- Disable minimization/maximization and background rendering throttling for the small strip only. The 336×54 visible surface, microphone rules, shortcut mapping, text processing and focus policy are unchanged.
+### Dictation and model connection
 
-Validation: **228 local Node tests**, **40 real Electron fixture flows per language**, and **5 native Windows overlay checks at 125% scaling** passed with natural exit 0. The native checks use synthetic shortcut dispatch and level events: visible/topmost without focus, a responsive waveform, hidden-window recovery, stable bounds and display while the test main window is minimized. No physical microphone, real system shortcut registration, model/API or system clipboard action was run. The existing running version was not replaced or restarted; no GitHub upload or release occurred.
+- Added Qwen3.8 Flash non-thinking adaptation for verified official endpoints, including saved Custom configurations.
+- Kept development settings and their encryption context together across candidates, so securely saved keys can be reused. The isolated-profile launcher remains available.
+- Made automatic Fluent cleanup the default for new profiles. Completed dictation becomes normalized text in the same editor; existing saved choices are preserved.
+- Aligned spoken self-corrections with content guards and clarified rejection reasons. Recognition originals, number and negation protection, local fallback and explicit retry remain intact.
+- Fixed the shortcut recording strip: wait for first paint, retain its nonactivating topmost layer, and recover hidden windows without moving the strip during a task.
 
-### Automatic normalized dictation output — local candidate
+### Homepage and documentation
 
-- New profiles now prefer automatic Fluent cleanup. Once a usable service is saved, a normal dictation Stop runs recognition, dictionary correction and one cleanup request in order; the result editor directly becomes the normalized final text. Opening the app, changing a preference and saving a connection do not send requests. Existing explicitly saved local-only choices remain intact on load, and missing credentials still finish locally.
-- Renamed the switch to Refine automatically and clarified the result states: a local draft while automatic cleanup runs, then Refined automatically. Copy current draft explicitly ends waiting; normal completed text retains its usual Copy action. No separate processing action is required for a successful dictation.
-- Updated all six README languages, installation, API and privacy documentation. Content guards, original protection, manual cancellation, append, recovery and the prohibition on automatic paid retries remain in place.
+- Shortened the English, Chinese, French, Japanese, Korean and Malay READMEs. Kept one project introduction and concise features, setup, model connection and privacy sections; moved detailed explanations to the existing guides.
+- Kept centered branding, language links and badges, plus the concept hero and two English software screenshots.
+- Updated both package versions and all six README titles to `0.2.2-dev.34`.
 
-Validation: **215 local Node tests** and **40 real Electron fixture flows per interface language** passed with natural exit 0, including an ordinary stop-to-normalized-output test through the production request and response validator. This round used fictional data and simulated services only, with no live API or microphone test. At the owner's explicit request, the existing running instance's automatic-cleanup preference was enabled and saved through its Settings UI without restarting or replacing that instance; this did not send a model request. No GitHub upload or release was made.
+### Validation
 
-### Fluent cleanup guard alignment — local candidate
-
-- Aligned explicitly spoken `哦不` / `啊不` / `呃不` / `嗯不` corrections with the fluent prompt. The exception requires a delimited marker and a following replacement; plain negation, terminal markers, negative amount contrasts, release prohibitions and strict light cleanup remain protected.
-- Constrained fluent cleanup against paraphrasing, numeral conversion and deleting contrastive negatives. Added detection for an invented bare `整理后：` preface.
-- Replaced the generic protection error with the rejected dimension, such as numbers, negation, terms, added content or truncation, in both interface languages. Errors contain no source text; rejected output still falls back to the preserved local draft with no paid retry.
-
-Validation: **207 local Node tests**, including 17 targeted guard checks, and **39 real Electron fixture flows per interface language** passed with natural exit 0. An explicitly authorized post-fix request using the exact fictional passage passed both HTTP and production content validation: **HTTP 200, 1213 ms**. A separate diagnostic request was made before the fix; no additional live requests, microphone access, automatic-cleanup preference changes, running-version replacement or publication occurred. The exact trigger of the earlier unrecorded rejection cannot be reconstructed; the corrected prompt/validator mismatch was reproduced offline.
-
-### Retained development configuration and key-save feedback — local candidate
-
-- Normal development startup now reuses a selected profile across sibling checkouts. New retained data lives outside the source checkout; `--profile=isolated` and `Start-Isolated.cmd` keep the per-candidate configuration option. An explicit current-profile selection records only relative directory references and keeps both the original settings and encryption environment in place. No credential is copied or decrypted by the launcher.
-- Kept the settings, runtime/session encryption context and environment together across builds. Missing, newer, escaping or conflicting references fail instead of silently creating an empty replacement. The existing profile-based single-instance lock activates a running instance and prevents a second writer; it does not switch the code of a running application.
-- Clarified session-only expiry, encrypted reopening and retained versus isolated configuration beside the key controls. Persistence remains opt-in; key removal, encryption/write rollback and saved-key privacy are unchanged. All six README guides and installation/privacy/API docs describe the two startup modes.
-
-Validation: **190 local Node tests**, **38 Chinese isolated-profile Electron flows**, **38 English retained-profile flows**, and an actual OS-encryption check across three isolated fixture processes passed with natural exit 0. The native check covers saved encrypted-key recovery after process exit, single-instance exclusion and activation, and absence of plaintext keys in settings/page state. Only fictional credentials/profiles and simulated services were used for regressions. One separately user-authorized live fixed-sample cleanup test returned **HTTP 200 / test_success in 916 ms**; it is not an equivalent-text benchmark or a guarantee for long dictation. No extra live request, microphone action, running-version restart or publication was performed.
-
-### Qwen3.8 Flash non-thinking cleanup — local candidate
-
-- Added an explicitly verified `qwen3.8-flash` rule that sends top-level `enable_thinking:false` to documented official Qwen Chat Completions endpoints. The rule also handles official addresses saved as Custom or Previous configuration, without changing saved profiles or credentials. Unknown models, third-party/local services and other endpoint protocols retain their existing parameters.
-- Added the exact model to Qwen's built-in suggestions and advanced the preset catalog revision/check date. Existing selected models and the default recommendation remain unchanged. Test cleanup and actual cleanup continue sharing the request builder; streaming and the 12-second overall deadline remain unchanged.
-
-Validation: **176 local Node tests** passed, including 14 non-thinking adapter checks, and **37 Electron flow checks in each of Chinese and English** passed with natural exit 0. Coverage includes official regional/legacy endpoints, Custom/Previous configuration, lookalike and third-party hosts, actual cleanup and diagnostic request bodies, and rejection of reasoning-only output. Checks use fictional data and scripted services; test materials remain local.
-
-The initial adapter checks used no live model request or paid retry; the later authorized sample is recorded above. This remains a local candidate with no running-version replacement, GitHub upload or release. Broader model latency, service-side parameter handling and real dictation quality remain manual acceptance.
+- 228 local Node checks, 40 Electron fixture flows per interface language and 5 native Windows overlay checks passed. Fixtures use fictional data and simulated input/services.
+- A separately authorized Qwen3.8 fictional cleanup sample passed HTTP and production content validation. This source update does not create an installer or a GitHub Release, and does not restart or replace an existing application.
 
 ## [0.2.2-dev.33] - 2026-10-29
 

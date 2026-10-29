@@ -34,20 +34,28 @@ const commands=fs.readFileSync(path.join(root,'README.md'),'utf8').replaceAll('\
 for(const file of languages){
  const body=fs.readFileSync(path.join(root,file),'utf8').replaceAll('\r\n','\n');
  const header=body.split(/^## /m,1)[0];
- if(!body.startsWith(`<h1 align="center">Dictpin v${version}</h1>\n`)||(body.match(/^## /gm)||[]).length<10||body.length<4000)problems.push(`${file}: incomplete README or mismatched version title`);
+ if(!body.startsWith(`<h1 align="center">Dictpin v${version}</h1>\n`)||(body.match(/^## /gm)||[]).length<6||(body.match(/^- /gm)||[]).length<5)problems.push(`${file}: incomplete README or mismatched version title`);
+ const overview=header.match(/<!-- overview -->\n([\s\S]*?)\n<!-- \/overview -->/)?.[1];
+ if(!overview||overview.trim().split(/\n\s*\n/).length!==1||!['Dictpin','Windows','Electron','SenseVoice'].every(term=>overview.includes(term)))problems.push(`${file}: expected one concise project overview`);
+ if(/^>/m.test(header))problems.push(`${file}: opening boilerplate should stay in supporting documentation`);
  if((header.match(/<p align="center">/g)||[]).length!==3)problems.push(`${file}: tagline, badges and language navigation must be centered`);
  const badgeImages=[...header.matchAll(/<img\b[^>]*\bsrc="([^"]+)"[^>]*>/g)].map(m=>m[1]);
  if(badgeImages.length!==6||badgeImages.some(src=>!src.startsWith('https://img.shields.io/badge/')))problems.push(`${file}: expected six static project badges`);
  if(body.match(/```powershell\n([\s\S]*?)```/)?.[1].trim()!==commands)problems.push(`${file}: quick-start commands differ`);
  for(const other of languages.filter(f=>f!==file))if(!header.includes(`href="${path.relative(path.dirname(file),other).replaceAll('\\','/')}"`))problems.push(`${file}: missing language navigation`);
- for(const fact of ['qwen-plus','distributionReady:false','MIT','Ctrl+C','Ctrl+Enter'])if(!body.includes(fact))problems.push(`${file}: missing ${fact}`);
+ for(const fact of ['MIT','Ctrl+C','Ctrl+Enter','Node.js','24','SenseVoice'])if(!body.includes(fact))problems.push(`${file}: missing ${fact}`);
+ for(const guide of ['docs/INSTALL.md','docs/API_CONFIGURATION.md','docs/PRIVACY.md','CHANGELOG.md','CONTRIBUTING.md','SECURITY.md','THIRD_PARTY_NOTICES.md'])if(!body.includes(path.relative(path.dirname(file),guide).replaceAll('\\','/')))problems.push(`${file}: missing supporting guide ${guide}`);
  const images=[...body.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)].map(m=>path.resolve(root,path.dirname(file),m[1]));
  const expected=['docs/branding/hero.png','docs/images/results.png','docs/images/settings.png'].map(f=>path.join(root,f));
  if(images.length!==3||images.some((f,i)=>f!==expected[i]))problems.push(`${file}: expected concept hero, main window and API settings only`);
  if(/npm (?:test|run (?:test:|preview))/.test(body))problems.push(`${file}: removed maintenance command remains`);
 }
-const captions=[['README.md',/AI-generated concept artwork[^\n]*not a software screenshot/],['zh-CN',/AI 生成的概念配图[^\n]*不是软件实际截图/],['fr',/Illustration conceptuelle générée par IA[^\n]*ni une capture du logiciel/],['ja',/AI[^\n]*コンセプト画像[^\n]*実際のソフトウェア画面[^\n]*ではありません/],['ko',/AI로 생성한 컨셉 이미지[^\n]*실제 소프트웨어 화면/],['ms',/Ilustrasi konsep yang dijana AI[^\n]*bukan tangkapan skrin perisian/]];
-for(const [id,pattern]of captions){const file=id==='README.md'?id:`docs/i18n/README.${id}.md`;if(!pattern.test(fs.readFileSync(path.join(root,file),'utf8').split(/^## /m,1)[0]))problems.push(`${file}: missing concept-art disclosure`);}
+const expectedIntro='Dictpin is a Windows desktop voice-to-text development candidate built with Electron, local SenseVoice recognition, explicit personal dictionary rules, and optional text cleanup through a compatible service. For short messages, notes, names, and technical terms: start, speak, review, copy.';
+if(fs.readFileSync(path.join(root,'README.md'),'utf8').match(/<!-- overview -->\r?\n([\s\S]*?)\r?\n<!-- \/overview -->/)?.[1]!==expectedIntro)problems.push('README.md: project overview differs from the approved text');
+// The hero itself carries its concept-art label. Keep localized image descriptions
+// and the provenance guide, without requiring a defensive paragraph on the homepage.
+const concepts=[['README.md',/concept artwork/i],['zh-CN',/概念配图/],['fr',/illustration conceptuelle/i],['ja',/コンセプト画像/],['ko',/컨셉 이미지/],['ms',/ilustrasi konsep/i]];
+for(const [id,pattern]of concepts){const file=id==='README.md'?id:`docs/i18n/README.${id}.md`,alt=fs.readFileSync(path.join(root,file),'utf8').match(/!\[([^\]]+)\]/)?.[1]||'';if(!pattern.test(alt))problems.push(`${file}: missing concept-art image description`);}
 for(const file of ['docs/branding/hero.png','docs/images/results.png','docs/images/settings.png']){
  const buffer=fs.readFileSync(path.join(root,file));
  if(buffer.length<24||buffer.subarray(0,8).toString('hex')!=='89504e470d0a1a0a')problems.push(`${file}: invalid PNG`);
