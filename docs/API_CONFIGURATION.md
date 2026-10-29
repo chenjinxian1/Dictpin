@@ -8,7 +8,7 @@ Open **设置 → 模型连接** (Settings → Model connection). The interface 
 
 | Provider | Preset contents | User input |
 | --- | --- | --- |
-| Qwen / Alibaba Model Studio | Region-specific workspace address; `qwen-flash`, with `qwen-plus` as another suggestion | Explicit region, workspace ID and matching key |
+| Qwen / Alibaba Model Studio | Region-specific workspace address; `qwen-flash`, with `qwen-plus` and `qwen3.8-flash` as other suggestions | Explicit region, workspace ID and matching key |
 | DeepSeek | Complete `https://api.deepseek.com/chat/completions` endpoint; `deepseek-flash` | Key; model remains editable |
 | OpenAI | `https://api.openai.com/v1`; `gpt-6-luna` | Key; model remains editable |
 | SiliconFlow | China address `https://api.siliconflow.cn/v1`; editable suggestions | Select a model and enter a key; no model is automatically selected |
@@ -16,6 +16,8 @@ Open **设置 → 模型连接** (Settings → Model connection). The interface 
 | Custom | Text Chat Completions guidance | Actual HTTPS address, model and key |
 
 Presets were checked against documentation on **2026-10-28**, not against real accounts or service quality. Sources: [Qwen Chat](https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions), [DeepSeek first call](https://api-docs.deepseek.com/quick_start/agent_integrations/), [OpenAI model](https://developers.openai.com/api/docs/models/gpt-6-luna), [SiliconFlow Chat](https://docs.siliconflow.cn/docs/api/chat-completions-post). Availability and offerings can change.
+
+The `qwen3.8-flash` non-thinking adapter was additionally checked against [Qwen's thinking-mode documentation](https://help.aliyun.com/en/model-studio/deep-thinking) on **2026-10-29**. For this exact model on the documented HTTPS Qwen workspace or legacy Chat Completions endpoints, Dictpin sends top-level `enable_thinking:false`. This also applies when that official endpoint is saved in **Custom** or **Previous configuration**; it does not change the saved provider, address, model or key. Third-party/local endpoints, other protocols, alternate ports and unverified model IDs receive no inferred parameter. Test cleanup and actual cleanup share this rule. The existing 12-second overall deadline remains; disabling thinking is not a guarantee of latency or quality, and no paid model call was used to verify this adapter.
 
 Qwen offers Beijing, Singapore, Hong Kong, Tokyo, Frankfurt and Virginia regions. New workspace URLs require an explicit region and valid workspace ID; the key must match. Existing legacy hosts and models are not silently migrated.
 

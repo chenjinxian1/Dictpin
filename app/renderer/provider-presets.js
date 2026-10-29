@@ -1,6 +1,7 @@
 (function(root,factory){const api=factory(typeof module==='object'&&module.exports?require('./provider-endpoint'):root.ProviderEndpoint);if(typeof module==='object'&&module.exports)module.exports=api;else root.ProviderPresets=api;})(typeof globalThis==='object'?globalThis:this,function(endpoints){
  'use strict';
- const VERSION=1,CHECKED_AT='2026-10-28';
+ const VERSION=2,CHECKED_AT='2026-10-29';
+ const QWEN_LEGACY_HOSTS=Object.freeze({'cn-beijing':'dashscope.aliyuncs.com','ap-southeast-1':'dashscope-intl.aliyuncs.com','cn-hongkong':'cn-hongkong.dashscope.aliyuncs.com'});
  const KEY_URLS=Object.freeze({qwen:'https://help.aliyun.com/zh/model-studio/get-api-key',deepseek:'https://platform.deepseek.com/api_keys',openai:'https://platform.openai.com/api-keys',siliconflow:'https://cloud.siliconflow.cn/account/ak'});
  const PROVIDERS=Object.freeze([
   {id:'qwen',label:'通义千问',en:'Qwen'},{id:'deepseek',label:'DeepSeek',en:'DeepSeek'},
@@ -25,7 +26,7 @@
   if(presetId==='siliconflow')baseUrl='https://api.siliconflow.cn/v1';
   return {id,presetId,region:presetId==='qwen'?region:'',workspaceId:presetId==='qwen'?workspaceId:'',baseUrl,endpointMode,model,revision:0,customized:false};
  }
- function suggestions(profile){return profile?.presetId==='qwen'?['qwen-flash','qwen-plus']:profile?.presetId==='deepseek'?['deepseek-flash']:profile?.presetId==='openai'?['gpt-6-luna']:profile?.presetId==='siliconflow'?['Qwen/Qwen3.8-27B','deepseek-ai/DeepSeek-V4-Flash']:[];}
+ function suggestions(profile){return profile?.presetId==='qwen'?['qwen-flash','qwen-plus','qwen3.8-flash']:profile?.presetId==='deepseek'?['deepseek-flash']:profile?.presetId==='openai'?['gpt-6-luna']:profile?.presetId==='siliconflow'?['Qwen/Qwen3.8-27B','deepseek-ai/DeepSeek-V4-Flash']:[];}
  function providerLabel(profile,language='zh-CN'){if(profile?.presetId==='legacy')return language==='en'?'Previous configuration':'原有配置';const p=PROVIDERS.find(p=>p.id===profile?.presetId);return p?(language==='en'?p.en:p.label):(language==='en'?'Not configured':'未配置');}
  function text(value,label,max){if(typeof value!=='string'||value.length>max||/[\x00-\x1f\x7f]/.test(value))throw Error(label+'格式无效。');return value.trim();}
  function normalizeProfile(input,{requireModel=true}={}){
@@ -45,11 +46,17 @@
  function officialQwen(profile,url){
   if(profile.presetId!=='qwen'||!REGIONS.some(r=>r.id===profile.region)||url.protocol!=='https:')return false;
   const host=profile.workspaceId?profile.workspaceId+'.'+profile.region+'.maas.aliyuncs.com':'';
-  const legacy={'cn-beijing':'dashscope.aliyuncs.com','ap-southeast-1':'dashscope-intl.aliyuncs.com','cn-hongkong':'cn-hongkong.dashscope.aliyuncs.com'};
-  return (url.hostname===host||url.hostname===legacy[profile.region])&&url.pathname==='/compatible-mode/v1/chat/completions'&&!url.port;
+  return (url.hostname===host||url.hostname===QWEN_LEGACY_HOSTS[profile.region])&&url.pathname==='/compatible-mode/v1/chat/completions'&&!url.port;
+ }
+ function verifiedQwenEndpoint(url){
+  if(url.protocol!=='https:'||url.port||url.username||url.password||url.search||url.hash||url.pathname!=='/compatible-mode/v1/chat/completions')return false;
+  if(Object.values(QWEN_LEGACY_HOSTS).includes(url.hostname))return true;
+  return REGIONS.some(region=>{const suffix='.'+region.id+'.maas.aliyuncs.com';return url.hostname.endsWith(suffix)&&/^[a-z0-9][a-z0-9_-]{0,127}$/.test(url.hostname.slice(0,-suffix.length));});
  }
  function requestParameters(profile){
   try{const p=normalizeProfile(profile),url=new URL(endpoints.resolveProviderEndpoint(p.baseUrl,'refiner',undefined,p.endpointMode).endpointUrl);
+   // The service is identified by its verified endpoint, even when its UI slot is Custom or Previous configuration.
+   if(p.model==='qwen3.8-flash'&&verifiedQwenEndpoint(url))return {enable_thinking:false};
    if(officialQwen(p,url)&&['qwen-flash','qwen-plus'].includes(p.model))return {enable_thinking:false};
    if(p.presetId==='deepseek'&&url.href==='https://api.deepseek.com/chat/completions'&&p.model==='deepseek-flash')return {thinking:{type:'disabled'}};
    if(p.presetId==='openai'&&url.href==='https://api.openai.com/v1/chat/completions'&&p.model==='gpt-6-luna')return {reasoning_effort:'none'};

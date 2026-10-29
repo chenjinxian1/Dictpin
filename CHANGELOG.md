@@ -2,7 +2,14 @@
 
 ## Unreleased
 
-No changes recorded yet.
+### Qwen3.8 Flash non-thinking cleanup — local candidate
+
+- Added an explicitly verified `qwen3.8-flash` rule that sends top-level `enable_thinking:false` to documented official Qwen Chat Completions endpoints. The rule also handles official addresses saved as Custom or Previous configuration, without changing saved profiles or credentials. Unknown models, third-party/local services and other endpoint protocols retain their existing parameters.
+- Added the exact model to Qwen's built-in suggestions and advanced the preset catalog revision/check date. Existing selected models and the default recommendation remain unchanged. Test cleanup and actual cleanup continue sharing the request builder; streaming and the 12-second overall deadline remain unchanged.
+
+Validation: **176 local Node tests** passed, including 14 non-thinking adapter checks, and **37 Electron flow checks in each of Chinese and English** passed with natural exit 0. Coverage includes official regional/legacy endpoints, Custom/Previous configuration, lookalike and third-party hosts, actual cleanup and diagnostic request bodies, and rejection of reasoning-only output. Checks use fictional data and scripted services; test materials remain local.
+
+This is a local candidate. No running version is replaced or restarted, and no live model request, paid retry, GitHub upload or release is included. Real model latency, service-side parameter handling and output quality remain manual acceptance.
 
 ## [0.2.2-dev.33] - 2026-10-29
 
