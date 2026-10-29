@@ -3,6 +3,14 @@
 // Presentation only: the Chinese originals remain the source of truth for logic and logs.
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.DictpinMessagesEn=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
  const messages=Object.freeze({
+  '整理结果没有可用正文，当前文字已保留。':'Cleanup returned no usable text; your current text is preserved.',
+  '整理结果添加了说明或外层包装，当前文字已保留。':'Cleanup added commentary or wrapping; your current text is preserved.',
+  '整理结果改变了数字、金额、日期或列表编号，当前文字已保留。':'Cleanup changed a number, amount, date or list marker; your current text is preserved.',
+  '整理结果改变了专名或英文术语，当前文字已保留。':'Cleanup changed a name or English term; your current text is preserved.',
+  '整理结果增加了原文之外的内容，当前文字已保留。':'Cleanup added content absent from the original; your current text is preserved.',
+  '整理结果省略过多内容，当前文字已保留。':'Cleanup omitted too much content; your current text is preserved.',
+  '整理结果含有超出允许范围的改写，当前文字已保留。':'Cleanup rewrote text beyond the allowed scope; your current text is preserved.',
+  '整理结果改变了否定表达，当前文字已保留。':'Cleanup changed a negation; your current text is preserved.',
   // Main process, tray and windows
   '旧配置不可读，当前只可查看；原文件与密钥保持不变。':'Old settings are unreadable and opened view-only; the original file and keys are unchanged.','词典当前只读；原文件保持不变。':'The dictionary is read-only; the original file is unchanged.','请在当前设置窗口录入快捷键。':'Record the shortcut in the open Settings window.','快捷键未能恢复，请在设置中重新启用或更换组合。':'The shortcut could not be restored. Re-enable it or choose another combination in Settings.','快捷键未能完全暂停，录入期间已禁止触发，请重试。':'The shortcut could not be fully paused; triggering is blocked while recording keys. Try again.','录音条未能打开，请从托盘打开最近结果。':'The voice strip could not open. Open the latest result from the tray.','本段仍可恢复，请先选择恢复或放弃。':'This segment can still be recovered. Recover or discard it first.','听写快捷键未能执行，请从托盘开始。':'The dictation shortcut did not run. Start from the tray.','帮助链接无效。':'Invalid help link.','文字尚未确认保存，窗口保持打开，请先复制当前文字。':'Text is not confirmed as saved, so the window stays open. Copy your text first.','录音页面中断，本次任务已取消。':'The recording page stopped; this task was cancelled.','录音页面已重载，请重新开始。':'The recording page reloaded. Start again.','系统挂起，本次录音已取消。':'The system went to sleep; this recording was cancelled.','快捷键未生效；请从托盘开始听写或修改键位。':'The shortcut is not active. Start from the tray or change the keys.','文字尚未确认保存，暂未退出，请先复制当前文字。':'Text is not confirmed as saved, so Dictpin did not quit. Copy your text first.',
   // IPC validation

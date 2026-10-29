@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Fluent cleanup guard alignment — local candidate
+
+- Aligned explicitly spoken `哦不` / `啊不` / `呃不` / `嗯不` corrections with the fluent prompt. The exception requires a delimited marker and a following replacement; plain negation, terminal markers, negative amount contrasts, release prohibitions and strict light cleanup remain protected.
+- Constrained fluent cleanup against paraphrasing, numeral conversion and deleting contrastive negatives. Added detection for an invented bare `整理后：` preface.
+- Replaced the generic protection error with the rejected dimension, such as numbers, negation, terms, added content or truncation, in both interface languages. Errors contain no source text; rejected output still falls back to the preserved local draft with no paid retry.
+
+Validation: **207 local Node tests**, including 17 targeted guard checks, and **39 real Electron fixture flows per interface language** passed with natural exit 0. An explicitly authorized post-fix request using the exact fictional passage passed both HTTP and production content validation: **HTTP 200, 1213 ms**. A separate diagnostic request was made before the fix; no additional live requests, microphone access, automatic-cleanup preference changes, running-version replacement or publication occurred. The exact trigger of the earlier unrecorded rejection cannot be reconstructed; the corrected prompt/validator mismatch was reproduced offline.
+
 ### Retained development configuration and key-save feedback — local candidate
 
 - Normal development startup now reuses a selected profile across sibling checkouts. New retained data lives outside the source checkout; `--profile=isolated` and `Start-Isolated.cmd` keep the per-candidate configuration option. An explicit current-profile selection records only relative directory references and keeps both the original settings and encryption environment in place. No credential is copied or decrypted by the launcher.
