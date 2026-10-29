@@ -89,6 +89,8 @@ node scripts/package-inputs.cjs
 npm run dev
 ```
 
+Pelancaran pembangunan biasa menggunakan semula konfigurasi yang dipilih antara salinan dalam folder induk yang sama. Gunakan `npm run dev -- --profile=isolated` untuk konfigurasi khusus calon. Kunci hanya kekal selepas keluar jika storan selamat sistem dipilih; lihat [pemilihan profil](../INSTALL.md).
+
 Skrip di akar menggunakan modul terbina dalam Node; tiada langkah pemasangan kebergantungan di akar repositori. `doctor` memeriksa susun atur sedia ada, bukan pemasangan baharu atau mutu pengecaman. `dev` membuka profil pembangunan tanpa memulakan rakaman. Jangan lancarkan aplikasi melalui skrip bootstrap atau resume lama.
 
 Untuk **penggunaan setempat tanpa API**, biarkan **文字整理** (kemasan teks) dimatikan. Buka **设置** (Tetapan), pilih mikrofon yang benar-benar digunakan oleh Windows Recorder, klik **保存更改** (Simpan perubahan), kemudian mulakan imlak sendiri. Pilihan peranti yang belum disimpan belum berkuat kuasa. Hentikan, semak dan salin. Tetapkan pintasan hanya jika diperlukan.
@@ -108,7 +110,7 @@ Hanya teks **Chat Completions** disokong; permintaan kemasan dihantar secara pen
 ## Privasi dan storan setempat
 
 - Pengecaman setempat dan pembetulan kamus tidak memerlukan API. Produk semasa tidak menyimpan fail rakaman baharu. Audio pemulihan disimpan sementara dalam memori; luput tempoh, tindakan padam dan keluar aplikasi akan membuangnya. Pemulihan selepas aplikasi ranap tidak boleh dijamin.
-- **Hasil terkini disimpan secara setempat sebagai teks biasa**, termasuk teks asal dan teks yang disunting, walaupun sejarah berbilang item dimatikan. Tiada luput automatik transkrip atau suis pengekalan. Data pembangunan berada di bawah `work/dev/profile/` yang diabaikan oleh Git; jangan sekali-kali memasukkannya dalam komit.
+- **Hasil terkini disimpan secara setempat sebagai teks biasa**, termasuk teks asal dan teks yang disunting, walaupun sejarah berbilang item dimatikan. Tiada luput automatik transkrip atau suis pengekalan. Data pembangunan berada di bawah `../Dictpin-Development/profile/` (`--profile=isolated`: `work/dev/profile/`) yang diabaikan oleh Git; jangan sekali-kali memasukkannya dalam komit.
 - Mengaktifkan kemasan menghantar transkrip yang dibetulkan serta senarai terhad istilah kamus yang betul kepada perkhidmatan yang dikonfigurasikan. Audio mentah dan alias ejaan salah tidak disertakan. Dasar pengekalan data dan pengebilan penyedia terpakai.
 - Kunci baharu hanya digunakan untuk sesi semasa melainkan penyimpanan disulitkan dipilih. Kunci yang disimpan menggunakan storan berasaskan sistem operasi melalui Electron; tiada simpanan teks biasa sebagai gantian jika storan selamat tidak tersedia. Ini tidak melindungi daripada perisian hasad yang bertindak sebagai pengguna sistem operasi anda.
 - Rekod penggunaan mengandungi metadata permintaan, model, masa dan token, bukan isi teks atau kunci. Maklumat penggunaan atau harga yang tiada bermaksud kos tidak diketahui, bukannya sifar.

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Retained development configuration and key-save feedback — local candidate
+
+- Normal development startup now reuses a selected profile across sibling checkouts. New retained data lives outside the source checkout; `--profile=isolated` and `Start-Isolated.cmd` keep the per-candidate configuration option. An explicit current-profile selection records only relative directory references and keeps both the original settings and encryption environment in place. No credential is copied or decrypted by the launcher.
+- Kept the settings, runtime/session encryption context and environment together across builds. Missing, newer, escaping or conflicting references fail instead of silently creating an empty replacement. The existing profile-based single-instance lock activates a running instance and prevents a second writer; it does not switch the code of a running application.
+- Clarified session-only expiry, encrypted reopening and retained versus isolated configuration beside the key controls. Persistence remains opt-in; key removal, encryption/write rollback and saved-key privacy are unchanged. All six README guides and installation/privacy/API docs describe the two startup modes.
+
+Validation: **190 local Node tests**, **38 Chinese isolated-profile Electron flows**, **38 English retained-profile flows**, and an actual OS-encryption check across three isolated fixture processes passed with natural exit 0. The native check covers saved encrypted-key recovery after process exit, single-instance exclusion and activation, and absence of plaintext keys in settings/page state. Only fictional credentials/profiles and simulated services were used for regressions. One separately user-authorized live fixed-sample cleanup test returned **HTTP 200 / test_success in 916 ms**; it is not an equivalent-text benchmark or a guarantee for long dictation. No extra live request, microphone action, running-version restart or publication was performed.
+
 ### Qwen3.8 Flash non-thinking cleanup — local candidate
 
 - Added an explicitly verified `qwen3.8-flash` rule that sends top-level `enable_thinking:false` to documented official Qwen Chat Completions endpoints. The rule also handles official addresses saved as Custom or Previous configuration, without changing saved profiles or credentials. Unknown models, third-party/local services and other endpoint protocols retain their existing parameters.
@@ -9,7 +17,7 @@
 
 Validation: **176 local Node tests** passed, including 14 non-thinking adapter checks, and **37 Electron flow checks in each of Chinese and English** passed with natural exit 0. Coverage includes official regional/legacy endpoints, Custom/Previous configuration, lookalike and third-party hosts, actual cleanup and diagnostic request bodies, and rejection of reasoning-only output. Checks use fictional data and scripted services; test materials remain local.
 
-This is a local candidate. No running version is replaced or restarted, and no live model request, paid retry, GitHub upload or release is included. Real model latency, service-side parameter handling and output quality remain manual acceptance.
+The initial adapter checks used no live model request or paid retry; the later authorized sample is recorded above. This remains a local candidate with no running-version replacement, GitHub upload or release. Broader model latency, service-side parameter handling and real dictation quality remain manual acceptance.
 
 ## [0.2.2-dev.33] - 2026-10-29
 

@@ -89,6 +89,8 @@ node scripts/package-inputs.cjs
 npm run dev
 ```
 
+Normal development startup reuses saved configuration across sibling checkouts. Use `npm run dev -- --profile=isolated` for a candidate with its own configuration. Keys persist only when system secure storage is selected; see [profile selection](docs/INSTALL.md).
+
 Root scripts use Node built-ins; there is no root dependency installation step. `doctor` checks the existing layout, not a fresh installation or recognition quality. `dev` deliberately opens a development profile without starting recording. Do not launch through historical bootstrap or resume scripts.
 
 For **local use without an API**, keep **文字整理** (text cleanup) off. Open **设置** (Settings), select the microphone actually used by Windows Recorder, click **保存更改** (Save changes), then explicitly start dictation. Unsaved device selections are not active. Stop, inspect, and copy. Configure a shortcut only if wanted.
@@ -108,7 +110,7 @@ Only text **Chat Completions** is supported; cleanup requests stream, and a serv
 ## Privacy and local storage
 
 - Local recognition and dictionary correction need no API. The current product saves no new recording files. Audio recovery is temporary memory; expiry, clear, and exit discard it. Crashes cannot promise recovery.
-- **The latest result is saved locally as plaintext**, including original and edited text, even with multi-item history off. There is no transcript auto-expiry or retention switch. Development data is under ignored `work/dev/profile/`; never commit it.
+- **The latest result is saved locally as plaintext**, including original and edited text, even with multi-item history off. There is no transcript auto-expiry or retention switch. Development data is under ignored `../Dictpin-Development/profile/` (`--profile=isolated`: `work/dev/profile/`); never commit it.
 - Enabling cleanup sends the corrected transcript and a bounded list of saved correct dictionary terms to the configured service. Raw audio and misspelling aliases are not included. Provider retention and billing apply.
 - New keys are session-only unless encrypted persistence is selected. Saved keys use Electron's OS-backed storage, with no plaintext fallback if unavailable. This does not protect against malware acting as your OS user.
 - Usage records contain request/model/timing/token metadata, not text bodies or keys. Missing usage or pricing means unknown cost, not zero.

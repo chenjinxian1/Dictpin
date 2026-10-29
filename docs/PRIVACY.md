@@ -1,6 +1,6 @@
 # Privacy and data handling
 
-This describes the current Windows development candidate, not a privacy certification or a promise about an external service. The default development profile starts without a key, with text cleanup off and no global shortcuts. Existing development profiles retain their own saved settings.
+This describes the current Windows development candidate, not a privacy certification or a promise about an external service. A new development profile starts without a key, with text cleanup off and no global shortcuts. Normal startup reuses its selected saved development profile; isolated startup uses the current checkout's own profile. Reuse does not itself record audio, send text or test a connection.
 
 ## What stays local
 
@@ -14,7 +14,7 @@ Do not interpret “no new recording files” as “no transcript storage.”
 
 ## What is written to disk
 
-The normal development profile is `work/dev/profile/`. It is ignored by Git.
+New retained development data is normally at `../Dictpin-Development/profile/`, outside the source checkout, with sibling runtime and environment folders. Isolated mode uses ignored `work/dev/profile/`. An explicitly selected existing profile stays at its original location; the sibling `../.dictpin-development-profile.json` file contains only relative directory paths and a format version. Selection does not copy/decrypt keys or rewrite a running profile. Settings, the runtime session's encryption context and the environment keep their original locations across builds. Do not delete the selected directories. One running instance owns a profile; concurrent isolated candidates use different data. See [installation](INSTALL.md).
 
 | File/data | Contents and retention |
 | --- | --- |

@@ -89,6 +89,8 @@ node scripts/package-inputs.cjs
 npm run dev
 ```
 
+Le démarrage normal réutilise la configuration de développement sélectionnée entre les copies situées dans le même dossier parent. Pour une configuration propre au candidat, utilisez `npm run dev -- --profile=isolated`. Les clés ne sont conservées après fermeture que si le stockage sécurisé du système est sélectionné ; voir la [sélection du profil](../INSTALL.md).
+
 Les scripts à la racine utilisent les modules intégrés de Node ; aucune installation de dépendances n’est nécessaire à la racine. `doctor` contrôle l’arborescence existante, sans valider une nouvelle installation ni la qualité de reconnaissance. `dev` ouvre volontairement un profil de développement sans lancer d’enregistrement. N’utilisez pas les anciens scripts de démarrage ou de reprise de session.
 
 Pour une **utilisation locale sans API**, laissez **文字整理** (nettoyage du texte) désactivé. Ouvrez **设置** (Paramètres), choisissez le microphone effectivement utilisé par l’Enregistreur Windows, cliquez sur **保存更改** (Enregistrer les modifications), puis démarrez explicitement la dictée. Un choix de microphone non enregistré n’est pas actif. Arrêtez, vérifiez et copiez le texte. Configurez un raccourci seulement si vous le souhaitez.
@@ -108,7 +110,7 @@ Seul **Chat Completions texte** est pris en charge ; les requêtes de nettoyage 
 ## Confidentialité et stockage local
 
 - La reconnaissance locale et les corrections du dictionnaire ne nécessitent aucune API. Le produit actuel ne crée pas de nouveaux fichiers d’enregistrement. La récupération audio utilise une mémoire temporaire ; l’expiration, l’effacement et la fermeture de l’application la vident. La récupération après un plantage n’est pas garantie.
-- **Le dernier résultat est enregistré localement en texte clair**, avec le texte original et le texte modifié, même lorsque l’historique de plusieurs éléments est désactivé. Il n’existe ni expiration automatique des transcriptions ni option permettant de désactiver cette conservation. Les données de développement se trouvent dans `work/dev/profile/`, exclu de Git ; ne les ajoutez jamais à un commit.
+- **Le dernier résultat est enregistré localement en texte clair**, avec le texte original et le texte modifié, même lorsque l’historique de plusieurs éléments est désactivé. Il n’existe ni expiration automatique des transcriptions ni option permettant de désactiver cette conservation. Les données de développement se trouvent dans `../Dictpin-Development/profile/` (`--profile=isolated`: `work/dev/profile/`), exclu de Git ; ne les ajoutez jamais à un commit.
 - L’activation du nettoyage envoie au service configuré la transcription corrigée et une liste de taille limitée de termes corrects enregistrés dans le dictionnaire. L’audio brut et les variantes erronées ne sont pas inclus. Les règles de conservation et de facturation du fournisseur s’appliquent.
 - Les nouvelles clés restent limitées à la session, sauf si leur conservation chiffrée est choisie. Les clés enregistrées utilisent le stockage Electron adossé au système d’exploitation ; aucun repli en texte clair n’est prévu si ce stockage est indisponible. Cette protection n’arrête pas un logiciel malveillant agissant sous votre compte système.
 - Les relevés d’utilisation contiennent des métadonnées de requête, modèle, durée et tokens, sans corps de texte ni clé. L’absence de données d’utilisation ou de tarification signifie que le coût est inconnu, pas qu’il est nul.

@@ -71,7 +71,13 @@ The portable source check does not require the original developer's private hist
 npm run dev
 ```
 
-The launcher uses an isolated development profile under `work/dev/profile/`; it does not start recording by itself. Existing development settings are retained. First-run defaults leave cleanup and global shortcuts off. Test fixtures, legacy entry points, benchmark tools and internal review reports are excluded from this repository.
+The default launcher reuses a development profile across sibling checkouts. New retained data starts at `../Dictpin-Development/profile/`; it does not start recording by itself. First-run defaults leave cleanup and global shortcuts off; later launches preserve your saved choices. `npm run doctor` reports the selected profile without reading a key. Test fixtures, legacy entry points, benchmark tools and internal review reports are excluded from this repository.
+
+For a candidate that uses only its own configuration, run `npm run dev -- --profile=isolated` or [Start-Isolated.cmd](../Start-Isolated.cmd). It uses that checkout's `work/dev/profile/` and does not copy saved keys from other candidates. The normal [Start-Dev.cmd](../Start-Dev.cmd) uses the retained profile.
+
+If this updated launcher is in a checkout with an existing configured `work/dev/profile/`, `npm run dev -- --remember-current-profile` selects that profile for subsequent sibling checkouts. This writes only a version and relative paths to the settings, runtime and environment directories in `../.dictpin-development-profile.json`: it does not copy/decrypt keys or move/rewrite settings. The runtime path preserves Electron's encryption context as well as the settings file. Keep all selected directories; a missing, malformed, newer or out-of-workspace reference stops startup instead of silently making an empty replacement. An already selected different profile is not overwritten.
+
+The existing single-instance lock belongs to the selected profile. Starting another checkout with that same profile displays the running instance and does not switch its code or start a second writer. Deliberately exit that development instance before using another build with the same profile. Use isolated mode for concurrent comparisons. Other running profiles are not closed or restarted.
 
 In **设置** (Settings), choose the microphone actually used by Windows Recorder and click **保存更改** (Save changes). Without an API, keep **文字整理** (Text cleanup) off. Click **开始听写** to record and **结束听写** to stop, then inspect, edit or explicitly copy. Recording now previews ordered local recognition segments while you speak. Segments prefer pauses and are capped at 20 seconds; a session is guarded at 30 minutes/100,000 characters, with early stop if recognition falls behind. Completed text is preserved and accepted unfinished PCM is retained for explicit recovery.
 

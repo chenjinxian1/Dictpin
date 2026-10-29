@@ -5,6 +5,7 @@ function subscribe(channel,callback){if(typeof callback!=='function')return()=>{
 contextBridge.exposeInMainWorld('dictation',Object.freeze({
  uiLanguage,
  windowControlsOverlay:process.argv.includes('--dictpin-titlebar-overlay'),
+ developmentProfileMode:process.argv.includes('--dictpin-profile-scope=remembered')?'remembered':'isolated',
  getSnapshot:()=>ipcRenderer.invoke('snapshot'),
  start:input=>input===undefined?ipcRenderer.invoke('capture:start'):ipcRenderer.invoke('capture:start',input),
  toggle:()=>ipcRenderer.invoke('capture:toggle'),

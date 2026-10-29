@@ -14,8 +14,9 @@ function windowAppearance({nativeTheme,systemPreferences,platform=process.platfo
  return {backgroundColor:color,...(platform==='win32'?{titleBarStyle:'hidden',titleBarOverlay:{color,symbolColor,height:34}}:{})};
 }
 function configurePaths(app,root){
- const scope=path.resolve(root,'..'),work=path.join(root,'work'),profile=path.resolve(process.env.LOCAL_DICTATION_PROFILE||path.join(work,'profile'));
+ const scope=path.resolve(root,'..'),work=path.resolve(process.env.LOCAL_DICTATION_RUNTIME||path.join(root,'work')),profile=path.resolve(process.env.LOCAL_DICTATION_PROFILE||path.join(work,'profile'));
  if(!profile.toLowerCase().startsWith((scope+path.sep).toLowerCase()))throw Error('Profile must stay in the named test directory.');
+ if(!work.toLowerCase().startsWith((scope+path.sep).toLowerCase()))throw Error('Runtime data must stay in the named test directory.');
  for(const name of ['tmp','session','logs','crashes'])fs.mkdirSync(path.join(work,name),{recursive:true});
  fs.mkdirSync(profile,{recursive:true});process.env.TEMP=process.env.TMP=process.env.TMPDIR=path.join(work,'tmp');
  app.setPath('userData',profile);app.setPath('sessionData',path.join(work,'session'));app.setPath('temp',path.join(work,'tmp'));app.setPath('crashDumps',path.join(work,'crashes'));app.setAppLogsPath?.(path.join(work,'logs'));
@@ -60,8 +61,8 @@ async function start(electron,{StoreClass=Store,LocalAsrClass=LocalAsr,SafePaste
  function publish(){if(mainWindow&&!mainWindow.isDestroyed())mainWindow.webContents.send('state',snapshot(false));barManager?.update(snapshot(true));tray?.setToolTip(controller.state.phase==='recording'?label('Dictpin · 录音中','Dictpin · Recording'):'Dictpin');}
  function secure(win){win.webContents.setWindowOpenHandler(()=>({action:'deny'}));win.webContents.on('will-navigate',event=>event.preventDefault());win.webContents.on('will-attach-webview',event=>event.preventDefault());}
  function showMain(view='recent'){requestedView=view;if(mainWindow&&!mainWindow.isDestroyed()){mainWindow.show();mainWindow.focus();publish();}}
- const appearance=()=>windowAppearance({nativeTheme,systemPreferences}),initialAppearance=appearance();
- mainWindow=new BrowserWindow({width:640,height:480,minWidth:360,minHeight:300,show:false,title:'Dictpin',icon:path.join(renderer,'../assets/icon.png'),autoHideMenuBar:true,...initialAppearance,webPreferences:{preload:path.join(__dirname,'dictation-preload.js'),additionalArguments:[...languageArguments,...(initialAppearance.titleBarOverlay?['--dictpin-titlebar-overlay']:[])],contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,backgroundThrottling:false}});
+ const appearance=()=>windowAppearance({nativeTheme,systemPreferences}),initialAppearance=appearance(),profileArguments=[process.argv.includes('--dictpin-profile-scope=remembered')?'--dictpin-profile-scope=remembered':'--dictpin-profile-scope=isolated'];
+ mainWindow=new BrowserWindow({width:640,height:480,minWidth:360,minHeight:300,show:false,title:'Dictpin',icon:path.join(renderer,'../assets/icon.png'),autoHideMenuBar:true,...initialAppearance,webPreferences:{preload:path.join(__dirname,'dictation-preload.js'),additionalArguments:[...languageArguments,...profileArguments,...(initialAppearance.titleBarOverlay?['--dictpin-titlebar-overlay']:[])],contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,backgroundThrottling:false}});
  const themeChanged=()=>{if(mainWindow.isDestroyed())return;const next=appearance();mainWindow.setBackgroundColor(next.backgroundColor);if(next.titleBarOverlay)mainWindow.setTitleBarOverlay(next.titleBarOverlay);};nativeTheme?.on('updated',themeChanged);systemPreferences?.on?.('color-changed',themeChanged);
  secure(mainWindow);
  mainWindow.on('blur',resumeShortcuts);

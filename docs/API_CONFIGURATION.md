@@ -66,7 +66,9 @@ Requests are streaming (`stream:true`, with `stream_options.include_usage`) JSON
 
 ## Storage and compatibility
 
-Development settings remain in ignored `work/dev/profile/settings.json`. Versioned metadata is stored in `settings.textServices` with an `activeProfileId`; optional encrypted per-profile keys are in `secrets.textServices`. Active `settings.refiner` remains a compatibility projection. Legacy encrypted-key fields are preserved where needed; raw keys never enter page-state broadcasts.
+Development settings remain in the selected profile's `settings.json`: normally `../Dictpin-Development/profile/settings.json` for retained development use, or ignored `work/dev/profile/settings.json` for isolated mode. A selected older profile stays where it was; the launcher records only its location, never an exported key. Reopening the same profile restores keys saved with system secure storage. Session-only keys still expire on exit, and a different isolated profile starts without another profile's keys. See [profile selection](INSTALL.md).
+
+Versioned metadata is stored in `settings.textServices` with an `activeProfileId`; optional encrypted per-profile keys are in `secrets.textServices`. Active `settings.refiner` remains a compatibility projection. Legacy encrypted-key fields are preserved where needed; raw keys never enter page-state broadcasts. A shared profile cannot have two running application instances, and selecting a profile does not upgrade a running process.
 
 An old profile appears as **原有配置** (Previous configuration), unchanged, in memory. Opening it does not write a migration, change its host/model or send a request. Explicit saving writes the new structure. Unknown newer service data opens read-only rather than being overwritten. Key encryption does not encrypt settings metadata, dictionary or plaintext latest-result text, and cannot protect against malware acting as the same OS user.
 
