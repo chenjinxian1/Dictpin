@@ -3,7 +3,7 @@ const path=require('node:path'),fs=require('node:fs'),{pathToFileURL}=require('n
 const {Store}=require('./dictation-store'),{Controller}=require('./segmented-controller'),{LocalAsr}=require('./local-asr');
 const {SafePaste}=require('./safe-paste');
 const {createShortcutManager}=require('./shortcut-manager'),{createTextServiceDiagnostics}=require('./provider-checks');
-const {createActions,readable}=require('./dictation-actions'),{createOverlayLifecycle}=require('./dictation-overlay-lifecycle');
+const {createActions,readable}=require('./dictation-actions'),{createOverlayLifecycle,loadOverlayWindow}=require('./dictation-overlay-lifecycle');
 const {registerProductIpc,singleShortcutMap}=require('./dictation-ipc');
 function windowAppearance({nativeTheme,systemPreferences,platform=process.platform}={}){
  const dark=nativeTheme?.shouldUseDarkColors;
@@ -68,8 +68,8 @@ async function start(electron,{StoreClass=Store,LocalAsrClass=LocalAsr,SafePaste
  mainWindow.on('blur',resumeShortcuts);
  mainWindow.on('focus',()=>{if(!shortcutRecordingIntent||disposed||!shortcutManager)return;try{shortcutManager.setRecording(true);}catch{store.notices.push('快捷键未能完全暂停，录入期间已禁止触发，请重试。');}publish();});
  barManager=createOverlayLifecycle({
-  createWindow(){const win=new BrowserWindow({width:380,height:112,show:false,frame:false,resizable:false,transparent:true,alwaysOnTop:true,skipTaskbar:true,focusable:false,webPreferences:{preload:path.join(__dirname,'dictation-preload.js'),additionalArguments:languageArguments,contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true}});secure(win);return win;},
-  loadWindow:win=>win.loadURL(barURL),
+  createWindow(){const win=new BrowserWindow({width:380,height:112,show:false,frame:false,resizable:false,minimizable:false,maximizable:false,transparent:true,alwaysOnTop:true,skipTaskbar:true,focusable:false,webPreferences:{preload:path.join(__dirname,'dictation-preload.js'),additionalArguments:languageArguments,contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,backgroundThrottling:false}});secure(win);return win;},
+  loadWindow:win=>loadOverlayWindow(win,barURL),
   positionWindow(win){const work=screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;win.setBounds({x:Math.round(work.x+(work.width-380)/2),y:Math.round(work.y+work.height-132),width:Math.min(380,work.width),height:112},false);},
   onFailure(){store.notices.push('录音条未能打开，请从托盘打开最近结果。');}
  });

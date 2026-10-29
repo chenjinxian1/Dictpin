@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Nonactivating shortcut recording strip — local candidate
+
+- Wait for both page loading and the first rendered frame before showing the transparent strip, with a five-second bound and cleanup on load failure or window close.
+- Explicitly reassert the Windows popup topmost layer after nonactivating show, and repair an active strip that becomes hidden or loses its topmost state. Keep the position fixed within the task; dismissal, copy acknowledgement and disposal cannot revive an obsolete strip.
+- Disable minimization/maximization and background rendering throttling for the small strip only. The 336×54 visible surface, microphone rules, shortcut mapping, text processing and focus policy are unchanged.
+
+Validation: **228 local Node tests**, **40 real Electron fixture flows per language**, and **5 native Windows overlay checks at 125% scaling** passed with natural exit 0. The native checks use synthetic shortcut dispatch and level events: visible/topmost without focus, a responsive waveform, hidden-window recovery, stable bounds and display while the test main window is minimized. No physical microphone, real system shortcut registration, model/API or system clipboard action was run. The existing running version was not replaced or restarted; no GitHub upload or release occurred.
+
 ### Automatic normalized dictation output — local candidate
 
 - New profiles now prefer automatic Fluent cleanup. Once a usable service is saved, a normal dictation Stop runs recognition, dictionary correction and one cleanup request in order; the result editor directly becomes the normalized final text. Opening the app, changing a preference and saving a connection do not send requests. Existing explicitly saved local-only choices remain intact on load, and missing credentials still finish locally.
