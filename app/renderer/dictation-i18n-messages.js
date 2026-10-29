@@ -3,6 +3,11 @@
 // Presentation only: the Chinese originals remain the source of truth for logic and logs.
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.DictpinMessagesEn=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
  const messages=Object.freeze({
+  '自动整理':'Refine automatically',
+  '录音结束后自动规范化，直接显示最终稿。':'After recording, refine automatically and show the final text.',
+  '复制当前稿':'Copy current draft',
+  '复制当前本地稿并结束本次整理':'Copy the current local draft and stop cleanup',
+  '复制最终文字':'Copy final text',
   '整理结果没有可用正文，当前文字已保留。':'Cleanup returned no usable text; your current text is preserved.',
   '整理结果添加了说明或外层包装，当前文字已保留。':'Cleanup added commentary or wrapping; your current text is preserved.',
   '整理结果改变了数字、金额、日期或列表编号，当前文字已保留。':'Cleanup changed a number, amount, date or list marker; your current text is preserved.',

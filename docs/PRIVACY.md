@@ -1,6 +1,6 @@
 # Privacy and data handling
 
-This describes the current Windows development candidate, not a privacy certification or a promise about an external service. A new development profile starts without a key, with text cleanup off and no global shortcuts. Normal startup reuses its selected saved development profile; isolated startup uses the current checkout's own profile. Reuse does not itself record audio, send text or test a connection.
+This describes the current Windows development candidate, not a privacy certification or a promise about an external service. A new development profile starts without a key or global shortcut and prefers automatic fluent cleanup. No request is sent until a model connection is usable and the user explicitly completes dictation; without credentials, recognition continues locally. Existing saved cleanup choices are preserved. Normal startup reuses its selected saved development profile; isolated startup uses the current checkout's own profile. Reuse does not itself record audio, send text or test a connection.
 
 ## What stays local
 

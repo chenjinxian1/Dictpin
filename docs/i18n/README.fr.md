@@ -93,7 +93,7 @@ Le démarrage normal réutilise la configuration de développement sélectionné
 
 Les scripts à la racine utilisent les modules intégrés de Node ; aucune installation de dépendances n’est nécessaire à la racine. `doctor` contrôle l’arborescence existante, sans valider une nouvelle installation ni la qualité de reconnaissance. `dev` ouvre volontairement un profil de développement sans lancer d’enregistrement. N’utilisez pas les anciens scripts de démarrage ou de reprise de session.
 
-Pour une **utilisation locale sans API**, laissez **文字整理** (nettoyage du texte) désactivé. Ouvrez **设置** (Paramètres), choisissez le microphone effectivement utilisé par l’Enregistreur Windows, cliquez sur **保存更改** (Enregistrer les modifications), puis démarrez explicitement la dictée. Un choix de microphone non enregistré n’est pas actif. Arrêtez, vérifiez et copiez le texte. Configurez un raccourci seulement si vous le souhaitez.
+Les nouveaux profils privilégient le nettoyage fluide automatique. Après l’enregistrement d’une connexion valide, chaque dictée terminée est nettoyée et le texte final apparaît directement dans l’éditeur. Sans API, la reconnaissance locale et le dictionnaire restent utilisables sans désactiver une option. Dans **设置** (Paramètres), choisissez le microphone utilisé par Windows et enregistrez, puis démarrez et arrêtez vous-même la dictée. Les préférences existantes sont conservées ; désactivez **自动整理** seulement pour obtenir uniquement le texte local.
 
 `npm run check` vérifie la syntaxe de l’application, les dépendances locales, les fichiers nécessaires à la distribution et la documentation. Les tests, mesures de performance, anciennes interfaces et outils internes de publication restent hors de ce dépôt. Consultez le [statut de validation et de compilation](../INSTALL.md#validation-and-build-status). Aucune commande de création d’un installateur n’est présentée comme validée.
 
@@ -133,7 +133,7 @@ Les anciens tests de performance concernent leur machine et leur corpus, sans pr
 | --- | --- |
 | Ressource d’exécution ou modèle manquant | Lancez `npm run doctor` ; vérifiez l’arborescence externe complète, les versions et les mentions de licence. |
 | Aucun mouvement du niveau ou aucune parole détectée | Choisissez par son nom le microphone qui fonctionne réellement, enregistrez, vérifiez les permissions Windows et le mode muet, puis lancez volontairement un enregistrement. L’entrée système par défaut peut être différente. |
-| Aucune API configurée | Désactivez le nettoyage ; la reconnaissance locale et les règles du dictionnaire restent utilisables. |
+| Aucune API configurée | Le nettoyage est ignoré ; la reconnaissance locale continue jusqu’à ce qu’une connexion soit utilisable. |
 | 401/403 ou 404 | Vérifiez la clé, la région, les droits, l’identifiant du modèle et l’adresse Chat Completions. Ne collez jamais de clé dans un ticket. |
 | Limitation de débit ou délai dépassé | Conservez le texte préservé. Relancez volontairement ; la requête précédente peut malgré tout être facturée. |
 | Échec d’enregistrement des modifications | Gardez le brouillon, copiez le texte important et vérifiez l’espace disque ainsi que les droits d’écriture avant de réessayer. |

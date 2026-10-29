@@ -9,7 +9,7 @@ const DEFAULTS = Object.freeze({
   copyShortcut:'',
   deliveryConsentVersion:0,appendMode:false,cleanupLevel:'fluent',uiLanguage:'system',
   asr: {backend:'cloud',baseUrl:'https://api.openai.com/v1', model:'whisper-1',protocol:'openai-transcriptions',endpointMode:'base'},
-  refiner: {baseUrl:'https://api.openai.com/v1', model:'gpt-4.1-mini',endpointMode:'base', enabled:false,citationFormat:'none'},
+  refiner: {baseUrl:'https://api.openai.com/v1', model:'gpt-4.1-mini',endpointMode:'base', enabled:true,citationFormat:'none'},
   usagePrices:{asr:defaultPrice(),refiner:defaultPrice()},
   shortcut:'CommandOrControl+Shift+Space', modeShortcuts:{dictate:'CommandOrControl+Shift+1',translate:'CommandOrControl+Shift+2',ask:'CommandOrControl+Shift+3'}, language:'zh', deviceId:'', autoPaste:false, saveHistory:true,
   modeShortcutAlternates:Object.freeze({dictate:Object.freeze([]),translate:Object.freeze([]),ask:Object.freeze([])}),

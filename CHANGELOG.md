@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Automatic normalized dictation output — local candidate
+
+- New profiles now prefer automatic Fluent cleanup. Once a usable service is saved, a normal dictation Stop runs recognition, dictionary correction and one cleanup request in order; the result editor directly becomes the normalized final text. Opening the app, changing a preference and saving a connection do not send requests. Existing explicitly saved local-only choices remain intact on load, and missing credentials still finish locally.
+- Renamed the switch to Refine automatically and clarified the result states: a local draft while automatic cleanup runs, then Refined automatically. Copy current draft explicitly ends waiting; normal completed text retains its usual Copy action. No separate processing action is required for a successful dictation.
+- Updated all six README languages, installation, API and privacy documentation. Content guards, original protection, manual cancellation, append, recovery and the prohibition on automatic paid retries remain in place.
+
+Validation: **215 local Node tests** and **40 real Electron fixture flows per interface language** passed with natural exit 0, including an ordinary stop-to-normalized-output test through the production request and response validator. This round used fictional data and simulated services only, with no live API or microphone test. At the owner's explicit request, the existing running instance's automatic-cleanup preference was enabled and saved through its Settings UI without restarting or replacing that instance; this did not send a model request. No GitHub upload or release was made.
+
 ### Fluent cleanup guard alignment — local candidate
 
 - Aligned explicitly spoken `哦不` / `啊不` / `呃不` / `嗯不` corrections with the fluent prompt. The exception requires a delimited marker and a following replacement; plain negation, terminal markers, negative amount contrasts, release prohibitions and strict light cleanup remain protected.

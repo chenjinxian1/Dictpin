@@ -16,7 +16,7 @@ function seedProfile(profile){
  fs.mkdirSync(profile,{recursive:true});const file=path.join(profile,'settings.json');
  if(fs.existsSync(file))return false;
  const settings=structuredClone(require('../app/src/settings').DEFAULTS);
- settings.mode='dictate';settings.asr.backend='local';settings.shortcut='';settings.modeShortcuts={dictate:'',translate:'',ask:''};settings.modeShortcutAlternates={dictate:[],translate:[],ask:[]};settings.refiner.enabled=false;settings.saveAudio=false;settings.saveHistory=false;
+ settings.mode='dictate';settings.asr.backend='local';settings.shortcut='';settings.modeShortcuts={dictate:'',translate:'',ask:''};settings.modeShortcutAlternates={dictate:[],translate:[],ask:[]};settings.refiner.enabled=true;settings.saveAudio=false;settings.saveHistory=false;
  try{fs.writeFileSync(file,JSON.stringify({version:2,settings,secrets:{}},null,2)+'\n',{flag:'wx'});return true;}catch(error){if(error.code==='EEXIST')return false;throw error;}
 }
 function prepare({uiLanguage=null,profileMode='remembered'}={}){

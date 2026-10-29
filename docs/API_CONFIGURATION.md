@@ -2,6 +2,8 @@
 
 Local recognition, dictionary rules, editing, copying and recovery do not require a text API. Missing or unavailable cleanup credentials make that passage continue locally with a notice; they do not prevent dictation or silently change the saved cleanup preference. There is no automatic cloud ASR or provider fallback.
 
+New development profiles prefer **Refine automatically** in Fluent mode. Save a usable connection once, then explicitly record and stop: recognition, dictionary correction and model cleanup run in order, and the result editor becomes the normalized final text. There is no routine manual cleanup action. While cleanup runs, the editor identifies the local draft; Copy current draft explicitly ends that wait. A failed request or protection check keeps the local text and exposes the reason, without a paid retry. Existing saved choices are preserved; turning automatic cleanup off explicitly selects local text only. Changing this preference or saving a connection does not itself send a request.
+
 ## Choose a provider and edit a draft
 
 Open **设置 → 模型连接** (Settings → Model connection). The interface distinguishes the active service from the draft that becomes active after **保存更改** (Save changes). The interface follows the Windows display language (Chinese or English) and can be changed under Settings → Interface language; both languages behave the same. Six README languages do not imply six UI languages.

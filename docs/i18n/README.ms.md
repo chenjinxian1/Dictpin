@@ -93,7 +93,7 @@ Pelancaran pembangunan biasa menggunakan semula konfigurasi yang dipilih antara 
 
 Skrip di akar menggunakan modul terbina dalam Node; tiada langkah pemasangan kebergantungan di akar repositori. `doctor` memeriksa susun atur sedia ada, bukan pemasangan baharu atau mutu pengecaman. `dev` membuka profil pembangunan tanpa memulakan rakaman. Jangan lancarkan aplikasi melalui skrip bootstrap atau resume lama.
 
-Untuk **penggunaan setempat tanpa API**, biarkan **文字整理** (kemasan teks) dimatikan. Buka **设置** (Tetapan), pilih mikrofon yang benar-benar digunakan oleh Windows Recorder, klik **保存更改** (Simpan perubahan), kemudian mulakan imlak sendiri. Pilihan peranti yang belum disimpan belum berkuat kuasa. Hentikan, semak dan salin. Tetapkan pintasan hanya jika diperlukan.
+Profil baharu menggunakan kemasan lancar automatik secara lalai. Selepas sambungan model yang boleh digunakan disimpan, setiap imlak yang selesai dikemas secara automatik dan teks akhir terus dipaparkan dalam penyunting hasil. Tanpa API, pengecaman setempat dan kamus masih berfungsi tanpa mematikan pilihan. Dalam **设置** (Tetapan), pilih mikrofon yang digunakan oleh Windows Recorder dan simpan, kemudian mula dan hentikan imlak sendiri. Pilihan tersimpan dikekalkan; matikan **自动整理** hanya apabila mahukan teks setempat sahaja.
 
 `npm run check` menyemak sintaks aplikasi, kebergantungan setempat, fail pengedaran dan dokumentasi. Ujian, penilaian prestasi, antara muka lama serta alat penerbitan dalaman tidak disertakan dalam repositori ini. Lihat [status pengesahan dan binaan](../INSTALL.md#validation-and-build-status). Belum ada arahan pembinaan pemasang yang disahkan.
 
@@ -133,7 +133,7 @@ Penanda aras terdahulu hanya terpakai pada mesin dan korpus berkenaan, bukan kel
 | --- | --- |
 | Masa jalan/model tiada | Jalankan `npm run doctor`; semak susun atur luaran yang lengkap, versi dan notis. |
 | Penunjuk aras tidak bergerak atau tiada pertuturan | Pilih mikrofon yang benar-benar berfungsi mengikut nama, simpan, semak kebenaran/senyap dalam Windows, kemudian rakam sendiri. Peranti lalai sistem mungkin input yang berbeza. |
-| API belum dikonfigurasikan | Matikan kemasan; pengecaman setempat dan peraturan kamus masih berfungsi. |
+| API belum dikonfigurasikan | Kemasan dilangkau secara automatik; pengecaman setempat diteruskan sehingga sambungan boleh digunakan. |
 | 401/403 atau 404 | Semak kunci/rantau/kebenaran, ID model dan alamat Chat Completions. Jangan tampal kunci dalam isu. |
 | Had kadar atau tamat masa | Kekalkan teks yang telah dipelihara. Cuba semula dengan sengaja; permintaan terdahulu mungkin masih dikenakan bayaran. |
 | Gagal menyimpan | Kekalkan draf, salin teks penting dan semak ruang cakera/kebenaran menulis sebelum mencuba semula. |

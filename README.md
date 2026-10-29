@@ -93,7 +93,7 @@ Normal development startup reuses saved configuration across sibling checkouts. 
 
 Root scripts use Node built-ins; there is no root dependency installation step. `doctor` checks the existing layout, not a fresh installation or recognition quality. `dev` deliberately opens a development profile without starting recording. Do not launch through historical bootstrap or resume scripts.
 
-For **local use without an API**, keep **文字整理** (text cleanup) off. Open **设置** (Settings), select the microphone actually used by Windows Recorder, click **保存更改** (Save changes), then explicitly start dictation. Unsaved device selections are not active. Stop, inspect, and copy. Configure a shortcut only if wanted.
+New profiles prefer automatic fluent cleanup: after a usable model connection is saved, each completed dictation is refined and the final text appears directly in the result editor. No API is required for local recognition and dictionary rules. Open **设置** (Settings), choose the microphone used by Windows Recorder, save, then explicitly start and stop dictation. Existing saved cleanup choices are preserved; turn **自动整理** (Refine automatically) off only when you want local text alone.
 
 `npm run check` checks application syntax, local dependencies, packaging inputs and documentation. Test suites, benchmarks, old interfaces and internal publication tools are kept out of this application-source repository. See [validation and build status](docs/INSTALL.md#validation-and-build-status). No installer build command is represented as working.
 
@@ -133,7 +133,7 @@ Earlier benchmarks apply to their machine and corpus, not universal speed or acc
 | --- | --- |
 | Missing runtime/model | Run `npm run doctor`; check complete external layout, versions, and notices. |
 | No level movement or no speech | Select the actual working microphone by name, save, check Windows permission/mute, then record deliberately. The system default can be a different input. |
-| No API configured | Switch cleanup off; local recognition and dictionary rules still work. |
+| No API configured | Continue locally; automatic cleanup is skipped until a connection is usable. |
 | 401/403 or 404 | Check key/region/permission, model ID, and Chat Completions address. Never paste a key into an issue. |
 | Rate limit or timeout | Keep the preserved text. Retry deliberately; the earlier request may still be billable. |
 | Save failed | Keep the draft, copy important text, and check disk space/write permission before retrying. |
